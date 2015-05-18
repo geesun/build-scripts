@@ -46,6 +46,7 @@ BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uboot.sh "
 UBOOT_PATH=u-boot
 UBOOT_ARCH=aarch64
 UBOOT_BOARDS="vexpress_aemv8a_juno"
+UBOOT_OUTPUT_DESTS[vexpress_aemv8a_juno]=juno
 
 UEFI_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uefi.sh "
