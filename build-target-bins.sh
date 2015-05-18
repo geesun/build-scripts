@@ -92,6 +92,44 @@ append_chosen_node()
 do_package()
 {
 	if [ "$TARGET_BINS_BUILD_ENABLED" == "1" ]; then
+		# Create uImages and uInitrds
+		local uboot_mkimage=${TOP_DIR}/${UBOOT_PATH}/tools/mkimage
+		local common_flags="-A $LINUX_ARCH -O linux -C none"
+		pushd ${OUTDIR}/$LINUX_PATH
+		for addr in $TARGET_BINS_UIMAGE_ADDRS; do
+			${uboot_mkimage} ${common_flags} -T kernel -n Linux -a $addr -e $addr -n "Linux" -d Image uImage.$addr
+		done
+		popd
+		pushd ${OUTDIR}
+		if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
+			for addr in $TARGET_BINS_UINITRD_ADDRS; do
+				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Android ramdisk" -d ramdisk-android.img uInitrd-android.$addr
+			done
+		fi
+		if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
+			mkdir -p oe
+			touch oe/initrd ; echo oe/initrd | cpio -ov > ramdisk-oe.img
+			for addr in $TARGET_BINS_UINITRD_ADDRS; do
+				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Dummy ramdisk" -d ramdisk-oe.img uInitrd-oe.$addr
+			done
+		fi
+		popd
+
+		# Add chosen node for ramdisk to dtbs
+
+		if [ "$TARGET_BINS_HAS_DTB_RAMDISK" = "1" ]; then
+			pushd ${OUTDIR}
+			for item in $DEVTREE_TREES; do
+				if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
+					append_chosen_node ${item}-chosen-android ramdisk-android.img $item
+				fi
+				if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
+					append_chosen_node ${item}-chosen-oe ramdisk-oe.img $item
+				fi
+			done
+			popd
+		fi
+
 		echo "Packaging target binaries $VARIANT";
 		# Create FIPs
 		for target in $TARGET_BINS_PLATS; do
@@ -130,44 +168,6 @@ do_package()
 					${OUTDIR}/$target/fip-uefi.bin
 			fi
 		done
-
-		# Create uImages and uInitrds
-		local uboot_mkimage=${TOP_DIR}/${UBOOT_PATH}/tools/mkimage
-		local common_flags="-A $LINUX_ARCH -O linux -C none"
-		pushd ${OUTDIR}/$LINUX_PATH
-		for addr in $TARGET_BINS_UIMAGE_ADDRS; do
-			${uboot_mkimage} ${common_flags} -T kernel -n Linux -a $addr -e $addr -n "Linux" -d Image uImage.$addr
-		done
-		popd
-		pushd ${OUTDIR}
-		if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
-			for addr in $TARGET_BINS_UINITRD_ADDRS; do
-				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Android ramdisk" -d ramdisk-android.img uInitrd-android.$addr
-			done
-		fi
-		if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
-			mkdir -p oe
-			touch oe/initrd ; echo oe/initrd | cpio -ov > ramdisk-oe.img
-			for addr in $TARGET_BINS_UINITRD_ADDRS; do
-				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Dummy ramdisk" -d ramdisk-oe.img uInitrd-oe.$addr
-			done
-		fi
-		popd
-
-		# Add chosen node for ramdisk to dtbs
-
-		if [ "$TARGET_BINS_HAS_DTB_RAMDISK" = "1" ]; then
-			pushd ${OUTDIR}
-			for item in $DEVTREE_TREES; do
-				if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
-					append_chosen_node ${item}-chosen-android ramdisk-android.img $item
-				fi
-				if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
-					append_chosen_node ${item}-chosen-oe ramdisk-oe.img $item
-				fi
-			done
-			popd
-		fi
 	fi
 }
 
