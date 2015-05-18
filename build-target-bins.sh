@@ -104,7 +104,7 @@ do_package()
 			local bl30_fip_param=
 
 			if [ "${!scp_out}" != "" ]; then
-				bl30_fip_param="--bl30 ${OUTDIR}/${!scp_out}/scp-ram.bin"
+				bl30_fip_param="--bl30 ${TOP_DIR}/${!scp_out}/bl30.bin"
 			fi
 
 			if [ "${!uboot_out}" != "" ]; then
