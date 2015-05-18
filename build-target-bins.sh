@@ -147,7 +147,7 @@ do_package()
 
 			if [ "${!uboot_out}" != "" ]; then
 				# remove existing fip
-				local outdir=${OUTDIR}/${target}
+				local outdir=${OUTDIR}/${VARIANT}
 				local outfile=${outdir}/fip-uboot.bin
 				rm -f $outfile
 				mkdir -p ${outdir}
@@ -160,7 +160,7 @@ do_package()
 			fi
 			if [ "${!uefi_out}" != "" ]; then
 				# remove existing fip
-				local outdir=${OUTDIR}/${target}
+				local outdir=${OUTDIR}/${VARIANT}
 				local outfile=${outdir}/fip-uefi.bin
 				rm -f $outfile
 				mkdir -p ${outdir}
