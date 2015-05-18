@@ -157,6 +157,7 @@ do_package()
 					${bl30_fip_param} \
 					--bl33 ${OUTDIR}/${!uboot_out}/uboot.bin \
 					$outfile
+				cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
 			fi
 			if [ "${!uefi_out}" != "" ]; then
 				# remove existing fip
@@ -170,6 +171,7 @@ do_package()
 					${bl30_fip_param} \
 					--bl33 ${OUTDIR}/${!uefi_out}/uefi.bin \
 					$outfile
+				cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
 			fi
 		done
 	fi
