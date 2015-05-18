@@ -147,25 +147,29 @@ do_package()
 
 			if [ "${!uboot_out}" != "" ]; then
 				# remove existing fip
-				rm -f ${OUTDIR}/$target/fip-uboot.bin
-				mkdir -p ${OUTDIR}/$target
+				local outdir=${OUTDIR}/${target}
+				local outfile=${outdir}/fip-uboot.bin
+				rm -f $outfile
+				mkdir -p ${outdir}
 				$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
 					${bl2_fip_param} \
 					${bl31_fip_param} \
 					${bl30_fip_param} \
 					--bl33 ${OUTDIR}/${!uboot_out}/uboot.bin \
-					${OUTDIR}/$target/fip-uboot.bin
+					$outfile
 			fi
 			if [ "${!uefi_out}" != "" ]; then
 				# remove existing fip
-				rm -f ${OUTDIR}/$target/fip-uefi.bin
-				mkdir -p ${OUTDIR}/$target
+				local outdir=${OUTDIR}/${target}
+				local outfile=${outdir}/fip-uefi.bin
+				rm -f $outfile
+				mkdir -p ${outdir}
 				$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
 					${bl2_fip_param} \
 					${bl31_fip_param} \
 					${bl30_fip_param} \
 					--bl33 ${OUTDIR}/${!uefi_out}/uefi.bin \
-					${OUTDIR}/$target/fip-uefi.bin
+					$outfile
 			fi
 		done
 	fi
