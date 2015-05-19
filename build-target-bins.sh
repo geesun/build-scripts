@@ -49,6 +49,26 @@
 # LINUX_ARCH - the architecure to build the output for (arm or arm64)
 # DEVTREE_LINUX_PATH - Path to Linux tree containing DT compiler
 
+populate_variant()
+{
+	local outdir=$1
+
+	# copy ramdisk to the variant
+	if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
+		cp ${OUTDIR}/uInitrd-oe.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
+	else
+		cp ${OUTDIR}/uInitrd-android.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
+	fi
+
+	# copy the kernel Image and *.dtb to the variant
+	cp ${OUTDIR}/linux/* $outdir
+	for item in $DEVTREE_TREES; do
+		cp ${TOP_DIR}/$LINUX_PATH/arch/arm64/boot/dts/arm/${item}.dtb $outdir 2>/dev/null || :
+		cp ${TOP_DIR}/$LINUX_PATH/arch/arm64/boot/dts/${item}.dtb $outdir 2>/dev/null || :
+	done
+
+}
+
 do_build()
 {
 	if [ "$TARGET_BINS_BUILD_ENABLED" == "1" ]; then
@@ -158,6 +178,7 @@ do_package()
 					--bl33 ${OUTDIR}/${!uboot_out}/uboot.bin \
 					$outfile
 				cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
+				populate_variant $outdir
 			fi
 			if [ "${!uefi_out}" != "" ]; then
 				# remove existing fip
@@ -172,6 +193,7 @@ do_package()
 					--bl33 ${OUTDIR}/${!uefi_out}/uefi.bin \
 					$outfile
 				cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
+				populate_variant $outdir
 			fi
 		done
 	fi
