@@ -52,12 +52,17 @@
 populate_variant()
 {
 	local outdir=$1
+	local boot_type=$2
 
 	# copy ramdisk to the variant
 	if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
 		cp ${OUTDIR}/uInitrd-oe.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
 	else
-		cp ${OUTDIR}/uInitrd-android.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
+		if [ "$boot_type" = "uboot" ]; then
+			cp ${OUTDIR}/uInitrd-android.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
+		else
+			cp ${OUTDIR}/ramdisk-android.img $outdir/ramdisk.img
+		fi
 	fi
 
 	# copy the kernel Image and *.dtb to the variant
@@ -184,7 +189,7 @@ do_package()
 					--bl33 ${OUTDIR}/${!uboot_out}/uboot.bin \
 					$outfile
 				cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
-				populate_variant $outdir
+				populate_variant $outdir uboot
 			fi
 			if [ "${!uefi_out}" != "" ]; then
 				# remove existing fip
@@ -199,7 +204,7 @@ do_package()
 					--bl33 ${OUTDIR}/${!uefi_out}/uefi.bin \
 					$outfile
 				cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
-				populate_variant $outdir
+				populate_variant $outdir uefi
 			fi
 		done
 	fi
