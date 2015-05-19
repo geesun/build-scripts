@@ -61,7 +61,7 @@ populate_variant()
 	fi
 
 	# copy the kernel Image and *.dtb to the variant
-	cp ${OUTDIR}/linux/* $outdir
+	cp ${OUTDIR}/$LINUX_PATH/* $outdir
 	for item in $DEVTREE_TREES; do
 		cp ${TOP_DIR}/$LINUX_PATH/arch/arm64/boot/dts/arm/${item}.dtb $outdir 2>/dev/null || :
 		cp ${TOP_DIR}/$LINUX_PATH/arch/arm64/boot/dts/${item}.dtb $outdir 2>/dev/null || :
