@@ -83,8 +83,8 @@ do_package ()
 		echo "Packaging Linux... $VARIANT";
 		# Copy binary to output folder
 		pushd $TOP_DIR
-		mkdir -p ${OUTDIR}/$LINUX_PATH
-		cp $LINUX_PATH/arch/$LINUX_ARCH/boot/Image ${OUTDIR}/$LINUX_PATH/.
+		mkdir -p ${OUTDIR}/$LINUX_PATH/$VARIANT
+		cp $LINUX_PATH/arch/$LINUX_ARCH/boot/Image ${OUTDIR}/$LINUX_PATH/$VARIANT/.
 		popd
 	fi
 }

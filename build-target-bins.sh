@@ -61,7 +61,13 @@ populate_variant()
 	fi
 
 	# copy the kernel Image and *.dtb to the variant
-	cp ${OUTDIR}/$LINUX_PATH/* $outdir
+	if [ "$TARGET_BINS_UIMAGE_ADDRS" != "" ]; then
+		for addr in $TARGET_BINS_UIMAGE_ADDRS; do
+			cp ${OUTDIR}/$LINUX_PATH/$VARIANT/uImage.$addr $outdir
+		done
+	else
+		cp ${OUTDIR}/$LINUX_PATH/$VARIANT/Image $outdir
+	fi
 	for item in $DEVTREE_TREES; do
 		cp ${TOP_DIR}/$LINUX_PATH/arch/arm64/boot/dts/arm/${item}.dtb $outdir 2>/dev/null || :
 		cp ${TOP_DIR}/$LINUX_PATH/arch/arm64/boot/dts/${item}.dtb $outdir 2>/dev/null || :
