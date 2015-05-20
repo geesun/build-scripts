@@ -207,6 +207,16 @@ do_package()
 				populate_variant $outdir uefi
 			fi
 		done
+
+		# clean up unwanted artifacts left in output directory
+		pushd ${OUTDIR}
+		rm uInitrd-android.* || :
+		rm uInitrd-oe.* || :
+		rm ramdisk-oe.img || :
+		rm -rf linux || :
+		rm -rf juno || :
+		rm -rf oe || :
+		popd
 	fi
 }
 
