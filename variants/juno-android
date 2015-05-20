@@ -28,7 +28,7 @@
 
 source $DIR/variants/juno-oe
 
-LINUX_CONFIGS="${LINUX_CONFIGS_BASE} android"
+LINUX_CONFIGS="${LINUX_CONFIGS_BASE} android selinux"
 
 TARGET_BINS_HAS_OE=
 TARGET_BINS_HAS_ANDROID=1
