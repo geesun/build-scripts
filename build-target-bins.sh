@@ -61,7 +61,7 @@ populate_variant()
 		if [ "$boot_type" = "uboot" ]; then
 			cp ${OUTDIR}/uInitrd-android.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
 		else
-			cp ${OUTDIR}/ramdisk-android.img $outdir/ramdisk.img
+			cp ${TOP_DIR}/ramdisk.img $outdir/ramdisk.img
 		fi
 	fi
 
@@ -134,7 +134,7 @@ do_package()
 		pushd ${OUTDIR}
 		if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
 			for addr in $TARGET_BINS_UINITRD_ADDRS; do
-				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Android ramdisk" -d ramdisk-android.img uInitrd-android.$addr
+				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Android ramdisk" -d ${TOP_DIR}/ramdisk.img uInitrd-android.$addr
 			done
 		fi
 		if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
@@ -152,7 +152,7 @@ do_package()
 			pushd ${OUTDIR}
 			for item in $DEVTREE_TREES; do
 				if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
-					append_chosen_node ${item}-chosen-android ramdisk-android.img $item
+					append_chosen_node ${item}-chosen-android ${TOP_DIR}/ramdisk.img $item
 				fi
 				if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
 					append_chosen_node ${item}-chosen-oe ramdisk-oe.img $item
