@@ -33,7 +33,7 @@
 #
 # VARIANT - build variant name
 # TOP_DIR - workspace root directory
-# LINUX_COMPILER - PATH to GCC including CROSS-COMPILE prefix
+# CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
 # PARALLELISM - number of cores to build across
 # LINUX_BUILD_ENABLED - Flag to enable building Linux
 # LINUX_PATH - sub-directory containing Linux code
@@ -44,7 +44,6 @@
 do_build ()
 {
 	if [ "$LINUX_BUILD_ENABLED" == "1" ]; then
-		export CROSS_COMPILE=$TOP_DIR/$LINUX_COMPILER
 		export ARCH=$LINUX_ARCH
 
 		pushd $TOP_DIR/$LINUX_PATH
@@ -67,7 +66,6 @@ do_build ()
 do_clean ()
 {
 	if [ "$LINUX_BUILD_ENABLED" == "1" ]; then
-		export CROSS_COMPILE=$TOP_DIR/$LINUX_COMPILER
 		export ARCH=$LINUX_ARCH
 
 		pushd $TOP_DIR/$LINUX_PATH

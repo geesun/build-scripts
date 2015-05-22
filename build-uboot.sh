@@ -33,7 +33,7 @@
 #
 # VARIANT - build variant name
 # TOP_DIR - workspace root directory
-# LINUX_COMPILER - PATH to GCC including CROSS-COMPILE prefix
+# CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
 # UBOOT_BUILD_ENABLED - Flag to enable building u-boot
 # UBOOT_PATH - sub-directory containing u-boot code
 # UBOOT_ARCH - Build architecture (aarch64)
@@ -45,7 +45,6 @@
 do_build ()
 {
 	if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-		export CROSS_COMPILE=$TOP_DIR/$LINUX_COMPILER
 		export ARCH=$UBOOT_ARCH
 
 		pushd $TOP_DIR/$UBOOT_PATH
@@ -61,7 +60,6 @@ do_build ()
 do_clean ()
 {
 	if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-		export CROSS_COMPILE=$TOP_DIR/$LINUX_COMPILER
 		export ARCH=$UBOOT_ARCH
 
 		pushd $TOP_DIR/$UBOOT_PATH

@@ -33,7 +33,7 @@
 #
 # VARIANT - build variant name
 # TOP_DIR - workspace root directory
-# LINUX_COMPILER - PATH to GCC including CROSS-COMPILE prefix
+# CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
 # PARALLELISM - number of cores to build across
 # UEFI_BUILD_ENABLED - Flag to enable building UEFI
 # UEFI_PATH - sub-directory containing UEFI code
@@ -50,7 +50,7 @@ do_build ()
 		source ./edksetup.sh
 		make -C BaseTools
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
-		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$TOP_DIR/$LINUX_COMPILER
+		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$CROSS_COMPILE
 		export EDK2_MACROS="-n $PARALLELISM"
 		for item in $UEFI_PLATFORMS; do
 			make -f $item EDK2_BUILD=$UEFI_BUILD_MODE
@@ -67,7 +67,7 @@ do_clean ()
 		source ./edksetup.sh
 		make -C BaseTools clean
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
-		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$TOP_DIR/$LINUX_COMPILER
+		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$CROSS_COMPILE
 		export EDK2_MACROS="-n $PARALLELISM"
 		for item in $UEFI_PLATFORMS; do
 			make -f $item EDK2_BUILD=$UEFI_BUILD_MODE clean

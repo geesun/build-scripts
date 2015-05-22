@@ -28,8 +28,10 @@
 
 VARIANT_DESC="Juno LSK kernel for OpenEmbedded Software Stack"
 
-# Path to the aarch64 GCC compoiler binaries (plus prefix) relative to the workspace root
-LINUX_COMPILER=../tools/gcc/gcc-linaro-4.9-2014.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+# Absolute path to the aarch64 GCC compoiler binaries (plus prefix)
+# If you wish to specify a path relative to the workspace root, prefix it with "$TOP_DIR/"
+# If your compiler is on your path, you can simply add the prefix, as per the default example.
+export CROSS_COMPILE=${CROSS_COMPILE:-aarch64-linux-gnu-}
 BUILD_SCRIPTS=""
 
 LINUX_BUILD_ENABLED=1

@@ -33,7 +33,7 @@
 #
 # VARIANT - build variant name
 # TOP_DIR - workspace root directory
-# LINUX_COMPILER - PATH to GCC including CROSS-COMPILE prefix
+# CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
 # ARM_TF_BUILD_ENABLED - Flag to enable building ARM Trusted Firmware
 # ARM_TF_PATH - sub-directory containing ARM Trusted Firmware code
 # ARM_TF_ARCH - ARM architecture (aarch64)
@@ -44,7 +44,6 @@
 do_build ()
 {
 	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		export CROSS_COMPILE=$TOP_DIR/$LINUX_COMPILER
 		export ARCH=$ARM_TF_ARCH
 
 		pushd $TOP_DIR/$ARM_TF_PATH
@@ -59,7 +58,6 @@ do_build ()
 do_clean ()
 {
 	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		export CROSS_COMPILE=$TOP_DIR/$LINUX_COMPILER
 		export ARCH=$ARM_TF_ARCH
 
 		pushd $TOP_DIR/$ARM_TF_PATH
