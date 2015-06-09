@@ -57,7 +57,13 @@ populate_variant()
 	# copy ramdisk to the variant
 	if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
 		cp ${OUTDIR}/uInitrd-oe.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
-	else
+	elif [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ]; then
+		if [ "$boot_type" = "uboot" ]; then
+			cp ${OUTDIR}/uInitrd-busybox.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
+		else
+			cp ${OUTDIR}/ramdisk.img $outdir/ramdisk.img
+		fi
+	elif [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
 		if [ "$boot_type" = "uboot" ]; then
 			cp ${OUTDIR}/uInitrd-android.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
 		else
@@ -144,6 +150,12 @@ do_package()
 				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Dummy ramdisk" -d ramdisk-oe.img uInitrd-oe.$addr
 			done
 		fi
+		if [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ]; then
+			mkdir -p busybox
+			for addr in $TARGET_BINS_UINITRD_ADDRS; do
+				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "BusyBox ramdisk" -d ${OUTDIR}/ramdisk.img uInitrd-busybox.$addr
+			done
+		fi
 		popd
 
 		# Add chosen node for ramdisk to dtbs
@@ -156,6 +168,9 @@ do_package()
 				fi
 				if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
 					append_chosen_node ${item}-chosen-oe ramdisk-oe.img $item
+				fi
+				if [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ]; then
+					append_chosen_node ${item}-chosen-busybox ramdisk.img $item
 				fi
 			done
 			popd
