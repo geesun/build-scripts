@@ -102,28 +102,38 @@ do_clean()
 
 append_chosen_node()
 {
-	# $1 = new dtb name
+	# $1 = dtb name
 	# $2 = ramdisk file
-	# $3 = original dtb name
-
 	local ramdisk_end=$(($TARGET_BINS_RAMDISK_ADDR + $(wc -c < $2)))
-	local DTC=$TOP_DIR/$DEVTREE_LINUX_PATH/scripts/dtc/dtc
+	local DTC=$TOP_DIR/$LINUX_PATH/scripts/dtc/dtc
+	local tmp=linux/tmp
+	local devtree_path=$TOP_DIR/$LINUX_PATH/arch/arm64/boot/dts/arm
+	local devtree=$devtree_path/$1
+
+	if [ ! -e $devtree_path ]; then
+		# take into account that the DTS dir added and "arm" sub-dir between 3.10 and 4.1
+		devtree_path=$TOP_DIR/$LINUX_PATH/arch/arm64/boot/dts
+		devtree=$devtree_path/$1
+	fi
+
+	cp ${devtree}.dtb ${tmp}.dtb
+
 	# Decode the DTB
-	${DTC} -Idtb -Odts -o$1.dts linux/$3.dtb
+	${DTC} -Idtb -Odts -o${tmp}.dts ${devtree}.dtb
 
-	echo "" >> $1.dts
-	echo "/ {" >> $1.dts
-	echo "	chosen {" >> $1.dts
-	echo "		linux,initrd-start = <$TARGET_BINS_RAMDISK_ADDR>;" >> $1.dts
-	echo "		linux,initrd-end = <${ramdisk_end}>;" >> $1.dts
-	echo "	};" >> $1.dts
-	echo "};" >> $1.dts
+	echo "" >> ${tmp}.dts
+	echo "/ {" >> ${tmp}.dts
+	echo "	chosen {" >> ${tmp}.dts
+	echo "		linux,initrd-start = <$TARGET_BINS_RAMDISK_ADDR>;" >> ${tmp}.dts
+	echo "		linux,initrd-end = <${ramdisk_end}>;" >> ${tmp}.dts
+	echo "	};" >> ${tmp}.dts
+	echo "};" >> ${tmp}.dts
 
-	# Recode the DTB
-	${DTC} -Idts -Odtb -olinux/$1.dtb $1.dts
+	# Recode the DTB - over-writing the current one
+	${DTC} -Idts -Odtb -o${devtree}.dtb ${tmp}.dts
 
 	# And clean up
-	rm $1.dts
+	rm ${tmp}.dts
 }
 
 do_package()
@@ -164,13 +174,13 @@ do_package()
 			pushd ${OUTDIR}
 			for item in $DEVTREE_TREES; do
 				if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
-					append_chosen_node ${item}-chosen-android ${TOP_DIR}/ramdisk.img $item
+					append_chosen_node ${item} ${TOP_DIR}/ramdisk.img
 				fi
 				if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
-					append_chosen_node ${item}-chosen-oe ramdisk-oe.img $item
+					append_chosen_node ${item} ramdisk-oe.img
 				fi
 				if [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ]; then
-					append_chosen_node ${item}-chosen-busybox ramdisk.img $item
+					append_chosen_node ${item} ramdisk.img
 				fi
 			done
 			popd
