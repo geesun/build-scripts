@@ -56,7 +56,11 @@ populate_variant()
 
 	# copy ramdisk to the variant
 	if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
-		cp ${OUTDIR}/uInitrd-oe.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
+		if [ "$boot_type" = "uboot" ]; then
+			cp ${OUTDIR}/uInitrd-oe.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
+		else
+			cp ${OUTDIR}/ramdisk.img $outdir/ramdisk.img
+		fi
 	elif [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ]; then
 		if [ "$boot_type" = "uboot" ]; then
 			cp ${OUTDIR}/uInitrd-busybox.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
@@ -155,9 +159,9 @@ do_package()
 		fi
 		if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
 			mkdir -p oe
-			touch oe/initrd ; echo oe/initrd | cpio -ov > ramdisk-oe.img
+			touch oe/initrd ; echo oe/initrd | cpio -ov > ramdisk.img
 			for addr in $TARGET_BINS_UINITRD_ADDRS; do
-				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Dummy ramdisk" -d ramdisk-oe.img uInitrd-oe.$addr
+				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Dummy ramdisk" -d ramdisk.img uInitrd-oe.$addr
 			done
 		fi
 		if [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ]; then
@@ -177,7 +181,7 @@ do_package()
 					append_chosen_node ${item} ${TOP_DIR}/ramdisk.img
 				fi
 				if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
-					append_chosen_node ${item} ramdisk-oe.img
+					append_chosen_node ${item} ramdisk.img
 				fi
 				if [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ]; then
 					append_chosen_node ${item} ramdisk.img
@@ -237,7 +241,7 @@ do_package()
 		pushd ${OUTDIR}
 		rm uInitrd-android.* || :
 		rm uInitrd-oe.* || :
-		rm ramdisk-oe.img || :
+		rm ramdisk*.img || :
 		rm -rf linux || :
 		rm -rf juno || :
 		rm -rf oe || :
