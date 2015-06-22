@@ -41,7 +41,7 @@
 # UEFI_BUILD_MODE - DEBUG or RELEASE
 # UEFI_TOOLCHAIN - Toolchain supported by Linaro uefi-tools: GCC49, GCC48 or GCC47
 # UEFI_OUTPUT_PLATFORMS - list of outputs to export
-
+# UEFI_BINARY - the filename of the UEFI binary 
 do_build ()
 {
 	if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
@@ -85,7 +85,7 @@ do_package ()
 		pushd $TOP_DIR
 		for item in $UEFI_OUTPUT_PLATFORMS; do
 			mkdir -p ${OUTDIR}/${UEFI_OUTPUT_DESTS[$item]}
-			cp ./$UEFI_PATH/Build/$item/${UEFI_BUILD_MODE}_${UEFI_TOOLCHAIN}/FV/BL33_AP_UEFI.fd \
+			cp ./$UEFI_PATH/Build/$item/${UEFI_BUILD_MODE}_${UEFI_TOOLCHAIN}/FV/${UEFI_BINARY} \
 				${OUTDIR}/${UEFI_OUTPUT_DESTS[$item]}/uefi.bin
 		done
 		popd
