@@ -26,55 +26,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+source $DIR/variants/juno-busybox
+
 VARIANT_DESC="Juno LSK kernel for OpenEmbedded Software Stack"
-
-# Absolute path to the aarch64 GCC compoiler binaries (plus prefix)
-# If you wish to specify a path relative to the workspace root, prefix it with "$TOP_DIR/"
-# If your compiler is on your path, you can simply add the prefix, as per the default example.
-export CROSS_COMPILE=${CROSS_COMPILE:-aarch64-linux-gnu-}
-BUILD_SCRIPTS=""
-
-LINUX_BUILD_ENABLED=1
-BUILD_SCRIPTS=$BUILD_SCRIPTS"build-linux.sh "
-LINUX_PATH=linux
-LINUX_CONFIGS_BASE="linaro-base vexpress64 big-LITTLE-MP"
 LINUX_CONFIGS="${LINUX_CONFIGS_BASE} distribution"
-LINUX_DEFCONFIG=defconfig
-LINUX_ARCH=arm64
-DEVTREE_TREES="juno juno-r1"
-
-UBOOT_BUILD_ENABLED=1
-BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uboot.sh "
-UBOOT_PATH=u-boot
-UBOOT_ARCH=aarch64
-UBOOT_BOARDS="vexpress_aemv8a_juno"
-UBOOT_OUTPUT_DESTS[vexpress_aemv8a_juno]=juno
-
-UEFI_BUILD_ENABLED=1
-BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uefi.sh "
-UEFI_PATH=uefi/edk2
-UEFI_TOOLS_PATH=uefi/uefi-tools
-UEFI_PLATFORMS="ArmPlatformPkg/ArmJunoPkg/Makefile"
-UEFI_BUILD_MODE=DEBUG
-UEFI_TOOLCHAIN=GCC49
-UEFI_OUTPUT_PLATFORMS="ArmJuno"
-UEFI_OUTPUT_DESTS[juno]=juno
-
-ARM_TF_BUILD_ENABLED=1
-BUILD_SCRIPTS=$BUILD_SCRIPTS"build-arm-tf.sh "
-ARM_TF_PATH=arm-tf
-ARM_TF_PLATS="juno"
-ARM_TF_ARCH=aarch64
-ARMTF_DEBUG_ENABLED=1
-
-# this must be the last step for low level code.
-TARGET_BINS_BUILD_ENABLED=1
-BUILD_SCRIPTS=$BUILD_SCRIPTS"build-target-bins.sh "
-TARGET_BINS_UINITRD_ADDRS="0x84000000"
-TARGET_BINS_PLATS="juno"
+TARGET_BINS_HAS_BUSYBOX=
 TARGET_BINS_HAS_OE=1
-
-TARGET_ARM_TF_juno="juno"
-TARGET_SCP_juno="recovery/SOFTWARE"
-TARGET_UBOOT_juno="juno"
-TARGET_UEFI_juno="juno"
