@@ -41,7 +41,7 @@ LINUX_CONFIGS_BASE="linaro-base vexpress64 big-LITTLE-MP"
 LINUX_CONFIGS="${LINUX_CONFIGS_BASE}"
 LINUX_DEFCONFIG=defconfig
 LINUX_ARCH=arm64
-DEVTREE_TREES="fvp-base-gicv2-psci foundation-v8"
+DEVTREE_TREES="fvp-base-gicv2-psci fvp-foundation-gicv2-psci"
 
 UBOOT_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uboot.sh "
