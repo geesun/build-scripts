@@ -120,24 +120,35 @@ append_chosen_node()
 		devtree=$devtree_path/$1
 	fi
 
-	cp ${devtree}.dtb ${tmp}.dtb
+	if [ -e ${devtree}.dtb ]; then
+		cp ${devtree}.dtb ${tmp}.dtb
 
-	# Decode the DTB
-	${DTC} -Idtb -Odts -o${tmp}.dts ${devtree}.dtb
+		# Decode the DTB
+		${DTC} -Idtb -Odts -o${tmp}.dts ${devtree}.dtb
 
-	echo "" >> ${tmp}.dts
-	echo "/ {" >> ${tmp}.dts
-	echo "	chosen {" >> ${tmp}.dts
-	echo "		linux,initrd-start = <$TARGET_BINS_RAMDISK_ADDR>;" >> ${tmp}.dts
-	echo "		linux,initrd-end = <${ramdisk_end}>;" >> ${tmp}.dts
-	echo "	};" >> ${tmp}.dts
-	echo "};" >> ${tmp}.dts
+		echo "" >> ${tmp}.dts
+		echo "/ {" >> ${tmp}.dts
+		echo "	chosen {" >> ${tmp}.dts
+		echo "		linux,initrd-start = <$TARGET_BINS_RAMDISK_ADDR>;" >> ${tmp}.dts
+		echo "		linux,initrd-end = <${ramdisk_end}>;" >> ${tmp}.dts
+		echo "	};" >> ${tmp}.dts
+		echo "};" >> ${tmp}.dts
 
-	# Recode the DTB - over-writing the current one
-	${DTC} -Idts -Odtb -o${devtree}.dtb ${tmp}.dts
+		# Recode the DTB - over-writing the current one
+		${DTC} -Idts -Odtb -o${devtree}.dtb ${tmp}.dts
 
-	# And clean up
-	rm ${tmp}.dts
+		# And clean up
+		rm ${tmp}.dts
+	else
+		echo ""
+		echo ""
+		echo "********************************************************************************"
+		echo "ERROR: Missing file: ${devtree}.dtb"
+		echo "       Continuing to process other .dtb files"
+		echo "********************************************************************************"
+		echo ""
+		echo ""
+	fi
 }
 
 do_package()
