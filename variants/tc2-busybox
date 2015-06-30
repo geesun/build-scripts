@@ -1,0 +1,84 @@
+# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# Neither the name of ARM nor the names of its contributors may be used
+# to endorse or promote products derived from this software without specific
+# prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+VARIANT_DESC="TC2 kernel for BusyBox Software Stack"
+
+# Absolute path to the GCC compiler binaries (plus prefix)
+# If you wish to specify a path relative to the workspace root, prefix it with "$TOP_DIR/"
+# If your compiler is on your path, you can simply add the prefix, as per the default example.
+export CROSS_COMPILE=${CROSS_COMPILE:-arm-linux-gnueabi-}
+BUILD_SCRIPTS=""
+
+LINUX_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-linux.sh "
+LINUX_PATH=linux
+LINUX_CONFIGS_BASE="linaro-base vexpress big-LITTLE-MP"
+LINUX_CONFIGS="${LINUX_CONFIGS_BASE}"
+LINUX_DEFCONFIG=defconfig
+LINUX_ARCH=arm
+DEVTREE_TREES="vexpress-v2p-ca15_a7"
+
+UBOOT_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uboot.sh "
+UBOOT_PATH=u-boot
+UBOOT_ARCH=arm
+UBOOT_BOARDS="vexpress_ca15_tc2"
+UBOOT_OUTPUT_DESTS[vexpress_ca15_tc2_defconfig]=tc2
+
+UEFI_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uefi.sh "
+UEFI_PATH=uefi/edk2
+UEFI_TOOLS_PATH=uefi/uefi-tools
+UEFI_PLATFORMS="ArmPlatformPkg/ArmVExpressPkg/ArmVExpress-CTA15-A7.mak"
+UEFI_BINARY="ARM_VEXPRESS_CTA15A7_EFI.fd"
+UEFI_BUILD_MODE=DEBUG
+UEFI_TOOLCHAIN=GCC49
+UEFI_OUTPUT_PLATFORMS="ArmVExpress-CTA15-A7"
+UEFI_OUTPUT_DESTS[ArmVExpress-CTA15-A7]=tc2
+
+ARM_TF_BUILD_ENABLED=0
+
+BUSYBOX_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-busybox.sh "
+BUSYBOX_PATH=busybox
+BUSYBOX_ARCH=arm
+
+RAMDISK_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-ramdisk.sh "
+RAMDISK_PATH=ramdisk
+RAMDISK_LINUX_GEN_CPIO=$LINUX_PATH/usr/gen_init_cpio
+RAMDISK_BUSYBOX_PATH=$BUSYBOX_PATH/_install/bin/busybox
+# this must be the last step for low level code.
+TARGET_BINS_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-target-bins.sh "
+TARGET_BINS_UINITRD_ADDRS="0x84000000"
+TARGET_BINS_PLATS="tc2"
+TARGET_BINS_HAS_BUSYBOX=1
+
+TARGET_UBOOT_tc2="tc2"
+TARGET_UEFI_tc2="tc2"
