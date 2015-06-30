@@ -84,8 +84,8 @@ populate_variant()
 		cp ${OUTDIR}/$LINUX_PATH/$VARIANT/Image $outdir
 	fi
 	for item in $DEVTREE_TREES; do
-		cp ${TOP_DIR}/$LINUX_PATH/arch/arm64/boot/dts/arm/${item}.dtb $outdir 2>/dev/null || :
-		cp ${TOP_DIR}/$LINUX_PATH/arch/arm64/boot/dts/${item}.dtb $outdir 2>/dev/null || :
+		cp ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/arm/${item}.dtb $outdir 2>/dev/null || :
+		cp ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/${item}.dtb $outdir 2>/dev/null || :
 	done
 
 }
@@ -222,13 +222,17 @@ do_package()
 				local outfile=${outdir}/fip.bin
 				rm -f $outfile
 				mkdir -p ${outdir}
-				$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
-					${bl2_fip_param} \
-					${bl31_fip_param} \
-					${bl30_fip_param} \
-					--bl33 ${OUTDIR}/${!uboot_out}/uboot.bin \
-					$outfile
-				cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
+				if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
+					$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
+						${bl2_fip_param} \
+						${bl31_fip_param} \
+						${bl30_fip_param} \
+						--bl33 ${OUTDIR}/${!uboot_out}/uboot.bin \
+						$outfile
+					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
+				else
+					cp ${OUTDIR}/${!uboot_out}/uboot.bin ${OUTDIR}/${VARIANT}/uboot
+				fi
 				populate_variant $outdir uboot
 			fi
 			if [ "${!uefi_out}" != "" ]; then
@@ -237,13 +241,17 @@ do_package()
 				local outfile=${outdir}/fip.bin
 				rm -f $outfile
 				mkdir -p ${outdir}
-				$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
-					${bl2_fip_param} \
-					${bl31_fip_param} \
-					${bl30_fip_param} \
-					--bl33 ${OUTDIR}/${!uefi_out}/uefi.bin \
-					$outfile
-				cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
+				if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
+					$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
+						${bl2_fip_param} \
+						${bl31_fip_param} \
+						${bl30_fip_param} \
+						--bl33 ${OUTDIR}/${!uefi_out}/uefi.bin \
+						$outfile
+					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
+				else
+					cp ${OUTDIR}/${!uefi_out}/uefi.bin ${OUTDIR}/${VARIANT}/uefi/uefi.bin
+				fi
 				populate_variant $outdir uefi
 			fi
 		done
