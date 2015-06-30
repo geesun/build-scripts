@@ -234,7 +234,7 @@ do_package()
 						$outfile
 					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
 				else
-					cp ${OUTDIR}/${!uboot_out}/uboot.bin ${OUTDIR}/${VARIANT}/uboot
+					cp ${OUTDIR}/${!uboot_out}/uboot.bin ${OUTDIR}/${VARIANT}/uboot/$UBOOT_OUTPUT_FILENAME
 				fi
 				populate_variant $outdir uboot
 			fi
@@ -253,7 +253,7 @@ do_package()
 						$outfile
 					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
 				else
-					cp ${OUTDIR}/${!uefi_out}/uefi.bin ${OUTDIR}/${VARIANT}/uefi/uefi.bin
+					cp ${OUTDIR}/${!uefi_out}/uefi.bin ${OUTDIR}/${VARIANT}/uefi/$UEFI_OUTPUT_FILENAME
 				fi
 				populate_variant $outdir uefi
 			fi
