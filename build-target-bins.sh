@@ -261,12 +261,12 @@ do_package()
 
 		# clean up unwanted artifacts left in output directory
 		pushd ${OUTDIR}
-		rm uInitrd-android.* || :
-		rm uInitrd-oe.* || :
+		rm uInitrd-* || :
 		rm ramdisk*.img || :
 		rm -rf linux || :
-		rm -rf juno || :
+		rm -rf ${TARGET_BINS_PLATS} || :
 		rm -rf oe || :
+		rm -rf busybox || :
 		popd
 	fi
 }
