@@ -52,6 +52,15 @@ do_build ()
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
 		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$CROSS_COMPILE
 		export EDK2_MACROS="-n $PARALLELISM"
+
+		if test -d .git && head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
+			FIRMWARE_VER=`git rev-parse --short HEAD`
+			if ! git diff-index --quiet HEAD --; then
+				FIRMWARE_VER="${FIRMWARE_VER}-dirty"
+			fi
+			export EDK2_MACROS="$EDK2_MACROS -D FIRMWARE_VER=\"$FIRMWARE_VER\""
+		fi
+
 		for item in $UEFI_PLATFORMS; do
 			make -f $item EDK2_BUILD=$UEFI_BUILD_MODE
 		done
