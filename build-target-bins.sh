@@ -85,9 +85,9 @@ populate_variant()
 	else
 		cp ${OUTDIR}/$LINUX_PATH/$VARIANT/$LINUX_IMAGE_TYPE $outdir
 	fi
-	for item in $DEVTREE_TREES; do
-		cp ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/arm/${item}.dtb $outdir 2>/dev/null || :
-		cp ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/${item}.dtb $outdir 2>/dev/null || :
+	for ((i=0;i<${#DEVTREE_TREES[@]};++i)); do
+		cp ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/arm/${DEVTREE_TREES[i]}.dtb $outdir/${DEVTREE_TREES_RENAME[i]} 2>/dev/null || :
+		cp ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/${DEVTREE_TREES[i]}.dtb $outdir/${DEVTREE_TREES_RENAME[i]} 2>/dev/null || :
 	done
 
 }
@@ -189,7 +189,8 @@ do_package()
 
 		if [ "$TARGET_BINS_HAS_DTB_RAMDISK" = "1" ]; then
 			pushd ${OUTDIR}
-			for item in $DEVTREE_TREES; do
+			for ((i=0;i<${#DEVTREE_TREES[@]};++i)); do
+				item=${DEVTREE_TREES[i]}
 				if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
 					append_chosen_node ${item} ${TOP_DIR}/ramdisk.img
 				fi
