@@ -48,6 +48,8 @@
 # TARGET_BINS_RAMDISK_ADDR - address in RAM that ramdisk is loaded. Required if TARGET_BINS_HAS_DTB_RAMDISK=1
 # LINUX_ARCH - the architecure to build the output for (arm or arm64)
 # DEVTREE_LINUX_PATH - Path to Linux tree containing DT compiler
+# LINUX_IMAGE_TYPE - Image or zImage (defaults to Image if not specified)
+LINUX_IMAGE_TYPE=${LINUX_IMAGE_TYPE:-Image}
 
 populate_variant()
 {
@@ -81,7 +83,7 @@ populate_variant()
 			cp ${OUTDIR}/$LINUX_PATH/$VARIANT/uImage.$addr $outdir
 		done
 	else
-		cp ${OUTDIR}/$LINUX_PATH/$VARIANT/Image $outdir
+		cp ${OUTDIR}/$LINUX_PATH/$VARIANT/$LINUX_IMAGE_TYPE $outdir
 	fi
 	for item in $DEVTREE_TREES; do
 		cp ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/arm/${item}.dtb $outdir 2>/dev/null || :
@@ -159,7 +161,7 @@ do_package()
 		local common_flags="-A $LINUX_ARCH -O linux -C none"
 		pushd ${OUTDIR}/$LINUX_PATH
 		for addr in $TARGET_BINS_UIMAGE_ADDRS; do
-			${uboot_mkimage} ${common_flags} -T kernel -n Linux -a $addr -e $addr -n "Linux" -d Image uImage.$addr
+			${uboot_mkimage} ${common_flags} -T kernel -n Linux -a $addr -e $addr -n "Linux" -d $LINUX_IMAGE_TYPE uImage.$addr
 		done
 		popd
 		pushd ${OUTDIR}

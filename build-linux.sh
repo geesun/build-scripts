@@ -40,6 +40,9 @@
 # LINUX_ARCH - Build architecture (arm64)
 # LINUX_DEFCONFIG - Single Linux defconfig to build. Ignored if LINUX_CONFIGS set
 # LINUX_CONFIGS - List of Linaro config fragments to use to build
+# LINUX_IMAGE_TYPE - Image or zImage (Image is the default if not specified)
+
+LINUX_IMAGE_TYPE=${LINUX_IMAGE_TYPE:-Image}
 
 do_build ()
 {
@@ -58,7 +61,7 @@ do_build ()
 			echo "Building using defconfig..."
 			make $LINUX_DEFCONFIG
 		fi
-		make -j$PARALLELISM Image dtbs
+		make -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
 		popd
 	fi
 }
@@ -82,7 +85,7 @@ do_package ()
 		# Copy binary to output folder
 		pushd $TOP_DIR
 		mkdir -p ${OUTDIR}/$LINUX_PATH/$VARIANT
-		cp $LINUX_PATH/arch/$LINUX_ARCH/boot/Image ${OUTDIR}/$LINUX_PATH/$VARIANT/.
+		cp $LINUX_PATH/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/$LINUX_PATH/$VARIANT/.
 		popd
 	fi
 }
