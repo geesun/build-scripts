@@ -86,8 +86,20 @@ populate_variant()
 		cp ${OUTDIR}/$LINUX_PATH/$VARIANT/$LINUX_IMAGE_TYPE $outdir
 	fi
 	for ((i=0;i<${#DEVTREE_TREES[@]};++i)); do
-		cp ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/arm/${DEVTREE_TREES[i]}.dtb $outdir/${DEVTREE_TREES_RENAME[i]} 2>/dev/null || :
-		cp ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/${DEVTREE_TREES[i]}.dtb $outdir/${DEVTREE_TREES_RENAME[i]} 2>/dev/null || :
+		if [ "$TARGET_BINS_HAS_DTB_RAMDISK" = "1" ]; then
+			chosen="-chosen"
+		fi
+		if [ "${DEVTREE_TREES_RENAME[i]}" == "" ]; then
+			newname=${DEVTREE_TREES[i]}.dtb
+		else
+			newname=${DEVTREE_TREES_RENAME[i]}
+		fi
+		dts_dir=${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/arm/
+		if [ ! -e ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/arm/ ]; then
+			dts_dir=${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/
+		fi
+
+		cp ${dts_dir}/${DEVTREE_TREES[i]}${chosen}.dtb $outdir/${newname} 2>/dev/null || :
 	done
 
 }
@@ -136,8 +148,8 @@ append_chosen_node()
 		echo "	};" >> ${tmp}.dts
 		echo "};" >> ${tmp}.dts
 
-		# Recode the DTB - over-writing the current one
-		${DTC} -Idts -Odtb -o${devtree}.dtb ${tmp}.dts
+		# Recode the DTB
+		${DTC} -Idts -Odtb -o${devtree}-chosen.dtb ${tmp}.dts
 
 		# And clean up
 		rm ${tmp}.dts
