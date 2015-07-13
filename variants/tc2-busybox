@@ -31,7 +31,7 @@ VARIANT_DESC="TC2 kernel for BusyBox Software Stack"
 # Absolute path to the GCC compiler binaries (plus prefix)
 # If you wish to specify a path relative to the workspace root, prefix it with "$TOP_DIR/"
 # If your compiler is on your path, you can simply add the prefix, as per the default example.
-export CROSS_COMPILE=${CROSS_COMPILE:-arm-linux-gnueabi-}
+export CROSS_COMPILE=${CROSS_COMPILE:-arm-linux-gnueabihf-}
 BUILD_SCRIPTS=""
 
 LINUX_BUILD_ENABLED=1
