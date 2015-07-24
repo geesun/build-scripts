@@ -273,8 +273,8 @@ do_package()
 
 		# clean up unwanted artifacts left in output directory
 		pushd ${OUTDIR}
-		rm uInitrd-* || :
-		rm ramdisk*.img || :
+		rm -f uInitrd-* || :
+		rm -f ramdisk*.img || :
 		rm -rf linux || :
 		rm -rf ${TARGET_BINS_PLATS} || :
 		rm -rf oe || :
