@@ -37,7 +37,7 @@
 # ARM_TF_BUILD_ENABLED - Flag to enable building ARM Trusted Firmware
 # ARM_TF_PATH - sub-directory containing ARM Trusted Firmware code
 # ARM_TF_PLATS - List of platforms to be built (from available in arm-tf/plat)
-# ARMTF_DEBUG_ENABLED - 1 = debug, 0 = release build
+# ARM_TF_DEBUG_ENABLED - 1 = debug, 0 = release build
 #
 
 do_build ()
@@ -45,8 +45,9 @@ do_build ()
 	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$ARM_TF_PATH
 		for plat in $ARM_TF_PLATS; do
-			make -j $PARALLELISM PLAT=$plat DEBUG=$ARMTF_DEBUG_ENABLED
+			make -j $PARALLELISM PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED
 		done
+
 		make fiptool
 		popd
 	fi
@@ -58,7 +59,7 @@ do_clean ()
 		pushd $TOP_DIR/$ARM_TF_PATH
 
 		for plat in $ARM_TF_PLATS; do
-			make PLAT=$plat DEBUG=$ARMTF_DEBUG_ENABLED clean
+			make PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED clean
 		done
 		make -C tools/fip_create clean
 		popd
@@ -74,7 +75,7 @@ do_package ()
 		for plat in $ARM_TF_PLATS; do
 			mkdir -p ${OUTDIR}/$plat
 			local mode=release
-			[ "$ARMTF_DEBUG_ENABLED" == "1" ] && mode=debug
+			[ "$ARM_TF_DEBUG_ENABLED" == "1" ] && mode=debug
 			for bin in $TOP_DIR/$ARM_TF_PATH/build/$plat/${mode}/bl*.bin; do
 				cp ${bin} ${OUTDIR}/$plat/tf-$(basename ${bin})
 			done
