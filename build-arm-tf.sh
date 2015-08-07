@@ -60,7 +60,7 @@ do_clean ()
 		for plat in $ARM_TF_PLATS; do
 			make PLAT=$plat DEBUG=$ARMTF_DEBUG_ENABLED clean
 		done
-		make fiptool clean
+		make -C tools/fip_create clean
 		popd
 	fi
 }
