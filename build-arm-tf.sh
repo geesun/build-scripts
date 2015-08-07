@@ -38,6 +38,7 @@
 # ARM_TF_PATH - sub-directory containing ARM Trusted Firmware code
 # ARM_TF_PLATS - List of platforms to be built (from available in arm-tf/plat)
 # ARM_TF_DEBUG_ENABLED - 1 = debug, 0 = release build
+# ARM_TF_BUILD_FLAGS - Additional build flags to pass on the build command line
 #
 
 do_build ()
@@ -45,7 +46,9 @@ do_build ()
 	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$ARM_TF_PATH
 		for plat in $ARM_TF_PLATS; do
-			make -j $PARALLELISM PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED
+			local build_cmd="make -j $PARALLELISM PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED $ARM_TF_BUILD_FLAGS"
+			echo $build_cmd
+			$build_cmd
 		done
 
 		make fiptool
