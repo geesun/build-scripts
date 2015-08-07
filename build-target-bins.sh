@@ -226,9 +226,14 @@ do_package()
 			local bl2_fip_param="--bl2  ${OUTDIR}/${!tf_out}/tf-bl2.bin"
 			local bl31_fip_param="--bl31 ${OUTDIR}/${!tf_out}/tf-bl31.bin"
 			local bl30_fip_param=
+			local bl32_fip_param=
 
 			if [ "${!scp_out}" != "" ]; then
 				bl30_fip_param="--bl30 ${TOP_DIR}/${!scp_out}/bl30.bin"
+			fi
+
+			if [ -e "${OUTDIR}/${!tf_out}/tf-bl32.bin" ]; then
+				bl32_fip_param="--bl32 ${OUTDIR}/${!tf_out}/tf-bl32.bin"
 			fi
 
 			if [ "${!uboot_out}" != "" ]; then
@@ -242,6 +247,7 @@ do_package()
 						${bl2_fip_param} \
 						${bl31_fip_param} \
 						${bl30_fip_param} \
+						${bl32_fip_param} \
 						--bl33 ${OUTDIR}/${!uboot_out}/uboot.bin \
 						$outfile
 					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
@@ -261,6 +267,7 @@ do_package()
 						${bl2_fip_param} \
 						${bl31_fip_param} \
 						${bl30_fip_param} \
+						${bl32_fip_param} \
 						--bl33 ${OUTDIR}/${!uefi_out}/uefi.bin \
 						$outfile
 					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
