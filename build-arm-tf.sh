@@ -36,7 +36,6 @@
 # CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
 # ARM_TF_BUILD_ENABLED - Flag to enable building ARM Trusted Firmware
 # ARM_TF_PATH - sub-directory containing ARM Trusted Firmware code
-# ARM_TF_ARCH - ARM architecture (aarch64)
 # ARM_TF_PLATS - List of platforms to be built (from available in arm-tf/plat)
 # ARMTF_DEBUG_ENABLED - 1 = debug, 0 = release build
 #
@@ -44,8 +43,6 @@
 do_build ()
 {
 	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		export ARCH=$ARM_TF_ARCH
-
 		pushd $TOP_DIR/$ARM_TF_PATH
 		for plat in $ARM_TF_PLATS; do
 			make -j $PARALLELISM PLAT=$plat DEBUG=$ARMTF_DEBUG_ENABLED
@@ -58,8 +55,6 @@ do_build ()
 do_clean ()
 {
 	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		export ARCH=$ARM_TF_ARCH
-
 		pushd $TOP_DIR/$ARM_TF_PATH
 
 		for plat in $ARM_TF_PLATS; do
