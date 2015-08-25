@@ -56,7 +56,10 @@ do_build ()
 			for config in $LINUX_CONFIGS; do
 				CONFIG=$CONFIG"linaro/configs/${config}.conf "
 			done
-			scripts/kconfig/merge_config.sh $CONFIG
+			EXTRA_CONFIGS=$(mktemp ./.tmp.EXTRA_CONFIGS.XXXXXXXXXX)
+			echo "CONFIG_GATOR=y" >>${EXTRA_CONFIGS}
+			scripts/kconfig/merge_config.sh $CONFIG $EXTRA_CONFIGS
+			rm $EXTRA_CONFIGS
 		else
 			echo "Building using defconfig..."
 			make $LINUX_DEFCONFIG
