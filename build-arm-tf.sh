@@ -46,7 +46,7 @@ do_build ()
 	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$ARM_TF_PATH
 		for plat in $ARM_TF_PLATS; do
-			local build_cmd="make -j $PARALLELISM PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED $ARM_TF_BUILD_FLAGS"
+			local build_cmd="make -j $PARALLELISM PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED $ARM_TF_BUILD_FLAGS all"
 			echo $build_cmd
 			$build_cmd
 		done
