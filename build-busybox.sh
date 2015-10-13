@@ -28,6 +28,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+#
+# This script uses the following environment variables from the variant
+#
+# VARIANT - build variant name
+# TOP_DIR - workspace root directory
+# CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
+# BUSYBOX_BUILD_ENABLED - Flag to enable building BusyBox
+# BUSYBOX_PATH - sub-directory containing BusyBox code
+# BUSYBOX_ARCH - Build architecture (arm)
+
 do_build ()
 {
 	if [ "$BUSYBOX_BUILD_ENABLED" == "1" ]; then
