@@ -235,6 +235,25 @@ do_package()
 			if [ -e "${OUTDIR}/${!tf_out}/tf-bl32.bin" ]; then
 				bl32_fip_param="--bl32 ${OUTDIR}/${!tf_out}/tf-bl32.bin"
 			fi
+			local fip_param="${bl2_fip_param} ${bl31_fip_param}  ${bl30_fip_param} ${bl32_fip_param}"
+			if [ "$ARM_TBBR_ENABLED" == "1" ]; then
+				local trusted_key_cert_param="--trusted-key-cert ${OUTDIR}/${!tf_out}/trusted_key.crt"
+				local bl30_tbbr_param="--bl30-key-cert ${OUTDIR}/${!tf_out}/bl30_key.crt --bl30-cert ${OUTDIR}/${!tf_out}/bl30.crt"
+				local bl31_tbbr_param="--bl31-key-cert ${OUTDIR}/${!tf_out}/bl31_key.crt --bl31-cert ${OUTDIR}/${!tf_out}/bl31.crt"
+				local bl32_tbbr_param=
+				local bl33_tbbr_param="--bl33-key-cert ${OUTDIR}/${!tf_out}/bl33_key.crt --bl33-cert ${OUTDIR}/${!tf_out}/bl33.crt"
+				local bl2_tbbr_param="--bl2-cert ${OUTDIR}/${!tf_out}/bl2.crt"
+
+				# add the cert related params to be used by fip_create as well as cert_create
+				fip_param="${fip_param} ${trusted_key_cert_param} \
+					   ${bl30_tbbr_param} ${bl31_tbbr_param} \
+					   ${bl32_tbbr_param} ${bl33_tbbr_param} \
+					   ${bl2_tbbr_param}"
+
+				#fip_create tool and cert_create tool take almost identical params
+				local cert_tool_param="${fip_param} --rot-key ${ROT_KEY} -n"
+
+			fi
 
 			if [ "${!uboot_out}" != "" ]; then
 				# remove existing fip
@@ -242,12 +261,16 @@ do_package()
 				local outfile=${outdir}/fip.bin
 				rm -f $outfile
 				mkdir -p ${outdir}
+				# if TBBR is enabled, generate certificates
+				if [ "$ARM_TBBR_ENABLED" == "1" ]; then
+					$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
+						${cert_tool_param} \
+						--bl33 ${OUTDIR}/${!uboot_out}/uboot.bin
+
+				fi
 				if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
 					$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
-						${bl2_fip_param} \
-						${bl31_fip_param} \
-						${bl30_fip_param} \
-						${bl32_fip_param} \
+						${fip_param} \
 						--bl33 ${OUTDIR}/${!uboot_out}/uboot.bin \
 						$outfile
 					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
@@ -262,12 +285,16 @@ do_package()
 				local outfile=${outdir}/fip.bin
 				rm -f $outfile
 				mkdir -p ${outdir}
+				# if TBBR is enabled, generate certificates
+				if [ "$ARM_TBBR_ENABLED" == "1" ]; then
+					$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
+						${cert_tool_param} \
+						--bl33 ${OUTDIR}/${!uefi_out}/uefi.bin
+
+				fi
 				if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
 					$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
-						${bl2_fip_param} \
-						${bl31_fip_param} \
-						${bl30_fip_param} \
-						${bl32_fip_param} \
+						${fip_param} \
 						--bl33 ${OUTDIR}/${!uefi_out}/uefi.bin \
 						$outfile
 					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
