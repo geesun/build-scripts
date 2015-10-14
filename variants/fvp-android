@@ -29,7 +29,7 @@
 source $DIR/variants/fvp-busybox
 
 VARIANT_DESC="FVP kernel for Android Software Stack"
-LINUX_CONFIGS="${LINUX_CONFIGS_BASE} android selinux"
+LINUX_CONFIGS="${LINUX_CONFIGS_BASE} android"
 BUSYBOX_BUILD_ENABLED=
 RAMDISK_BUILD_ENABLED=
 TARGET_BINS_HAS_BUSYBOX=
