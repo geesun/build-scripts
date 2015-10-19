@@ -50,7 +50,7 @@ do_build ()
 		make -C BaseTools
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
 		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$CROSS_COMPILE
-		export EDK2_MACROS="-n $PARALLELISM"
+		export EDK2_MACROS="-n $PARALLELISM ${UEFI_EXTRA_OPTIONS}"
 
 		if test -d .git && head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
 			FIRMWARE_VER=`git rev-parse --short HEAD`
