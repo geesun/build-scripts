@@ -53,7 +53,6 @@ UBOOT_OUTPUT_DESTS[vexpress_aemv8a_juno]=juno
 UEFI_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uefi.sh "
 UEFI_PATH=uefi/edk2
-UEFI_TOOLS_PATH=uefi/uefi-tools
 UEFI_PLATFORMS="ArmPlatformPkg/ArmJunoPkg/Makefile"
 UEFI_BINARY="BL33_AP_UEFI.fd"
 UEFI_BUILD_MODE=DEBUG

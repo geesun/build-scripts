@@ -39,14 +39,13 @@
 # UEFI_PATH - sub-directory containing UEFI code
 # UEFI_PLATFORMS - List of platform Makefiles to run
 # UEFI_BUILD_MODE - DEBUG or RELEASE
-# UEFI_TOOLCHAIN - Toolchain supported by Linaro uefi-tools: GCC49, GCC48 or GCC47
+# UEFI_TOOLCHAIN - supported Toolchain, eg: GCC49, GCC48 or GCC47
 # UEFI_OUTPUT_PLATFORMS - list of outputs to export
 # UEFI_BINARY - the filename of the UEFI binary 
 do_build ()
 {
 	if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$UEFI_PATH
-		PATH=$PATH:$TOP_DIR/$UEFI_TOOLS_PATH
 		source ./edksetup.sh
 		make -C BaseTools
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
@@ -72,7 +71,6 @@ do_clean ()
 {
 	if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$UEFI_PATH
-		PATH=$PATH:$TOP_DIR/$UEFI_TOOLS_PATH
 		source ./edksetup.sh
 		make -C BaseTools clean
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
