@@ -33,69 +33,32 @@
 #
 # VARIANT - build variant name
 # TOP_DIR - workspace root directory
-# CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
-# ARM_TF_BUILD_ENABLED - Flag to enable building ARM Trusted Firmware
-# ARM_TF_PATH - sub-directory containing ARM Trusted Firmware code
-# ARM_TF_PLATS - List of platforms to be built (from available in arm-tf/plat)
-# ARM_TF_DEBUG_ENABLED - 1 = debug, 0 = release build
-# ARM_TF_BUILD_FLAGS - Additional build flags to pass on the build command line
-# OPTEE_RAM_LOCATION - optee load location (dram/tsram/carveout)
+# OPTEE_CLIENT_CROSS_COMPILE - PATH to GCC
+# OPTEE_BUILD_ENABLED - Flag to enable building optee
+# OPTEE_CLIENT_PATH - sub-directory containing optee client code
 #
 
 do_build ()
 {
-	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		export ARM_TSP_RAM_LOCATION=$OPTEE_RAM_LOCATION
-		#if trusted board boot(TBBR) enabled, set corresponding compiliation flags
-		if [ "$ARM_TBBR_ENABLED" == "1" ]; then
-			ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS $ARM_TF_TBBR_BUILD_FLAGS"
-		fi
-		pushd $TOP_DIR/$ARM_TF_PATH
-		for plat in $ARM_TF_PLATS; do
-			local build_cmd="make -j $PARALLELISM PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED $ARM_TF_BUILD_FLAGS all"
-			echo $build_cmd
-			$build_cmd
-		done
-
-		# tool to create certificates
-		if [ "$ARM_TBBR_ENABLED" == "1" ]; then
-			make certtool
-		fi
-
-		make fiptool
+	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
+		pushd $TOP_DIR/$OPTEE_CLIENT_PATH
+		make -j$PARALLELISM CROSS_COMPILE=$OPTEE_CLIENT_CROSS_COMPILE
 		popd
 	fi
 }
 
 do_clean ()
 {
-	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		pushd $TOP_DIR/$ARM_TF_PATH
-
-		for plat in $ARM_TF_PLATS; do
-			make PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED clean
-		done
-		make -C tools/fip_create clean
+	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
+		pushd $TOP_DIR/$OPTEE_CLIENT_PATH
+		make clean
 		popd
 	fi
 }
 
 do_package ()
 {
-	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		echo "Packaging arm-tf... $VARIANT";
-		# Copy binaries to output folder
-		pushd $TOP_DIR
-		for plat in $ARM_TF_PLATS; do
-			mkdir -p ${OUTDIR}/$plat
-			local mode=release
-			[ "$ARM_TF_DEBUG_ENABLED" == "1" ] && mode=debug
-			for bin in $TOP_DIR/$ARM_TF_PATH/build/$plat/${mode}/bl*.bin; do
-				cp ${bin} ${OUTDIR}/$plat/tf-$(basename ${bin})
-			done
-		done
-		popd
-	fi
+	echo "packaging optee client.. nothing to be done"
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )

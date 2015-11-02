@@ -80,6 +80,29 @@ RAMDISK_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-ramdisk.sh "
 RAMDISK_PATH=ramdisk
 RAMDISK_BUSYBOX_PATH=$BUSYBOX_PATH/_install/bin/busybox
+
+OPTEE_BUILD_ENABLED=1
+if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
+    BUILD_SCRIPTS=$BUILD_SCRIPTS"build-optee-os.sh build-optee-linuxdriver.sh build-optee-client.sh "
+    # set trusted firmware to use dram for TEE
+    OPTEE_RAM_LOCATION=dram
+    ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS ARM_TSP_RAM_LOCATION=$OPTEE_RAM_LOCATION SPD=opteed"
+    OPTEE_ARCH="aarch32"
+    OPTEE_OS_CROSS_COMPILE=arm-linux-gnueabihf-
+    OPTEE_OS_PATH=optee/optee_os
+    OPTEE_PLATFORM=vexpress
+    OPTEE_PLATFORM_FLAVOUR=juno
+    OPTEE_CORE_LOG_LEVEL=4
+    OPTEE_OS_BIN_NAME="tee.bin"
+
+    # OPTEE linux driver
+    OPTEE_LINUXDRIVER_PATH=optee/optee_linuxdriver
+
+    #client API
+    OPTEE_CLIENT_CROSS_COMPILE=$CROSS_COMPILE
+    OPTEE_CLIENT_PATH=optee/optee_client
+fi
+
 # this must be the last step for low level code.
 TARGET_BINS_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-target-bins.sh "

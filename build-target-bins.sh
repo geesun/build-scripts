@@ -244,6 +244,10 @@ do_package()
 				local bl33_tbbr_param="--bl33-key-cert ${OUTDIR}/${!tf_out}/bl33_key.crt --bl33-cert ${OUTDIR}/${!tf_out}/bl33.crt"
 				local bl2_tbbr_param="--bl2-cert ${OUTDIR}/${!tf_out}/bl2.crt"
 
+				#only if a TEE implementation is available and built
+				if [ -e "${OUTDIR}/${!tf_out}/tf-bl32.bin" ]; then
+					bl32_tbbr_param="--bl32-key-cert ${OUTDIR}/${!tf_out}/bl32_key.crt --bl32-cert ${OUTDIR}/${!tf_out}/bl32.crt"
+				fi
 				# add the cert related params to be used by fip_create as well as cert_create
 				fip_param="${fip_param} ${trusted_key_cert_param} \
 					   ${bl30_tbbr_param} ${bl31_tbbr_param} \

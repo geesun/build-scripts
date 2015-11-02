@@ -31,68 +31,58 @@
 #
 # This script uses the following environment variables from the variant
 #
-# VARIANT - build variant name
+# OUTDIR - output dir for final packaging
 # TOP_DIR - workspace root directory
-# CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
-# ARM_TF_BUILD_ENABLED - Flag to enable building ARM Trusted Firmware
-# ARM_TF_PATH - sub-directory containing ARM Trusted Firmware code
-# ARM_TF_PLATS - List of platforms to be built (from available in arm-tf/plat)
-# ARM_TF_DEBUG_ENABLED - 1 = debug, 0 = release build
-# ARM_TF_BUILD_FLAGS - Additional build flags to pass on the build command line
-# OPTEE_RAM_LOCATION - optee load location (dram/tsram/carveout)
-#
+# OPTEE_ARCH - OPTEE OS execution mode
+# OPTEE_BUILD_ENABLED - Flag to enable building optee
+# OPTEE_OS_PATH - path to optee os code
+# OPTEE_PLATFORM - Platform for which to build optee for
+# OPTEE_PLATFORM_FLAVOR - Platform flavour for optee build
+# OPTEE_OS_CROSS_COMPILE - gcc for compiling tee (optee os)
+# OPTEE_OS_BIN_NAME - name of the optee os executable bin
+# OPTEE_CORE_LOG_LEVEL - 1-> least debug logs, 4-> most debug logs
 
 do_build ()
 {
-	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		export ARM_TSP_RAM_LOCATION=$OPTEE_RAM_LOCATION
-		#if trusted board boot(TBBR) enabled, set corresponding compiliation flags
-		if [ "$ARM_TBBR_ENABLED" == "1" ]; then
-			ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS $ARM_TF_TBBR_BUILD_FLAGS"
-		fi
-		pushd $TOP_DIR/$ARM_TF_PATH
-		for plat in $ARM_TF_PLATS; do
-			local build_cmd="make -j $PARALLELISM PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED $ARM_TF_BUILD_FLAGS all"
-			echo $build_cmd
-			$build_cmd
-		done
-
-		# tool to create certificates
-		if [ "$ARM_TBBR_ENABLED" == "1" ]; then
-			make certtool
+	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
+		#setup the environment
+		#only aarch32 mode supported currently for optee execution
+		if [ "$OPTEE_ARCH" ==  "aarch32" ]; then
+			echo "Building OPTEE for $PLATFORM_FLAVOR"
+			export CROSS_COMPILE=$OPTEE_OS_CROSS_COMPILE
+			export PLATFORM=$OPTEE_PLATFORM
+			export PLATFORM_FLAVOR=$OPTEE_PLATFORM_FLAVOUR
+			export CFG_TEE_CORE_LOG_LEVEL=$OPTEE_CORE_LOG_LEVEL
+		else
+			echo
+			echo "OPTEE: unsupported ARCH"
+			echo
+			exit 1;
 		fi
 
-		make fiptool
+		pushd $TOP_DIR/$OPTEE_OS_PATH
+		make -j$PARALLELISM
+		## temp patch: to be fixed by proper memory mapping of TEE
+		${CROSS_COMPILE}objcopy -O binary out/arm-plat-${PLATFORM}/core/tee.elf out/arm-plat-${PLATFORM}/core/tee.bin
 		popd
 	fi
 }
 
 do_clean ()
 {
-	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		pushd $TOP_DIR/$ARM_TF_PATH
-
-		for plat in $ARM_TF_PLATS; do
-			make PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED clean
-		done
-		make -C tools/fip_create clean
-		popd
+	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
+		pushd $TOP_DIR/$OPTEE_OS_PATH
+		make clean
 	fi
 }
 
 do_package ()
 {
-	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		echo "Packaging arm-tf... $VARIANT";
-		# Copy binaries to output folder
-		pushd $TOP_DIR
+	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
+		pushd $TOP_DIR/$OPTEE_OS_PATH
 		for plat in $ARM_TF_PLATS; do
 			mkdir -p ${OUTDIR}/$plat
-			local mode=release
-			[ "$ARM_TF_DEBUG_ENABLED" == "1" ] && mode=debug
-			for bin in $TOP_DIR/$ARM_TF_PATH/build/$plat/${mode}/bl*.bin; do
-				cp ${bin} ${OUTDIR}/$plat/tf-$(basename ${bin})
-			done
+			cp out/arm-plat-${OPTEE_PLATFORM}/core/${OPTEE_OS_BIN_NAME}  ${OUTDIR}/$plat/tf-bl32.bin
 		done
 		popd
 	fi
