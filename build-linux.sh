@@ -58,13 +58,14 @@ do_build ()
 			done
 			EXTRA_CONFIGS=$(mktemp ./.tmp.EXTRA_CONFIGS.XXXXXXXXXX)
 			echo "CONFIG_GATOR=y" >>${EXTRA_CONFIGS}
-			scripts/kconfig/merge_config.sh $CONFIG $EXTRA_CONFIGS
+			mkdir -p $LINUX_OUT_DIR
+			scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR $CONFIG $EXTRA_CONFIGS
 			rm $EXTRA_CONFIGS
 		else
 			echo "Building using defconfig..."
-			make $LINUX_DEFCONFIG
+			make O=$LINUX_OUT_DIR $LINUX_DEFCONFIG
 		fi
-		make -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
+		make O=$LINUX_OUT_DIR -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
 		popd
 	fi
 }
@@ -76,7 +77,7 @@ do_clean ()
 
 		pushd $TOP_DIR/$LINUX_PATH
 
-		make distclean
+		make O=$LINUX_OUT_DIR distclean
 		popd
 	fi
 }
@@ -88,7 +89,7 @@ do_package ()
 		# Copy binary to output folder
 		pushd $TOP_DIR
 		mkdir -p ${OUTDIR}/$LINUX_PATH/$VARIANT
-		cp $LINUX_PATH/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/$LINUX_PATH/$VARIANT/.
+		cp $LINUX_PATH/$LINUX_OUT_DIR/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/$LINUX_PATH/$VARIANT/.
 		popd
 	fi
 }

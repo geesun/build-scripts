@@ -60,6 +60,7 @@ pushd $DIR/..
 TOP_DIR=`pwd`
 popd
 OUTDIR=${TOP_DIR}/output
+LINUX_OUT_DIR=out/$VARIANT
 
 usage_exit ()
 {

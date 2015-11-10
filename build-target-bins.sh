@@ -94,9 +94,9 @@ populate_variant()
 		else
 			newname=${DEVTREE_TREES_RENAME[i]}
 		fi
-		dts_dir=${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/arm/
-		if [ ! -e ${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/arm/ ]; then
-			dts_dir=${TOP_DIR}/$LINUX_PATH/arch/${LINUX_ARCH}/boot/dts/
+		dts_dir=${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/arm/
+		if [ ! -e ${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/arm/ ]; then
+			dts_dir=${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/
 		fi
 
 		cp ${dts_dir}/${DEVTREE_TREES[i]}${chosen}.dtb $outdir/${newname} 2>/dev/null || :
@@ -123,14 +123,14 @@ append_chosen_node()
 	# $1 = dtb name
 	# $2 = ramdisk file
 	local ramdisk_end=$(($TARGET_BINS_RAMDISK_ADDR + $(wc -c < $2)))
-	local DTC=$TOP_DIR/$LINUX_PATH/scripts/dtc/dtc
+	local DTC=$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/scripts/dtc/dtc
 	local tmp=linux/tmp
-	local devtree_path=$TOP_DIR/$LINUX_PATH/arch/arm64/boot/dts/arm
+	local devtree_path=$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/arch/arm64/boot/dts/arm
 	local devtree=$devtree_path/$1
 
 	if [ ! -e $devtree_path ]; then
 		# take into account that the DTS dir added and "arm" sub-dir between 3.10 and 4.1
-		devtree_path=$TOP_DIR/$LINUX_PATH/arch/arm64/boot/dts
+		devtree_path=$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/arch/arm64/boot/dts
 		devtree=$devtree_path/$1
 	fi
 
