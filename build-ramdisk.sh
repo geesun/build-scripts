@@ -56,6 +56,8 @@ do_clean ()
 
 do_package ()
 {
+	RAMDISK_LINUX_GEN_CPIO=${RAMDISK_LINUX_GEN_CPIO:-$LINUX_PATH/$LINUX_OUT_DIR/usr/gen_init_cpio}
+
 	if [ "$RAMDISK_BUILD_ENABLED" == "1" ]; then
 		echo "Packaging ramdisk... $VARIANT";
 		# create the ramdisk

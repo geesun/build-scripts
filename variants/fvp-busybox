@@ -74,7 +74,6 @@ BUSYBOX_ARCH=arm
 RAMDISK_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-ramdisk.sh "
 RAMDISK_PATH=ramdisk
-RAMDISK_LINUX_GEN_CPIO=$LINUX_PATH/$LINUX_OUT_DIR/usr/gen_init_cpio
 RAMDISK_BUSYBOX_PATH=$BUSYBOX_PATH/_install/bin/busybox
 # this must be the last step for low level code.
 TARGET_BINS_BUILD_ENABLED=1
