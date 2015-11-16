@@ -169,7 +169,7 @@ do_package()
 {
 	if [ "$TARGET_BINS_BUILD_ENABLED" == "1" ]; then
 		# Create uImages and uInitrds
-		local uboot_mkimage=${TOP_DIR}/${UBOOT_PATH}/tools/mkimage
+		local uboot_mkimage=${TOP_DIR}/${UBOOT_PATH}/output/tools/mkimage
 		local common_flags="-A $LINUX_ARCH -O linux -C none"
 		pushd ${OUTDIR}/$LINUX_PATH
 		for addr in $TARGET_BINS_UIMAGE_ADDRS; do

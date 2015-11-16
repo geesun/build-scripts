@@ -49,9 +49,10 @@ do_build ()
 
 		pushd $TOP_DIR/$UBOOT_PATH
 		for item in $UBOOT_BOARDS; do
-			mkdir -p output/$item
-			./MAKEALL -b $item -a $UBOOT_ARCH
-			cp u-boot u-boot.* output/$item
+			local outdir=output/$item
+			make -j $PARALLELISM O=$outdir ${item}_config
+			make -j $PARALLELISM O=$outdir
+			cp -R $outdir/tools output
 		done
 		popd
 	fi
