@@ -41,7 +41,7 @@ do_build ()
 	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
 		# use linux build system to build the kernel module
 		pushd $TOP_DIR/$LINUX_PATH
-		make ARCH=$LINUX_ARCH CROSS_COMPILE=$CROSS_COMPILE LOCALVERSION= M=$TOP_DIR/$OPTEE_LINUXDRIVER_PATH modules
+		make O=$LINUX_OUT_DIR ARCH=$LINUX_ARCH CROSS_COMPILE=$CROSS_COMPILE LOCALVERSION= M=$TOP_DIR/$OPTEE_LINUXDRIVER_PATH modules
 		popd
 	fi
 }
@@ -51,7 +51,7 @@ do_clean ()
 	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
 		# use linux build system to build the kernel module
 		pushd $TOP_DIR/$LINUX_PATH
-		make ARCH=$LINUX_ARCH CROSS_COMPILE=$CROSS_COMPILE LOCALVERSION= M=$TOP_DIR/$OPTEE_LINUXDRIVER_PATH clean
+		make O=$LINUX_OUT_DIR ARCH=$LINUX_ARCH CROSS_COMPILE=$CROSS_COMPILE LOCALVERSION= M=$TOP_DIR/$OPTEE_LINUXDRIVER_PATH clean
 		popd
 	fi
 }
