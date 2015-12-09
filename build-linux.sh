@@ -58,6 +58,12 @@ do_build ()
 			done
 			EXTRA_CONFIGS=$(mktemp ./.tmp.EXTRA_CONFIGS.XXXXXXXXXX)
 			echo "CONFIG_GATOR=y" >>${EXTRA_CONFIGS}
+
+			if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
+				# OPTEE requires modules to be able to compile the linux driver
+				echo "CONFIG_MODULES=y" >>${EXTRA_CONFIGS}
+			fi
+
 			mkdir -p $LINUX_OUT_DIR
 			scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR $CONFIG $EXTRA_CONFIGS
 			rm $EXTRA_CONFIGS
