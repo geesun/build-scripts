@@ -29,7 +29,7 @@
 source $DIR/variants/fvp-busybox
 
 VARIANT_DESC="FVP kernel for Android Software Stack"
-LINUX_CONFIGS="${LINUX_CONFIGS_BASE} android"
+LINUX_CONFIGS="linaro-base big-LITTLE-MP android vexpress64"
 BUSYBOX_BUILD_ENABLED=
 RAMDISK_BUILD_ENABLED=
 TARGET_BINS_HAS_BUSYBOX=

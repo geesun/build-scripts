@@ -29,6 +29,6 @@
 source $DIR/variants/tc2-busybox
 
 VARIANT_DESC="TC2 LSK kernel for OpenEmbedded Software Stack"
-LINUX_CONFIGS="${LINUX_CONFIGS_BASE} distribution"
+LINUX_CONFIGS="linaro-base big-LITTLE-MP distribution vexpress"
 TARGET_BINS_HAS_BUSYBOX=
 TARGET_BINS_HAS_OE=1
