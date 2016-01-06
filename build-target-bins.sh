@@ -224,47 +224,38 @@ do_package()
 			local uboot_out="TARGET_UBOOT_"$target
 			local uefi_out="TARGET_UEFI_"$target
 			local bl2_fip_param="--bl2  ${OUTDIR}/${!tf_out}/tf-bl2.bin"
-			local bl2_cert_param="--tb-fw  ${OUTDIR}/${!tf_out}/tf-bl2.bin"
 			local bl31_fip_param="--bl31 ${OUTDIR}/${!tf_out}/tf-bl31.bin"
-			local bl31_cert_param="--soc-fw ${OUTDIR}/${!tf_out}/tf-bl31.bin"
 			local bl30_fip_param=
 			local bl32_fip_param=
 
 			if [ "${!scp_out}" != "" ]; then
-				bl30_fip_param="--scp_bl2 ${TOP_DIR}/${!scp_out}/bl30.bin"
-				bl30_cert_param="--scp-fw ${TOP_DIR}/${!scp_out}/bl30.bin"
+				bl30_fip_param="--bl30 ${TOP_DIR}/${!scp_out}/bl30.bin"
 			fi
 
 			if [ -e "${OUTDIR}/${!tf_out}/tf-bl32.bin" ]; then
 				bl32_fip_param="--bl32 ${OUTDIR}/${!tf_out}/tf-bl32.bin"
-				bl32_cert_param="--tos-fw ${OUTDIR}/${!tf_out}/tf-bl32.bin"
 			fi
 			local fip_param="${bl2_fip_param} ${bl31_fip_param}  ${bl30_fip_param} ${bl32_fip_param}"
-			local cert_param="${bl2_cert_param} ${bl31_cert_param}  ${bl30_cert_param} ${bl32_cert_param}"
 			if [ "$ARM_TBBR_ENABLED" == "1" ]; then
 				local trusted_key_cert_param="--trusted-key-cert ${OUTDIR}/${!tf_out}/trusted_key.crt"
-				local bl30_tbbr_param="--scp-fw-key-cert ${OUTDIR}/${!tf_out}/bl30_key.crt --scp-fw-cert ${OUTDIR}/${!tf_out}/bl30.crt"
-				local bl31_tbbr_param="--soc-fw-key-cert ${OUTDIR}/${!tf_out}/bl31_key.crt --soc-fw-cert ${OUTDIR}/${!tf_out}/bl31.crt"
+				local bl30_tbbr_param="--bl30-key-cert ${OUTDIR}/${!tf_out}/bl30_key.crt --bl30-cert ${OUTDIR}/${!tf_out}/bl30.crt"
+				local bl31_tbbr_param="--bl31-key-cert ${OUTDIR}/${!tf_out}/bl31_key.crt --bl31-cert ${OUTDIR}/${!tf_out}/bl31.crt"
 				local bl32_tbbr_param=
-				local bl33_tbbr_param="--nt-fw-key-cert ${OUTDIR}/${!tf_out}/bl33_key.crt --nt-fw-cert ${OUTDIR}/${!tf_out}/bl33.crt"
-				local bl2_tbbr_param="--tb-fw-cert ${OUTDIR}/${!tf_out}/bl2.crt"
+				local bl33_tbbr_param="--bl33-key-cert ${OUTDIR}/${!tf_out}/bl33_key.crt --bl33-cert ${OUTDIR}/${!tf_out}/bl33.crt"
+				local bl2_tbbr_param="--bl2-cert ${OUTDIR}/${!tf_out}/bl2.crt"
 
 				#only if a TEE implementation is available and built
 				if [ -e "${OUTDIR}/${!tf_out}/tf-bl32.bin" ]; then
-					bl32_tbbr_param="--tos-fw-key-cert ${OUTDIR}/${!tf_out}/bl32_key.crt --tos-fw-cert ${OUTDIR}/${!tf_out}/bl32.crt"
+					bl32_tbbr_param="--bl32-key-cert ${OUTDIR}/${!tf_out}/bl32_key.crt --bl32-cert ${OUTDIR}/${!tf_out}/bl32.crt"
 				fi
 				# add the cert related params to be used by fip_create as well as cert_create
 				fip_param="${fip_param} ${trusted_key_cert_param} \
 					   ${bl30_tbbr_param} ${bl31_tbbr_param} \
 					   ${bl32_tbbr_param} ${bl33_tbbr_param} \
 					   ${bl2_tbbr_param}"
-				cert_param="${cert_param} ${trusted_key_cert_param} \
-					   ${bl30_tbbr_param} ${bl31_tbbr_param} \
-					   ${bl32_tbbr_param} ${bl33_tbbr_param} \
-					   ${bl2_tbbr_param}"
 
 				#fip_create tool and cert_create tool take almost identical params
-				local cert_tool_param="${cert_param} --rot-key ${ROT_KEY} -n"
+				local cert_tool_param="${fip_param} --rot-key ${ROT_KEY} -n"
 
 			fi
 
@@ -278,7 +269,7 @@ do_package()
 				if [ "$ARM_TBBR_ENABLED" == "1" ]; then
 					$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
 						${cert_tool_param} \
-						--nt-fw ${OUTDIR}/${!uboot_out}/uboot.bin
+						--bl33 ${OUTDIR}/${!uboot_out}/uboot.bin
 
 				fi
 				if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
@@ -302,7 +293,7 @@ do_package()
 				if [ "$ARM_TBBR_ENABLED" == "1" ]; then
 					$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
 						${cert_tool_param} \
-						--nt-fw ${OUTDIR}/${!uefi_out}/uefi.bin
+						--bl33 ${OUTDIR}/${!uefi_out}/uefi.bin
 
 				fi
 				if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
