@@ -223,19 +223,19 @@ do_package()
 			local scp_out="TARGET_SCP_"$target
 			local uboot_out="TARGET_UBOOT_"$target
 			local uefi_out="TARGET_UEFI_"$target
-			local bl2_fip_param="--tb-fw  ${OUTDIR}/${!tf_out}/tf-bl2.bin"
-			local bl31_fip_param="--soc-fw ${OUTDIR}/${!tf_out}/tf-bl31.bin"
-			local bl30_fip_param=
-			local bl32_fip_param=
+			local bl2_param="--tb-fw  ${OUTDIR}/${!tf_out}/tf-bl2.bin"
+			local bl31_param="--soc-fw ${OUTDIR}/${!tf_out}/tf-bl31.bin"
+			local bl30_param=
+			local bl32_param=
 
 			if [ "${!scp_out}" != "" ]; then
-				bl30_fip_param="--scp-fw ${TOP_DIR}/${!scp_out}/bl30.bin"
+				bl30_param="--scp-fw ${TOP_DIR}/${!scp_out}/bl30.bin"
 			fi
 
 			if [ -e "${OUTDIR}/${!tf_out}/tf-bl32.bin" ]; then
-				bl32_fip_param="--tos-fw ${OUTDIR}/${!tf_out}/tf-bl32.bin"
+				bl32_param="--tos-fw ${OUTDIR}/${!tf_out}/tf-bl32.bin"
 			fi
-			local fip_param="${bl2_fip_param} ${bl31_fip_param}  ${bl30_fip_param} ${bl32_fip_param}"
+			local common_param="${bl2_param} ${bl31_param}  ${bl30_param} ${bl32_param}"
 			if [ "$ARM_TBBR_ENABLED" == "1" ]; then
 				local trusted_key_cert_param="--trusted-key-cert ${OUTDIR}/${!tf_out}/trusted_key.crt"
 				local bl30_tbbr_param="--scp-fw-key-cert ${OUTDIR}/${!tf_out}/bl30_key.crt --scp-fw-cert ${OUTDIR}/${!tf_out}/bl30.crt"
@@ -249,13 +249,13 @@ do_package()
 					bl32_tbbr_param="--tos-fw-key-cert ${OUTDIR}/${!tf_out}/bl32_key.crt --tos-fw-cert ${OUTDIR}/${!tf_out}/bl32.crt"
 				fi
 				# add the cert related params to be used by fip_create as well as cert_create
-				fip_param="${fip_param} ${trusted_key_cert_param} \
+				common_param="${common_param} ${trusted_key_cert_param} \
 					   ${bl30_tbbr_param} ${bl31_tbbr_param} \
 					   ${bl32_tbbr_param} ${bl33_tbbr_param} \
 					   ${bl2_tbbr_param}"
 
 				#fip_create tool and cert_create tool take almost identical params
-				local cert_tool_param="${fip_param} --rot-key ${ROT_KEY} -n"
+				local cert_tool_param="${common_param} --rot-key ${ROT_KEY} -n"
 
 			fi
 
@@ -274,7 +274,7 @@ do_package()
 				fi
 				if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
 					$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
-						${fip_param} \
+						${common_param} \
 						--nt-fw ${OUTDIR}/${!uboot_out}/uboot.bin \
 						$outfile
 					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
@@ -298,7 +298,7 @@ do_package()
 				fi
 				if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
 					$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
-						${fip_param} \
+						${common_param} \
 						--nt-fw ${OUTDIR}/${!uefi_out}/uefi.bin \
 						$outfile
 					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
