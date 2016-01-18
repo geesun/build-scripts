@@ -29,7 +29,7 @@
 source $DIR/variants/fvp-busybox
 
 VARIANT_DESC="FVP LSK kernel for OpenEmbedded Software Stack"
-LINUX_CONFIGS="linaro-base big-LITTLE-MP distribution vexpress64"
+LINUX_CONFIGS="linaro-base $BL_SUPPORT distribution vexpress64"
 TARGET_BINS_HAS_BUSYBOX=
 BUSYBOX_BUILD_ENABLED=
 RAMDISK_BUILD_ENABLED=

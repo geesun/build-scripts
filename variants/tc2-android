@@ -30,7 +30,7 @@ source $DIR/variants/tc2-busybox
 
 VARIANT_DESC="TC2 kernel for Android Software Stack"
 
-LINUX_CONFIGS="linaro-base big-LITTLE-MP android vexpress"
+LINUX_CONFIGS="linaro-base $BL_SUPPORT android vexpress"
 
 TARGET_BINS_HAS_BUSYBOX=
 TARGET_BINS_HAS_ANDROID=1

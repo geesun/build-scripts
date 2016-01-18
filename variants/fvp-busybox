@@ -37,7 +37,8 @@ BUILD_SCRIPTS=""
 LINUX_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-linux.sh "
 LINUX_PATH=linux
-LINUX_CONFIGS="linaro-base big-LITTLE-MP vexpress64"
+source $DIR/big-LITTLE-conf.sh
+LINUX_CONFIGS="linaro-base $BL_SUPPORT vexpress64"
 LINUX_DEFCONFIG=defconfig
 LINUX_ARCH=arm64
 DEVTREE_TREES=(fvp-base-gicv2-psci fvp-foundation-gicv2-psci)
