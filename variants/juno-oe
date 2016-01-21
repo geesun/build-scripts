@@ -29,6 +29,6 @@
 source $DIR/variants/juno-busybox
 
 VARIANT_DESC="Juno LSK kernel for OpenEmbedded Software Stack"
-LINUX_CONFIGS="linaro-base $BL_SUPPORT distribution vexpress64"
+LINUX_CONFIGS="linaro-base distribution vexpress64 $BL_SUPPORT"
 TARGET_BINS_HAS_BUSYBOX=
 TARGET_BINS_HAS_OE=1

@@ -38,7 +38,7 @@ LINUX_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-linux.sh "
 LINUX_PATH=linux
 source $DIR/big-LITTLE-conf.sh
-LINUX_CONFIGS="linaro-base $BL_SUPPORT vexpress"
+LINUX_CONFIGS="linaro-base vexpress $BL_SUPPORT"
 LINUX_DEFCONFIG=defconfig
 LINUX_ARCH=arm
 LINUX_IMAGE_TYPE=zImage
