@@ -77,31 +77,32 @@ populate_variant()
 		fi
 	fi
 
-	# copy the kernel Image and *.dtb to the variant
-	if [ "$TARGET_BINS_UIMAGE_ADDRS" != "" ]; then
-		for addr in $TARGET_BINS_UIMAGE_ADDRS; do
-			cp ${OUTDIR}/$LINUX_PATH/$VARIANT/uImage.$addr $outdir
-		done
-	else
-		cp ${OUTDIR}/$LINUX_PATH/$VARIANT/$LINUX_IMAGE_TYPE $outdir
-	fi
-	for ((i=0;i<${#DEVTREE_TREES[@]};++i)); do
-		if [ "$TARGET_BINS_HAS_DTB_RAMDISK" = "1" ]; then
-			chosen="-chosen"
-		fi
-		if [ "${DEVTREE_TREES_RENAME[i]}" == "" ]; then
-			newname=${DEVTREE_TREES[i]}.dtb
+	if [ "$LINUX_BUILD_ENABLED" == "1" ]; then
+		# copy the kernel Image and *.dtb to the variant
+		if [ "$TARGET_BINS_UIMAGE_ADDRS" != "" ]; then
+			for addr in $TARGET_BINS_UIMAGE_ADDRS; do
+				cp ${OUTDIR}/$LINUX_PATH/$VARIANT/uImage.$addr $outdir
+			done
 		else
-			newname=${DEVTREE_TREES_RENAME[i]}
+			cp ${OUTDIR}/$LINUX_PATH/$VARIANT/$LINUX_IMAGE_TYPE $outdir
 		fi
-		dts_dir=${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/arm/
-		if [ ! -e ${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/arm/ ]; then
-			dts_dir=${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/
-		fi
+		for ((i=0;i<${#DEVTREE_TREES[@]};++i)); do
+			if [ "$TARGET_BINS_HAS_DTB_RAMDISK" = "1" ]; then
+				chosen="-chosen"
+			fi
+			if [ "${DEVTREE_TREES_RENAME[i]}" == "" ]; then
+				newname=${DEVTREE_TREES[i]}.dtb
+			else
+				newname=${DEVTREE_TREES_RENAME[i]}
+			fi
+			dts_dir=${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/arm/
+			if [ ! -e ${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/arm/ ]; then
+				dts_dir=${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/
+			fi
 
-		cp ${dts_dir}/${DEVTREE_TREES[i]}${chosen}.dtb $outdir/${newname} 2>/dev/null || :
-	done
-
+			cp ${dts_dir}/${DEVTREE_TREES[i]}${chosen}.dtb $outdir/${newname} 2>/dev/null || :
+		done
+	fi
 }
 
 do_build()
@@ -171,11 +172,13 @@ do_package()
 		# Create uImages and uInitrds
 		local uboot_mkimage=${TOP_DIR}/${UBOOT_PATH}/output/tools/mkimage
 		local common_flags="-A $LINUX_ARCH -O linux -C none"
-		pushd ${OUTDIR}/$LINUX_PATH
-		for addr in $TARGET_BINS_UIMAGE_ADDRS; do
-			${uboot_mkimage} ${common_flags} -T kernel -n Linux -a $addr -e $addr -n "Linux" -d $LINUX_IMAGE_TYPE uImage.$addr
-		done
-		popd
+		if [ "$LINUX_BUILD_ENABLED=" == "1" ]; then
+			pushd ${OUTDIR}/$LINUX_PATH
+			for addr in $TARGET_BINS_UIMAGE_ADDRS; do
+				${uboot_mkimage} ${common_flags} -T kernel -n Linux -a $addr -e $addr -n "Linux" -d $LINUX_IMAGE_TYPE uImage.$addr
+			done
+			popd
+		fi
 		pushd ${OUTDIR}
 		if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
 			for addr in $TARGET_BINS_UINITRD_ADDRS; do
@@ -259,53 +262,57 @@ do_package()
 
 			fi
 
-			if [ "${!uboot_out}" != "" ]; then
-				# remove existing fip
-				local outdir=${OUTDIR}/${VARIANT}/uboot
-				local outfile=${outdir}/fip.bin
-				rm -f $outfile
-				mkdir -p ${outdir}
-				# if TBBR is enabled, generate certificates
-				if [ "$ARM_TBBR_ENABLED" == "1" ]; then
-					$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
-						${cert_tool_param} \
-						--nt-fw ${OUTDIR}/${!uboot_out}/uboot.bin
+			if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
+				if [ "${!uboot_out}" != "" ]; then
+					# remove existing fip
+					local outdir=${OUTDIR}/${VARIANT}/uboot
+					local outfile=${outdir}/fip.bin
+					rm -f $outfile
+					mkdir -p ${outdir}
+					# if TBBR is enabled, generate certificates
+					if [ "$ARM_TBBR_ENABLED" == "1" ]; then
+						$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
+							${cert_tool_param} \
+							--nt-fw ${OUTDIR}/${!uboot_out}/uboot.bin
 
+					fi
+					if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
+						$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
+							${common_param} \
+							--nt-fw ${OUTDIR}/${!uboot_out}/uboot.bin \
+							$outfile
+						cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
+					else
+						cp ${OUTDIR}/${!uboot_out}/uboot.bin ${OUTDIR}/${VARIANT}/uboot/$UBOOT_OUTPUT_FILENAME
+					fi
+					populate_variant $outdir uboot
 				fi
-				if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-					$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
-						${common_param} \
-						--nt-fw ${OUTDIR}/${!uboot_out}/uboot.bin \
-						$outfile
-					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
-				else
-					cp ${OUTDIR}/${!uboot_out}/uboot.bin ${OUTDIR}/${VARIANT}/uboot/$UBOOT_OUTPUT_FILENAME
-				fi
-				populate_variant $outdir uboot
 			fi
-			if [ "${!uefi_out}" != "" ]; then
-				# remove existing fip
-				local outdir=${OUTDIR}/${VARIANT}/uefi
-				local outfile=${outdir}/fip.bin
-				rm -f $outfile
-				mkdir -p ${outdir}
-				# if TBBR is enabled, generate certificates
-				if [ "$ARM_TBBR_ENABLED" == "1" ]; then
-					$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
-						${cert_tool_param} \
-						--nt-fw ${OUTDIR}/${!uefi_out}/uefi.bin
+			if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
+				if [ "${!uefi_out}" != "" ]; then
+					# remove existing fip
+					local outdir=${OUTDIR}/${VARIANT}/uefi
+					local outfile=${outdir}/fip.bin
+					rm -f $outfile
+					mkdir -p ${outdir}
+					# if TBBR is enabled, generate certificates
+					if [ "$ARM_TBBR_ENABLED" == "1" ]; then
+						$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
+							${cert_tool_param} \
+							--nt-fw ${OUTDIR}/${!uefi_out}/uefi.bin
 
+					fi
+					if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
+						$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
+							${common_param} \
+							--nt-fw ${OUTDIR}/${!uefi_out}/uefi.bin \
+							$outfile
+						cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
+					else
+						cp ${OUTDIR}/${!uefi_out}/uefi.bin ${OUTDIR}/${VARIANT}/uefi/$UEFI_OUTPUT_FILENAME
+					fi
+					populate_variant $outdir uefi
 				fi
-				if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-					$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
-						${common_param} \
-						--nt-fw ${OUTDIR}/${!uefi_out}/uefi.bin \
-						$outfile
-					cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
-				else
-					cp ${OUTDIR}/${!uefi_out}/uefi.bin ${OUTDIR}/${VARIANT}/uefi/$UEFI_OUTPUT_FILENAME
-				fi
-				populate_variant $outdir uefi
 			fi
 		done
 
