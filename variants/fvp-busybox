@@ -50,7 +50,7 @@ UBOOT_ARCH=aarch64
 UBOOT_BOARDS="vexpress_aemv8a_dram"
 UBOOT_OUTPUT_DESTS[vexpress_aemv8a_dram]=fvp
 
-UEFI_BUILD_ENABLED=1
+UEFI_BUILD_ENABLED=0
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uefi.sh "
 UEFI_PATH=uefi/edk2
 UEFI_PLATFORMS="ArmPlatformPkg/ArmVExpressPkg/ArmVExpress-FVP-AArch64.mak"
