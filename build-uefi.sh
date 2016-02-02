@@ -46,22 +46,8 @@ do_build ()
 {
 	if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$UEFI_PATH
-		source ./edksetup.sh
-		make -C BaseTools
-		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
-		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$CROSS_COMPILE
-		export EDK2_MACROS="-n $PARALLELISM ${UEFI_EXTRA_OPTIONS}"
-
-		if test -d .git && head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
-			FIRMWARE_VER=`git rev-parse --short HEAD`
-			if ! git diff-index --quiet HEAD --; then
-				FIRMWARE_VER="${FIRMWARE_VER}-dirty"
-			fi
-			export EDK2_MACROS="$EDK2_MACROS -D FIRMWARE_VER=\"$FIRMWARE_VER\""
-		fi
-
 		for item in $UEFI_PLATFORMS; do
-			make -f $item EDK2_BUILD=$UEFI_BUILD_MODE
+			${TOP_DIR}/${UEFI_TOOLS_PATH}/uefi-build.sh -b DEBUG -D EDK_OUT_DIR=$UEFI_OUTPUT_PLATFORMS $item
 		done
 		popd
 	fi
@@ -77,7 +63,7 @@ do_clean ()
 		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$CROSS_COMPILE
 		export EDK2_MACROS="-n $PARALLELISM"
 		for item in $UEFI_PLATFORMS; do
-			make -f $item EDK2_BUILD=$UEFI_BUILD_MODE clean
+			rm -rf Build/$UEFI_OUTPUT_PLATFORMS
 		done
 		rm -rf Build
 		popd
