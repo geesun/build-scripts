@@ -262,6 +262,17 @@ do_package()
 
 			fi
 
+			if [ "$BOOTMON_BUILD_ENABLED" == "1" ]; then
+					local outdir=${OUTDIR}/${VARIANT}/bootmon
+					local outfile=${outdir}/${BOOTMON_SCRIPT}
+					rm -f $outfile
+					mkdir -p ${outdir}
+					echo "fl linux fdt board.dtb" > $outfile
+					echo "fl linux initrd ramdisk.img" >> $outfile
+					echo "fl linux boot zImage console=ttyAMA0,38400 earlyprintk debug verbose rootwait root=/dev/sda2 androidboot.hardware=arm-versatileexpress-usb" >> $outfile
+					populate_variant $outdir bootmon
+			fi
+
 			if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
 				if [ "${!uboot_out}" != "" ]; then
 					# remove existing fip
