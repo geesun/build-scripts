@@ -45,9 +45,12 @@
 do_build ()
 {
 	if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
+		pushd $TOP_DIR/$UEFI_ACPICA_PATH
+		make iasl
+		popd
 		pushd $TOP_DIR/$UEFI_PATH
 		for item in $UEFI_PLATFORMS; do
-			${TOP_DIR}/${UEFI_TOOLS_PATH}/uefi-build.sh -b $UEFI_BUILD_MODE -D EDK_OUT_DIR=$UEFI_OUTPUT_PLATFORMS $item
+			IASL_PREFIX=${TOP_DIR}/${UEFI_ACPICA_PATH}/bin/ ${TOP_DIR}/${UEFI_TOOLS_PATH}/uefi-build.sh -b $UEFI_BUILD_MODE -D EDK_OUT_DIR=$UEFI_OUTPUT_PLATFORMS $item
 		done
 		popd
 	fi
@@ -66,6 +69,9 @@ do_clean ()
 			rm -rf Build/$UEFI_OUTPUT_PLATFORMS
 		done
 		rm -rf Build
+		popd
+		pushd $TOP_DIR/$UEFI_ACPICA_PATH
+		make veryclean
 		popd
 	fi
 }
