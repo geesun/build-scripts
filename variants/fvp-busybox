@@ -41,7 +41,7 @@ source $DIR/big-LITTLE-conf.sh
 LINUX_CONFIGS="linaro-base vexpress64 $BL_SUPPORT"
 LINUX_DEFCONFIG=defconfig
 LINUX_ARCH=arm64
-DEVTREE_TREES=(fvp-base-gicv2-psci fvp-foundation-gicv2-psci)
+DEVTREE_TREES=(fvp-base-aemv8a-aemv8a foundation-v8-gicv3)
 
 UBOOT_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uboot.sh "
