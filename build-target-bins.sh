@@ -73,7 +73,8 @@ populate_variant()
 		if [ "$boot_type" = "uboot" ]; then
 			cp ${OUTDIR}/uInitrd-android.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
 		else
-			cp ${TOP_DIR}/ramdisk.img $outdir/ramdisk.img
+			plat=`echo $VARIANT | cut -d "-" -f 1`
+			cp ${TOP_DIR}/prebuilts/android/$plat/ramdisk.img $outdir/ramdisk.img
 		fi
 	fi
 
@@ -182,7 +183,8 @@ do_package()
 		pushd ${OUTDIR}
 		if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
 			for addr in $TARGET_BINS_UINITRD_ADDRS; do
-				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Android ramdisk" -d ${TOP_DIR}/ramdisk.img uInitrd-android.$addr
+				plat=`echo $VARIANT | cut -d "-" -f 1`
+				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Android ramdisk" -d ${TOP_DIR}/prebuilts/android/$plat/ramdisk.img uInitrd-android.$addr
 			done
 		fi
 		if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
@@ -207,7 +209,8 @@ do_package()
 			for ((i=0;i<${#DEVTREE_TREES[@]};++i)); do
 				item=${DEVTREE_TREES[i]}
 				if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
-					append_chosen_node ${item} ${TOP_DIR}/ramdisk.img
+					plat=`echo $VARIANT | cut -d "-" -f 1`
+					append_chosen_node ${item} ${TOP_DIR}/prebuilts/android/$plat/ramdisk.img
 				fi
 				if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
 					append_chosen_node ${item} ramdisk.img
