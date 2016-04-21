@@ -258,7 +258,7 @@ do_package()
 					   ${bl2_tbbr_param}"
 
 				#fip_create tool and cert_create tool take almost identical params
-				local cert_tool_param="${common_param} --rot-key ${ROT_KEY} -n"
+				local cert_tool_param="${common_param} --rot-key ${ROT_KEY} -n --tfw-nvctr 31 --ntfw-nvctr 223"
 
 			fi
 
