@@ -266,14 +266,13 @@ do_package()
 			fi
 
 			if [ "$BOOTMON_BUILD_ENABLED" == "1" ]; then
-					local outdir=${OUTDIR}/${VARIANT}/bootmon
-					local outfile=${outdir}/${BOOTMON_SCRIPT}
-					rm -f $outfile
-					mkdir -p ${outdir}
-					echo "fl linux fdt board.dtb" > $outfile
-					echo "fl linux initrd ramdisk.img" >> $outfile
-					echo "fl linux boot zImage console=ttyAMA0,38400 earlyprintk debug verbose rootwait root=/dev/sda2 androidboot.hardware=arm-versatileexpress-usb" >> $outfile
-					populate_variant $outdir bootmon
+				local outdir=${OUTDIR}/${VARIANT}/bootmon
+				mkdir -p ${outdir}
+				populate_variant $outdir bootmon
+				if [ "$BOOTMON_SCRIPT" != "" ]; then
+					script_src=${TOP_DIR}/vexpress-firmware/SOFTWARE/bootkern.txt
+					script_file=${outdir}/${BOOTMON_SCRIPT}
+				fi
 			fi
 
 			if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
@@ -298,6 +297,10 @@ do_package()
 						cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
 					else
 						cp ${OUTDIR}/${!uboot_out}/uboot.bin ${OUTDIR}/${VARIANT}/uboot/$UBOOT_OUTPUT_FILENAME
+					fi
+					if [ "$BOOTMON_SCRIPT" != "" ]; then
+						script_src=${TOP_DIR}/vexpress-firmware/SOFTWARE/bootldr.txt
+						script_file=${outdir}/${BOOTMON_SCRIPT}
 					fi
 					populate_variant $outdir uboot
 				fi
@@ -325,8 +328,15 @@ do_package()
 					else
 						cp ${OUTDIR}/${!uefi_out}/uefi.bin ${OUTDIR}/${VARIANT}/uefi/$UEFI_OUTPUT_FILENAME
 					fi
+					if [ "$BOOTMON_SCRIPT" != "" ]; then
+						script_src=${TOP_DIR}/vexpress-firmware/SOFTWARE/bootldr.txt
+						script_file=${outdir}/${BOOTMON_SCRIPT}
+					fi
 					populate_variant $outdir uefi
 				fi
+			fi
+			if [ "$BOOTMON_SCRIPT" != "" ]; then
+				cp ${script_src} ${script_file}
 			fi
 		done
 
