@@ -299,7 +299,7 @@ do_package()
 						cp ${OUTDIR}/${!uboot_out}/uboot.bin ${OUTDIR}/${VARIANT}/uboot/$UBOOT_OUTPUT_FILENAME
 					fi
 					if [ "$BOOTMON_SCRIPT" != "" ]; then
-						script_src=${TOP_DIR}/vexpress-firmware/SOFTWARE/bootldr.txt
+						script_src=${TOP_DIR}/vexpress-firmware/SOFTWARE/bootuefi.txt
 						script_file=${outdir}/${BOOTMON_SCRIPT}
 					fi
 					populate_variant $outdir uboot
@@ -329,7 +329,7 @@ do_package()
 						cp ${OUTDIR}/${!uefi_out}/uefi.bin ${OUTDIR}/${VARIANT}/uefi/$UEFI_OUTPUT_FILENAME
 					fi
 					if [ "$BOOTMON_SCRIPT" != "" ]; then
-						script_src=${TOP_DIR}/vexpress-firmware/SOFTWARE/bootldr.txt
+						script_src=${TOP_DIR}/vexpress-firmware/SOFTWARE/bootuefi.txt
 						script_file=${outdir}/${BOOTMON_SCRIPT}
 					fi
 					populate_variant $outdir uefi
