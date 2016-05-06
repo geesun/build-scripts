@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -33,37 +33,39 @@
 #
 # OUTDIR - output dir for final packaging
 # TOP_DIR - workspace root directory
-# OPTEE_ARCH - OPTEE OS execution mode
 # OPTEE_BUILD_ENABLED - Flag to enable building optee
 # OPTEE_OS_PATH - path to optee os code
-# OPTEE_PLATFORM - Platform for which to build optee for
-# OPTEE_PLATFORM_FLAVOR - Platform flavour for optee build
 # OPTEE_OS_CROSS_COMPILE - gcc for compiling tee (optee os)
 # OPTEE_OS_BIN_NAME - name of the optee os executable bin
 # OPTEE_CORE_LOG_LEVEL - 1-> least debug logs, 4-> most debug logs
+# OPTEE_$plat[plat] - optee platform
+# OPTEE_$plat[flavor] - optee platform flavor
+# OPTEE_PLATS - List of platforms to be built
+#
 
 do_build ()
 {
 	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
-		#setup the environment
-		#only aarch32 mode supported currently for optee execution
-		if [ "$OPTEE_ARCH" ==  "aarch32" ]; then
-			echo "Building OPTEE for $PLATFORM_FLAVOR"
+		for plat in $OPTEE_PLATS; do
+			echo "Building OPTEE for OPTEE_plat[$plat]"
+			local optee_plat=OPTEE_$plat[plat]
+			local optee_plat_flavor=OPTEE_$plat[flavor]
 			export CROSS_COMPILE=$OPTEE_OS_CROSS_COMPILE
-			export PLATFORM=$OPTEE_PLATFORM
-			export PLATFORM_FLAVOR=$OPTEE_PLATFORM_FLAVOUR
+			export PLATFORM=${!optee_plat}
+			export PLATFORM_FLAVOR=${!optee_plat_flavor}
 			export CFG_TEE_CORE_LOG_LEVEL=$OPTEE_CORE_LOG_LEVEL
-		else
-			echo
-			echo "OPTEE: unsupported ARCH"
-			echo
-			exit 1;
-		fi
-
-		pushd $TOP_DIR/$OPTEE_OS_PATH
-		make -j$PARALLELISM
-		## temp patch: to be fixed by proper memory mapping of TEE
-		${CROSS_COMPILE}objcopy -O binary out/arm-plat-${PLATFORM}/core/tee.elf out/arm-plat-${PLATFORM}/core/tee.bin
+			pushd $TOP_DIR/$OPTEE_OS_PATH
+			make -j$PARALLELISM
+			## temp patch: to be fixed by proper memory mapping of TEE
+			mkdir -p out/arm-plat-${PLATFORM_FLAVOR}/core
+			${CROSS_COMPILE}objcopy -O binary out/arm-plat-${PLATFORM}/core/tee.elf out/arm-plat-${PLATFORM_FLAVOR}/core/${OPTEE_OS_BIN_NAME}
+			popd
+		done
+		# optee client build
+		# temp patch: this will be removed once we have the client built in the LCR/OE
+		echo "Build optee client.."
+		pushd $TOP_DIR/optee/optee_client
+		make -j$PARALLELISM CROSS_COMPILE=${OPTEE_CLIENT_CROSS_COMPILE}
 		popd
 	fi
 }
@@ -73,17 +75,32 @@ do_clean ()
 	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$OPTEE_OS_PATH
 		make clean
+		popd
+		pushd $TOP_DIR/optee/optee_client
+		make clean
+		popd
 	fi
 }
 
 do_package ()
 {
 	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
-		pushd $TOP_DIR/$OPTEE_OS_PATH
-		for plat in $ARM_TF_PLATS; do
+		for plat in $OPTEE_PLATS; do
+			local optee_plat_flavor=OPTEE_$plat[flavor]
+			export PLATFORM_FLAVOR=${!optee_plat_flavor}
+			pushd $TOP_DIR/$OPTEE_OS_PATH
 			mkdir -p ${OUTDIR}/$plat
-			cp out/arm-plat-${OPTEE_PLATFORM}/core/${OPTEE_OS_BIN_NAME}  ${OUTDIR}/$plat/tf-bl32.bin
+			cp out/arm-plat-${PLATFORM_FLAVOR}/core/${OPTEE_OS_BIN_NAME}  ${OUTDIR}/$plat/${OPTEE_OS_BIN_NAME}
+			popd
 		done
+		# optee client is independent of platform config,
+		# packaging to plat independent location
+		echo "packaging optee client.."
+		mkdir -p ${OUTDIR}/optee/rootfs/usr/lib/
+		mkdir -p ${OUTDIR}/optee/rootfs/usr/bin/
+		pushd $TOP_DIR/optee/optee_client
+		find out/ -name "*.so*" -exec cp {} ${OUTDIR}/optee/rootfs/usr/lib/ \;
+		cp out/tee-supplicant/tee-supplicant ${OUTDIR}/optee/rootfs/usr/bin/
 		popd
 	fi
 }

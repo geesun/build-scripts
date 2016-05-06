@@ -40,6 +40,14 @@
 # LINUX_ARCH - Build architecture (arm64)
 # LINUX_DEFCONFIG - Single Linux defconfig to build. Ignored if LINUX_CONFIGS set
 # LINUX_CONFIGS - List of Linaro config fragments to use to build
+# TARGET_BINS_PLATS - the platforms to create binaries for
+# TARGET_{plat} - array of platform parameters, indexed by
+#	fdts - the fdt pattern used by the platform
+# UBOOT_UIMAGE_ADDRS - address at which to link UBOOT image
+# UBOOT_MKIMAGE - path to uboot mkimage
+# LINUX_ARCH - the arch
+# UBOOT_BUILD_ENABLED - flag to indicate the need for uimages.
+#
 # LINUX_IMAGE_TYPE - Image or zImage (Image is the default if not specified)
 
 LINUX_IMAGE_TYPE=${LINUX_IMAGE_TYPE:-Image}
@@ -56,17 +64,8 @@ do_build ()
 			for config in $LINUX_CONFIGS; do
 				CONFIG=$CONFIG"linaro/configs/${config}.conf "
 			done
-			EXTRA_CONFIGS=$(mktemp ./.tmp.EXTRA_CONFIGS.XXXXXXXXXX)
-			echo "CONFIG_GATOR=y" >>${EXTRA_CONFIGS}
-
-			if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
-				# OPTEE requires modules to be able to compile the linux driver
-				echo "CONFIG_MODULES=y" >>${EXTRA_CONFIGS}
-			fi
-
 			mkdir -p $LINUX_OUT_DIR
-			scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR $CONFIG $EXTRA_CONFIGS
-			rm $EXTRA_CONFIGS
+			scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR $CONFIG
 		else
 			echo "Building using defconfig..."
 			make O=$LINUX_OUT_DIR $LINUX_DEFCONFIG
@@ -94,9 +93,34 @@ do_package ()
 		echo "Packaging Linux... $VARIANT";
 		# Copy binary to output folder
 		pushd $TOP_DIR
-		mkdir -p ${OUTDIR}/$LINUX_PATH/$VARIANT
-		cp $LINUX_PATH/$LINUX_OUT_DIR/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/$LINUX_PATH/$VARIANT/.
+		mkdir -p ${OUTDIR}/$LINUX_PATH/
+
+		for plat in $TARGET_BINS_PLATS; do
+			local fd=TARGET_$plat[fdts]
+			for target in ${!fd}; do
+				for item in $target; do
+					discoveredDTB=$(find $LINUX_PATH/$LINUX_OUT_DIR/arch/$LINUX_ARCH/boot/dts/ -name ${item}.dtb)
+					if [ "${discoveredDTB}" = "" ]; then
+						echo "skipping dtb $item"
+					else
+						cp ${discoveredDTB} ${OUTDIR}/$LINUX_PATH/.
+					fi
+				done
+			done
+		done
+
+		cp $LINUX_PATH/$LINUX_OUT_DIR/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/$LINUX_PATH/.
 		popd
+		if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
+			pushd ${OUTDIR}/$LINUX_PATH/
+			for addr in $UBOOT_UIMAGE_ADDRS; do
+				${UBOOT_MKIMG} -A $LINUX_ARCH -O linux -C none \
+					-T kernel -n Linux \
+					-a $addr -e $addr \
+					-n "Linux" -d $LINUX_IMAGE_TYPE uImage.$addr
+			done
+			popd
+		fi
 	fi
 }
 

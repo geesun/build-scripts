@@ -35,77 +35,28 @@
 # TOP_DIR - workspace root directory
 # ARM_TF_PATH - for the fip tool / output images
 # UBOOT_PATH - for mkimage / output images
-# TARGET_BINS_PLATS - the platforms to create binaries for
-# TARGET_ARM_TF_### - the arm-tf output directory, where ### is the arm-tf plat name
-# TARGET_SCP_### - the scp output directory, where ### is the scp plat name
-# TARGET_UBOOT_### - the uboot output directory, where ### is the boot plat name
-# TARGET_UEFI_### - the uefi output directory, where ### is the uefi plat name.
-# TARGET_BINS_UIMAGE_ADDRS - the uImage load addresses
-# TARGET_BINS_UINITRD_ADDRS - the uInitrd load addresses
 # TARGET_BINS_HAS_ANDROID - whether we have android enabled
 # TARGET_BINS_HAS_OE - whether we have OE enabled
 # TARGET_BINS_HAS_DTB_RAMDISK - whether create dtbs with ramdisk chosen node
-# TARGET_BINS_RAMDISK_ADDR - address in RAM that ramdisk is loaded. Required if TARGET_BINS_HAS_DTB_RAMDISK=1
 # LINUX_ARCH - the architecure to build the output for (arm or arm64)
-# DEVTREE_LINUX_PATH - Path to Linux tree containing DT compiler
-# LINUX_IMAGE_TYPE - Image or zImage (defaults to Image if not specified)
-LINUX_IMAGE_TYPE=${LINUX_IMAGE_TYPE:-Image}
-
-populate_variant()
-{
-	local outdir=$1
-	local boot_type=$2
-
-	# copy ramdisk to the variant
-	if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
-		if [ "$boot_type" = "uboot" ]; then
-			cp ${OUTDIR}/uInitrd-oe.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
-		else
-			cp ${OUTDIR}/ramdisk.img $outdir/ramdisk.img
-		fi
-	elif [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ]; then
-		if [ "$boot_type" = "uboot" ]; then
-			cp ${OUTDIR}/uInitrd-busybox.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
-		else
-			cp ${OUTDIR}/ramdisk.img $outdir/ramdisk.img
-		fi
-	elif [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
-		if [ "$boot_type" = "uboot" ]; then
-			cp ${OUTDIR}/uInitrd-android.$TARGET_BINS_UINITRD_ADDRS $outdir/ramdisk.img
-		else
-			plat=`echo $VARIANT | cut -d "-" -f 1`
-			cp ${TOP_DIR}/prebuilts/android/$plat/ramdisk.img $outdir/ramdisk.img
-		fi
-	fi
-
-	if [ "$LINUX_BUILD_ENABLED" == "1" ]; then
-		# copy the kernel Image and *.dtb to the variant
-		if [ "$TARGET_BINS_UIMAGE_ADDRS" != "" ]; then
-			for addr in $TARGET_BINS_UIMAGE_ADDRS; do
-				cp ${OUTDIR}/$LINUX_PATH/$VARIANT/uImage.$addr $outdir
-			done
-		else
-			cp ${OUTDIR}/$LINUX_PATH/$VARIANT/$LINUX_IMAGE_TYPE $outdir
-		fi
-		for ((i=0;i<${#DEVTREE_TREES[@]};++i)); do
-			if [ "$TARGET_BINS_HAS_DTB_RAMDISK" = "1" ]; then
-				chosen="-chosen"
-			fi
-			if [ "${DEVTREE_TREES_RENAME[i]}" == "" ]; then
-				newname=${DEVTREE_TREES[i]}.dtb
-			else
-				newname=${DEVTREE_TREES_RENAME[i]}
-			fi
-			dts_dir=${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/arm/
-			if [ ! -e ${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/arm/ ]; then
-				dts_dir=${TOP_DIR}/$LINUX_PATH/$LINUX_OUT_DIR/arch/${LINUX_ARCH}/boot/dts/
-			fi
-
-			cp ${dts_dir}/${DEVTREE_TREES[i]}${chosen}.dtb $outdir/${newname} 2>/dev/null || :
-		done
-	fi
-}
-
+# DEVTREE_DTC_PATH - Path to Linux tree containing DT compiler
+# TARGET_BINS_PLATS - the platforms to create binaries for
+# TARGET_{plat} - array of platform parameters, indexed by
+#	arm-tf - where to find the arm-tf binaries
+#	scp - the scp output directory
+# 	uboot - the uboot output directory
+# 	uefi - the uefi output directory
+#	fdts - the fdt pattern used by the platform
+#	linux - the linux image / uImage for a platform
+# 	ramdisk - the address of the ramdisk per platform
+# 	tbbr - flag to indicate if TBBR is enabled
+# TARGET_BINS_COPY_ENABLED - whether we have extra copy steps
+# TARGET_BINS_COPY_LIST - an array of "src dest" strings that
+#			can be fed into a cp command. Zero based index.
+# ARM_TF_ROT_KEY - Root Key location for COT generation
+# TARGET_BINS_EXTRA_TAR_LIST - Extra folders that are to be tarred
+# OPTEE_OS_BIN_NAME - optee os binary name
+#
 do_build()
 {
 	if [ "$TARGET_BINS_BUILD_ENABLED" == "1" ]; then
@@ -122,234 +73,285 @@ do_clean()
 
 append_chosen_node()
 {
-	# $1 = dtb name
+	# $1 = new dtb name
 	# $2 = ramdisk file
-	local ramdisk_end=$(($TARGET_BINS_RAMDISK_ADDR + $(wc -c < $2)))
-	local DTC=$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/scripts/dtc/dtc
-	local tmp=linux/tmp
-	local devtree_path=$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/arch/arm64/boot/dts/arm
-	local devtree=$devtree_path/$1
+	# $3 = original dtb name
+	# $4 = ramdisk address
+	local ramdisk_end=$(($4 + $(wc -c < $2)))
+	local DTC=$TOP_DIR/$DEVTREE_DTC_PATH/scripts/dtc/dtc
+	# Decode the DTB
+	${DTC} -Idtb -Odts -o$1.dts linux/$3.dtb
 
-	if [ ! -e $devtree_path ]; then
-		# take into account that the DTS dir added and "arm" sub-dir between 3.10 and 4.1
-		devtree_path=$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/arch/arm64/boot/dts
-		devtree=$devtree_path/$1
+	echo "" >> $1.dts
+	echo "/ {" >> $1.dts
+	echo "	chosen {" >> $1.dts
+	echo "		linux,initrd-start = <$4>;" >> $1.dts
+	echo "		linux,initrd-end = <${ramdisk_end}>;" >> $1.dts
+	echo "	};" >> $1.dts
+	echo "};" >> $1.dts
+
+	# Recode the DTB
+	${DTC} -Idts -Odtb -olinux/$1.dtb $1.dts
+
+	# And clean up
+	rm $1.dts
+}
+
+relative_path()
+{
+	# both $1 and $2 are absolute paths beginning with /
+	# returns relative path to $2/$target from $1/$source
+	source=$2
+	target=$1
+
+	common_part=$source # for now
+	result="" # for now
+
+	while [[ "${target#$common_part}" == "${target}" ]]; do
+		# no match, means that candidate common part is not correct
+		# go up one level (reduce common part)
+		common_part="$(dirname $common_part)"
+		# and record that we went back, with correct / handling
+		if [[ -z $result ]]; then
+			result=".."
+		else
+			result="../$result"
+		fi
+	done
+
+	if [[ $common_part == "/" ]]; then
+		# special case for root (no common path)
+		result="$result/"
 	fi
 
-	if [ -e ${devtree}.dtb ]; then
-		cp ${devtree}.dtb ${tmp}.dtb
+	# since we now have identified the common part,
+	# compute the non-common part
+	forward_part="${target#$common_part}"
 
-		# Decode the DTB
-		${DTC} -Idtb -Odts -o${tmp}.dts ${devtree}.dtb
-
-		echo "" >> ${tmp}.dts
-		echo "/ {" >> ${tmp}.dts
-		echo "	chosen {" >> ${tmp}.dts
-		echo "		linux,initrd-start = <$TARGET_BINS_RAMDISK_ADDR>;" >> ${tmp}.dts
-		echo "		linux,initrd-end = <${ramdisk_end}>;" >> ${tmp}.dts
-		echo "	};" >> ${tmp}.dts
-		echo "};" >> ${tmp}.dts
-
-		# Recode the DTB
-		${DTC} -Idts -Odtb -o${devtree}-chosen.dtb ${tmp}.dts
-
-		# And clean up
-		rm ${tmp}.dts
-	else
-		echo ""
-		echo ""
-		echo "********************************************************************************"
-		echo "ERROR: Missing file: ${devtree}.dtb"
-		echo "       Continuing to process other .dtb files"
-		echo "********************************************************************************"
-		echo ""
-		echo ""
+	# and now stick all parts together
+	if [[ -n $result ]] && [[ -n $forward_part ]]; then
+		result="$result$forward_part"
+	elif [[ -n $forward_part ]]; then
+		# extra slash removal
+		result="${forward_part:1}"
 	fi
+	echo ${result}
+}
+
+# $1: TARGET_blah from variant
+# $2: target from variant
+# $3: file pattern
+create_tgt_symlinks()
+{
+	shopt -s nullglob
+
+	if [[ "${OUTDIR}/$1" != "${PLATDIR}/$2" ]]; then
+		mkdir -p ${PLATDIR}/$2
+		for bin in ${OUTDIR}/$1/$3; do
+			local dirlink=$(relative_path $(dirname ${bin}) ${PLATDIR}/$1)
+			local filename=$(basename ${bin})
+			ln -sf  ${dirlink}/${filename} ${PLATDIR}/$2/${filename}
+		done
+	fi
+}
+
+# $1: ramdisk address
+# $2: devtree
+# $3: plat name
+update_devtree()
+{
+	if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
+		if [ -e ${PLATDIR}/$3-ramdisk-android.img ]; then
+			append_chosen_node $2-chosen-android \
+				 ${PLATDIR}/$3-ramdisk-android.img $2 $1
+		else
+			echo "Skipping non-existing android RD for $3."
+		fi
+	elif [ "$TARGET_BINS_HAS_OE" = "1" ]; then
+		append_chosen_node $2-chosen-oe ${PLATDIR}/ramdisk-oe.img $2 $1
+	fi
+	append_chosen_node $2-chosen ${PLATDIR}/ramdisk-busybox.img $2 $1
 }
 
 do_package()
 {
 	if [ "$TARGET_BINS_BUILD_ENABLED" == "1" ]; then
-		# Create uImages and uInitrds
-		local uboot_mkimage=${TOP_DIR}/${UBOOT_PATH}/output/tools/mkimage
-		local common_flags="-A $LINUX_ARCH -O linux -C none"
-		if [ "$LINUX_BUILD_ENABLED=" == "1" ]; then
-			pushd ${OUTDIR}/$LINUX_PATH
-			for addr in $TARGET_BINS_UIMAGE_ADDRS; do
-				${uboot_mkimage} ${common_flags} -T kernel -n Linux -a $addr -e $addr -n "Linux" -d $LINUX_IMAGE_TYPE uImage.$addr
-			done
-			popd
-		fi
-		pushd ${OUTDIR}
-		if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
-			for addr in $TARGET_BINS_UINITRD_ADDRS; do
-				plat=`echo $VARIANT | cut -d "-" -f 1`
-				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Android ramdisk" -d ${TOP_DIR}/prebuilts/android/$plat/ramdisk.img uInitrd-android.$addr
-			done
-		fi
-		if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
-			mkdir -p oe
-			touch oe/initrd ; echo oe/initrd | cpio -ov > ramdisk.img
-			for addr in $TARGET_BINS_UINITRD_ADDRS; do
-				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "Dummy ramdisk" -d ramdisk.img uInitrd-oe.$addr
-			done
-		fi
-		if [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ]; then
-			mkdir -p busybox
-			for addr in $TARGET_BINS_UINITRD_ADDRS; do
-				${uboot_mkimage} ${common_flags} -T ramdisk -n ramdisk -a $addr -e $addr -n "BusyBox ramdisk" -d ${OUTDIR}/ramdisk.img uInitrd-busybox.$addr
-			done
-		fi
-		popd
-
+		echo "Packaging target binaries $VARIANT";
 		# Add chosen node for ramdisk to dtbs
-
 		if [ "$TARGET_BINS_HAS_DTB_RAMDISK" = "1" ]; then
 			pushd ${OUTDIR}
-			for ((i=0;i<${#DEVTREE_TREES[@]};++i)); do
-				item=${DEVTREE_TREES[i]}
-				if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
-					plat=`echo $VARIANT | cut -d "-" -f 1`
-					append_chosen_node ${item} ${TOP_DIR}/prebuilts/android/$plat/ramdisk.img
-				fi
-				if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
-					append_chosen_node ${item} ramdisk.img
-				fi
-				if [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ]; then
-					append_chosen_node ${item} ramdisk.img
-				fi
+			rm -f linux/*chosen*.dtb
+			for plat in $TARGET_BINS_PLATS; do
+				local fd=TARGET_$plat[fdts]
+				for target in ${!fd}; do
+					local data=`ls linux/${target}.dtb || echo ""`
+					for item in $data; do
+						local tempy=TARGET_$plat[ramdisk]
+						# remove dir and extension..
+						x="$item"
+						y=${x%.dtb}
+						z=${y##*/}
+						update_devtree ${!tempy} $z $plat
+					done
+				done
 			done
-			popd
 		fi
 
-		echo "Packaging target binaries $VARIANT";
-		# Create FIPs
-		for target in $TARGET_BINS_PLATS; do
-			local tf_out="TARGET_ARM_TF_"$target
-			local scp_out="TARGET_SCP_"$target
-			local uboot_out="TARGET_UBOOT_"$target
-			local uefi_out="TARGET_UEFI_"$target
-			local bl2_param="--tb-fw  ${OUTDIR}/${!tf_out}/tf-bl2.bin"
-			local bl31_param="--soc-fw ${OUTDIR}/${!tf_out}/tf-bl31.bin"
-			local bl30_param=
-			local bl32_param=
+		if [ "$ARM_TF_PATH" != "" ]; then
+			# Now do the platform stuff...
+			local fip_tool=$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create
 
-			if [ "${!scp_out}" != "" ]; then
-				bl30_param="--scp-fw ${TOP_DIR}/${!scp_out}/bl30.bin"
-			fi
+			# From LT release 16.01 onwards, fip tool param identifiers have changed
+			# To maintain backward compatibility within build script, dynamically
+			# select identifiers
 
-			if [ -e "${OUTDIR}/${!tf_out}/tf-bl32.bin" ]; then
-				bl32_param="--tos-fw ${OUTDIR}/${!tf_out}/tf-bl32.bin"
+			if(${fip_tool} --help | grep "\-\-scp-fwu-cfg")
+			then
+				echo "Using TBBR spec terminology for image name identifiers"
+				local bl2_param_id="--tb-fw"
+				local bl30_param_id="--scp-fw"
+				local bl31_param_id="--soc-fw"
+				local bl32_param_id="--tos-fw"
+				local bl33_param_id="--nt-fw"
+			else
+				echo "Using legacy terminology for image name identifiers"
+				local bl2_param_id="--bl2"
+				local bl30_param_id="--bl30"
+				local bl31_param_id="--bl31"
+				local bl32_param_id="--bl32"
+				local bl33_param_id="--bl33"
 			fi
-			local common_param="${bl2_param} ${bl31_param}  ${bl30_param} ${bl32_param}"
-			if [ "$ARM_TBBR_ENABLED" == "1" ]; then
-				local trusted_key_cert_param="--trusted-key-cert ${OUTDIR}/${!tf_out}/trusted_key.crt"
-				local bl30_tbbr_param="--scp-fw-key-cert ${OUTDIR}/${!tf_out}/bl30_key.crt --scp-fw-cert ${OUTDIR}/${!tf_out}/bl30.crt"
-				local bl31_tbbr_param="--soc-fw-key-cert ${OUTDIR}/${!tf_out}/bl31_key.crt --soc-fw-cert ${OUTDIR}/${!tf_out}/bl31.crt"
-				local bl32_tbbr_param=
-				local bl33_tbbr_param="--nt-fw-key-cert ${OUTDIR}/${!tf_out}/bl33_key.crt --nt-fw-cert ${OUTDIR}/${!tf_out}/bl33.crt"
-				local bl2_tbbr_param="--tb-fw-cert ${OUTDIR}/${!tf_out}/bl2.crt"
+			for target in $TARGET_BINS_PLATS; do
+				local tf_out=TARGET_$target[arm-tf]
+				local scp_out=TARGET_$target[scp]
+				local uboot_out=TARGET_$target[uboot]
+				local uefi_out=TARGET_$target[uefi]
+				local fdt_pattern=TARGET_$target[fdts]
+				local linux_bins=TARGET_$target[linux]
+				local bl2_fip_param="${bl2_param_id} ${OUTDIR}/${!tf_out}/tf-bl2.bin"
+				local bl31_fip_param="${bl31_param_id} ${OUTDIR}/${!tf_out}/tf-bl31.bin"
+				local bl32_fip_param=
+				local bl30_fip_param=
+				local bl30_tbbr_param=
+				local cert_tool_param=
+				local atf_tbbr_enabled=TARGET_$target[tbbr]
+				local optee_enabled=TARGET_$target[optee]
+
+				if [ "${!scp_out}" != "" ]; then
+					bl30_fip_param="${bl30_param_id} ${OUTDIR}/${!scp_out}/scp-ram.bin"
+				fi
 
 				#only if a TEE implementation is available and built
-				if [ -e "${OUTDIR}/${!tf_out}/tf-bl32.bin" ]; then
-					bl32_tbbr_param="--tos-fw-key-cert ${OUTDIR}/${!tf_out}/bl32_key.crt --tos-fw-cert ${OUTDIR}/${!tf_out}/bl32.crt"
+				if [ "${!optee_enabled}" == "1" ]; then
+					echo ${OUTDIR}/${!tf_out}/
+					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!tf_out}/${OPTEE_OS_BIN_NAME}"
 				fi
-				# add the cert related params to be used by fip_create as well as cert_create
-				common_param="${common_param} ${trusted_key_cert_param} \
-					   ${bl30_tbbr_param} ${bl31_tbbr_param} \
-					   ${bl32_tbbr_param} ${bl33_tbbr_param} \
-					   ${bl2_tbbr_param}"
+				local fip_param="${bl2_fip_param} ${bl31_fip_param}  ${bl30_fip_param} ${bl32_fip_param}"
+				echo "fip_param is $fip_param"
 
-				#fip_create tool and cert_create tool take almost identical params
-				local cert_tool_param="${common_param} --rot-key ${ROT_KEY} -n --tfw-nvctr 31 --ntfw-nvctr 223"
+				if [ "${!atf_tbbr_enabled}" == "1" ]; then
+					local trusted_key_cert_param="--trusted-key-cert ${OUTDIR}/${!tf_out}/trusted_key.crt"
+					if [ "${!scp_out}" != "" ]; then
+						local bl30_tbbr_param="${bl30_param_id}-key-cert ${OUTDIR}/${!tf_out}/bl30_key.crt ${bl30_param_id}-cert ${OUTDIR}/${!tf_out}/bl30.crt"
+					fi
+					local bl31_tbbr_param="${bl31_param_id}-key-cert ${OUTDIR}/${!tf_out}/bl31_key.crt ${bl31_param_id}-cert ${OUTDIR}/${!tf_out}/bl31.crt"
+					local bl32_tbbr_param=
+					local bl33_tbbr_param="${bl33_param_id}-key-cert ${OUTDIR}/${!tf_out}/bl33_key.crt ${bl33_param_id}-cert ${OUTDIR}/${!tf_out}/bl33.crt"
+					local bl2_tbbr_param="${bl2_param_id}-cert ${OUTDIR}/${!tf_out}/bl2.crt"
 
-			fi
+					#only if a TEE implementation is available and built
+					if [ "${!optee_enabled}" == "1" ]; then
+						bl32_tbbr_param="${bl32_param_id}-key-cert ${OUTDIR}/${!tf_out}/bl32_key.crt ${bl32_param_id}-cert ${OUTDIR}/${!tf_out}/bl32.crt"
+					fi
 
-			if [ "$BOOTMON_BUILD_ENABLED" == "1" ]; then
-				local outdir=${OUTDIR}/${VARIANT}/bootmon
-				mkdir -p ${outdir}
-				populate_variant $outdir bootmon
-				if [ "$BOOTMON_SCRIPT" != "" ]; then
-					script_src=${TOP_DIR}/vexpress-firmware/SOFTWARE/bootkern.txt
-					script_file=${outdir}/${BOOTMON_SCRIPT}
+					# add the cert related params to be used by fip_create as well as cert_create
+					fip_param="${fip_param} ${trusted_key_cert_param} \
+						   ${bl30_tbbr_param} ${bl31_tbbr_param} \
+						   ${bl32_tbbr_param} ${bl33_tbbr_param} \
+						   ${bl2_tbbr_param}"
+
+					#fip_create tool and cert_create tool take almost identical params
+					cert_tool_param="${fip_param} --rot-key ${ARM_TF_ROT_KEY} -n --tfw-nvctr 31 --ntfw-nvctr 223"
+
 				fi
-			fi
 
-			if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
 				if [ "${!uboot_out}" != "" ]; then
 					# remove existing fip
-					local outdir=${OUTDIR}/${VARIANT}/uboot
-					local outfile=${outdir}/fip.bin
-					rm -f $outfile
-					mkdir -p ${outdir}
+					rm -f ${PLATDIR}/$target/fip-uboot.bin
+					mkdir -p ${PLATDIR}/$target
+
 					# if TBBR is enabled, generate certificates
-					if [ "$ARM_TBBR_ENABLED" == "1" ]; then
+					if [ "${!atf_tbbr_enabled}" == "1" ]; then
 						$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
 							${cert_tool_param} \
-							--nt-fw ${OUTDIR}/${!uboot_out}/uboot.bin
+							${bl33_param_id} ${OUTDIR}/${!uboot_out}/uboot.bin
+					fi
 
-					fi
-					if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-						$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
-							${common_param} \
-							--nt-fw ${OUTDIR}/${!uboot_out}/uboot.bin \
-							$outfile
-						cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
-					else
-						cp ${OUTDIR}/${!uboot_out}/uboot.bin ${OUTDIR}/${VARIANT}/uboot/$UBOOT_OUTPUT_FILENAME
-					fi
-					if [ "$BOOTMON_SCRIPT" != "" ]; then
-						script_src=${TOP_DIR}/vexpress-firmware/SOFTWARE/bootuefi.txt
-						script_file=${outdir}/${BOOTMON_SCRIPT}
-					fi
-					populate_variant $outdir uboot
+					${fip_tool} --dump  \
+							${fip_param} \
+							${bl33_param_id} ${OUTDIR}/${!uboot_out}/uboot.bin \
+							${PLATDIR}/$target/fip-uboot.bin
+
+					local outfile=${outdir}/fip.bin
+					rm -f $outfile
 				fi
-			fi
-			if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
 				if [ "${!uefi_out}" != "" ]; then
 					# remove existing fip
-					local outdir=${OUTDIR}/${VARIANT}/uefi
-					local outfile=${outdir}/fip.bin
-					rm -f $outfile
-					mkdir -p ${outdir}
+					rm -f ${PLATDIR}/$target/fip-uefi.bin
+					mkdir -p ${PLATDIR}/$target
 					# if TBBR is enabled, generate certificates
-					if [ "$ARM_TBBR_ENABLED" == "1" ]; then
+					if [ "${!atf_tbbr_enabled}" == "1" ]; then
 						$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
 							${cert_tool_param} \
-							--nt-fw ${OUTDIR}/${!uefi_out}/uefi.bin
+							${bl33_param_id} ${OUTDIR}/${!uefi_out}/uefi.bin
+					fi
 
-					fi
-					if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-						$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create --dump  \
-							${common_param} \
-							--nt-fw ${OUTDIR}/${!uefi_out}/uefi.bin \
-							$outfile
-						cp ${OUTDIR}/${!tf_out}/tf-bl1.bin $outdir/bl1.bin
-					else
-						cp ${OUTDIR}/${!uefi_out}/uefi.bin ${OUTDIR}/${VARIANT}/uefi/$UEFI_OUTPUT_FILENAME
-					fi
-					if [ "$BOOTMON_SCRIPT" != "" ]; then
-						script_src=${TOP_DIR}/vexpress-firmware/SOFTWARE/bootuefi.txt
-						script_file=${outdir}/${BOOTMON_SCRIPT}
-					fi
-					populate_variant $outdir uefi
+					${fip_tool} --dump  \
+						${fip_param} \
+						${bl33_param_id} ${OUTDIR}/${!uefi_out}/uefi.bin \
+						${PLATDIR}/$target/fip-uefi.bin
 				fi
-			fi
-			if [ "$BOOTMON_SCRIPT" != "" ]; then
-				cp ${script_src} ${script_file}
-			fi
-		done
 
-		# clean up unwanted artifacts left in output directory
-		pushd ${OUTDIR}
-		rm -f uInitrd-* || :
-		rm -f ramdisk*.img || :
-		rm -rf linux || :
-		rm -rf ${TARGET_BINS_PLATS} || :
-		rm -rf oe || :
-		rm -rf busybox || :
-		popd
+				# Create symlinks to common binaries
+				if [ "${!tf_out}" != "" ]; then
+					create_tgt_symlinks ${!tf_out} ${target} "tf-*"
+				fi
+				if [ "${!scp_out}" != "" ]; then
+					create_tgt_symlinks ${!scp_out} ${target} "*cp-*"
+				fi
+				if [ "${!uboot_out}" != "" ]; then
+					create_tgt_symlinks ${!uboot_out} ${target} "uboot*"
+				fi
+				if [ "${!uefi_out}" != "" ]; then
+					create_tgt_symlinks ${!uefi_out} ${target} "uefi*"
+				fi
+				for tgt in ${!fdt_pattern}; do
+					create_tgt_symlinks linux ${target} "${tgt}*"
+				done
+				for item in ${!linux_bins}; do
+					create_tgt_symlinks linux ${target} $item
+				done
+			done
+		fi
 	fi
+
+	if [ "$TARGET_BINS_COPY_ENABLED" == "1" ] ; then
+		local array_length=${#TARGET_BINS_COPY_LIST[@]}
+		for (( i=0; i<${array_length}; i++ )); do
+			local copy_params=(${TARGET_BINS_COPY_LIST[$i]})
+			destdir=`dirname "${copy_params[1]}"`
+			test -d $destdir || mkdir -p $destdir
+			cmd="cp -r ${TARGET_BINS_COPY_LIST[$i]}"
+			echo $cmd
+			$cmd
+		done
+	fi
+	for tarDir in $TARGET_BINS_EXTRA_TAR_LIST ; do
+		tarname=$(basename $tarDir).tar.gz
+		pushd $tarDir
+			tar -czf ../$tarname *
+		popd
+	done
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )

@@ -28,9 +28,29 @@
 
 source $DIR/variants/fvp-busybox
 
-VARIANT_DESC="FVP kernel for Android Software Stack"
-LINUX_CONFIGS="linaro-base android vexpress64 $BL_SUPPORT"
-BUSYBOX_BUILD_ENABLED=
-RAMDISK_BUILD_ENABLED=
-TARGET_BINS_HAS_BUSYBOX=
+VARIANT_DESC="FVP Android Software Stack"
+
+ANDROID_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-android.sh "
+ANDROID_SOURCE_PATH=android
+ANDROID_LUNCH_TARGET=fvp-userdebug
+ANDROID_SOURCE_VARIANT="fvp"
+ANDROID_IMAGE_SIZE=$((1024*1024*1024))
+LINUX_CONFIGS="linaro-base $BL_SUPPORT android vexpress64"
+
+ANDROID_BINARIES_PATH=prebuilts/android
+ANDROID_BINS_VARIANTS="fvp"
+
 TARGET_BINS_HAS_ANDROID=1
+
+#Copy binaries into the U-Boot folder
+TARGET_BINS_COPY_ENABLED=1
+unset TARGET_BINS_COPY_LIST
+declare -a TARGET_BINS_COPY_LIST
+FVP_UBOOT_FOLDER=$PLATDIR/fvp-android/uboot
+TARGET_BINS_COPY_LIST[0]="${OUTDIR}/linux/Image ${FVP_UBOOT_FOLDER}/Image"
+TARGET_BINS_COPY_LIST[1]="${OUTDIR}/linux/foundation-v8-gicv3-chosen-android.dtb ${FVP_UBOOT_FOLDER}/foundation-v8-gicv3.dtb"
+TARGET_BINS_COPY_LIST[2]="${OUTDIR}/linux/fvp-base-aemv8a-aemv8a-chosen-android.dtb ${FVP_UBOOT_FOLDER}/fvp-base-aemv8a-aemv8a.dtb"
+TARGET_BINS_COPY_LIST[3]="${OUTDIR}/fvp/tf-bl1.bin ${FVP_UBOOT_FOLDER}/bl1.bin"
+TARGET_BINS_COPY_LIST[4]="${PLATDIR}/fvp-uInitrd-android.0x84000000 ${FVP_UBOOT_FOLDER}/ramdisk.img"
+TARGET_BINS_COPY_LIST[5]="${PLATDIR}/fvp/fip-uboot.bin ${FVP_UBOOT_FOLDER}/fip.bin"

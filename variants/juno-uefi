@@ -35,4 +35,23 @@ LINUX_BUILD_ENABLED=
 RAMDISK_BUILD_ENABLED=
 UBOOT_BUILD_ENABLED=
 OPTEE_BUILD_ENABLED=
+BOOTMON_BUILD_ENABLED=
 UEFI_BUILD_ENABLED=1
+
+TARGET_juno[fdts]=""
+TARGET_juno[uboot]=""
+
+UEFI_PLATFORMS="juno"
+declare -A UEFI_PLAT_juno
+UEFI_PLAT_juno[platname]="ArmJuno"
+UEFI_PLAT_juno[output]=juno
+UEFI_PLAT_juno[defines]=
+UEFI_PLAT_juno[binary]="BL33_AP_UEFI.fd"
+
+#Copy binaries into the U-Boot folder
+TARGET_BINS_COPY_ENABLED=1
+unset TARGET_BINS_COPY_LIST
+declare -a TARGET_BINS_COPY_LIST
+JUNO_UEFI_FOLDER=$PLATDIR/juno-uefi/uefi
+TARGET_BINS_COPY_LIST[0]="${OUTDIR}/juno/tf-bl1.bin ${JUNO_UEFI_FOLDER}/bl1.bin"
+TARGET_BINS_COPY_LIST[1]="${PLATDIR}/juno/fip-uefi.bin ${JUNO_UEFI_FOLDER}/fip.bin"

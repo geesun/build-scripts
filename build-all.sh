@@ -57,15 +57,34 @@ if [ "$FINAL_BUILD_STEP" != "" ]; then
 	echo "Done."
 fi
 
-# Now to execute each component build in turn
-for build in $BUILD_SCRIPTS; do
-	echo "***********************************"
-	echo "Execute $CMD for $build on $VARIANT"
-	$DIR/$build $VARIANT $CMD
-	if [ "$?" -ne 0 ]; then
-		echo "Command failed: $CMD for $build on $VARIANT"
-		exit 1
+# $1 - cmd to execute
+__do_build_all()
+{
+	# Now to execute each component build in turn
+	for build in $BUILD_SCRIPTS; do
+		echo "***********************************"
+		echo "Execute $1 for $build on $VARIANT"
+		${DIR}/$build $VARIANT $1
+		if [ "$?" -ne 0 ]; then
+			echo "Command failed: $1 for $build on $VARIANT"
+			exit 1
+		fi
+		echo "Execute $1 for $build on $VARIANT done."
+		echo "-----------------------------------"
+	done
+
+	if [ "$1" = "clean" ]; then
+		echo "Finishing clean by removing $OUTDIR and $PLATDIR"
+		rm -rf $OUTDIR
+		rm -rf $PLATDIR
 	fi
-	echo "Execute $CMD for $build on $VARIANT done."
-	echo "-----------------------------------"
-done
+}
+
+if [ "$CMD" != "all" ]; then
+	__do_build_all $CMD
+else
+	__do_build_all clean
+	__do_build_all build
+	__do_build_all package
+
+fi

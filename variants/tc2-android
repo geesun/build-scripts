@@ -30,7 +30,17 @@ source $DIR/variants/tc2-busybox
 
 VARIANT_DESC="TC2 kernel for Android Software Stack"
 
-LINUX_CONFIGS="linaro-base android vexpress $BL_SUPPORT"
+LINUX_CONFIGS="linaro-base $BL_SUPPORT android vexpress"
 
 TARGET_BINS_HAS_BUSYBOX=
 TARGET_BINS_HAS_ANDROID=1
+
+#Copy binaries into the U-Boot folder
+TARGET_BINS_COPY_ENABLED=1
+unset TARGET_BINS_COPY_LIST
+declare -a TARGET_BINS_COPY_LIST
+TC2_FOLDER=$PLATDIR/tc2-android/bootmon
+TARGET_BINS_COPY_LIST[0]="${OUTDIR}/linux/zImage ${TC2_FOLDER}/zImage"
+TARGET_BINS_COPY_LIST[1]="${OUTDIR}/linux/vexpress-v2p-ca15_a7.dtb ${TC2_FOLDER}/tc2.dtb"
+TARGET_BINS_COPY_LIST[2]="${TOP_DIR}/prebuilts/android/tc2/ramdisk.img ${TC2_FOLDER}/ramdisk.img"
+TARGET_BINS_COPY_LIST[3]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootkern.txt ${TC2_FOLDER}/bootscr.txt"

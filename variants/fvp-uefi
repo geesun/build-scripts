@@ -35,4 +35,23 @@ LINUX_BUILD_ENABLED=
 RAMDISK_BUILD_ENABLED=
 UBOOT_BUILD_ENABLED=
 OPTEE_BUILD_ENABLED=
+BOOTMON_BUILD_ENABLED=
 UEFI_BUILD_ENABLED=1
+
+TARGET_fvp[fdts]=""
+TARGET_fvp[uboot]=""
+
+UEFI_PLATFORMS="fvp"
+declare -A UEFI_PLAT_fvp
+UEFI_PLAT_fvp[platname]="ArmVExpress-FVP-AArch64"
+UEFI_PLAT_fvp[output]=fvp
+UEFI_PLAT_fvp[defines]=
+UEFI_PLAT_fvp[binary]="FVP_AARCH64_EFI.fd"
+
+#Copy binaries into the U-Boot folder
+TARGET_BINS_COPY_ENABLED=1
+unset TARGET_BINS_COPY_LIST
+declare -a TARGET_BINS_COPY_LIST
+FVP_UEFI_FOLDER=$PLATDIR/fvp-uefi/uefi
+TARGET_BINS_COPY_LIST[0]="${OUTDIR}/fvp/tf-bl1.bin ${FVP_UEFI_FOLDER}/bl1.bin"
+TARGET_BINS_COPY_LIST[1]="${PLATDIR}/fvp/fip-uefi.bin ${FVP_UEFI_FOLDER}/fip.bin"

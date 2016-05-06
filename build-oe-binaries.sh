@@ -33,43 +33,61 @@
 #
 # VARIANT - build variant name
 # TOP_DIR - workspace root directory
-# RAMDISK_BUILD_ENABLED - Flag to enable building ramdisk
-# RAMDISK_PATH - sub-directory containing ramdisk code
-# RAMDISK_LINUX_GEN_CPIO - path to gen_init_cpio tool
-# RAMDISK_BUSYBOX_PATH - path to built busybox image
+# OE_BINARIES_BUILD_ENABLED - Flag to enable this script
+# OE_BINARIES_PATH - sub-directory where to store Android binaries
+# UBOOT_MKIMAGE - path to uboot mkimage
+# LINUX_ARCH - the arch
+# UBOOT_BUILD_ENABLED - flag to indicate the need for uimages.
+# TARGET_BINS_PLATS - the platforms to create binaries for
+# TARGET_{plat} - array of platform parameters, indexed by
+# 	ramdisk - the address of the ramdisk per platform
+#
 
 do_build ()
 {
-	if [ "$RAMDISK_BUILD_ENABLED" == "1" ]; then
-		echo "Building... $VARIANT";
+	if [ "$OE_BINARIES_BUILD_ENABLED" == "1" ]; then
+		:
 	fi
 }
 
 do_clean ()
 {
-	if [ "$RAMDISK_BUILD_ENABLED" == "1" ]; then
-		pushd $TOP_DIR/$RAMDISK_PATH
-		rm -f ramdisk.img busybox
-		popd
+	if [ "$OE_BINARIES_BUILD_ENABLED" == "1" ]; then
+		:
 	fi
 }
 
 do_package ()
 {
-	RAMDISK_LINUX_GEN_CPIO=${RAMDISK_LINUX_GEN_CPIO:-$LINUX_PATH/$LINUX_OUT_DIR/usr/gen_init_cpio}
+	if [ "$OE_BINARIES_BUILD_ENABLED" == "1" ]; then
+		echo "Packaging OE... $VARIANT"
 
-	if [ "$RAMDISK_BUILD_ENABLED" == "1" ]; then
-		echo "Packaging ramdisk... $VARIANT";
-		# create the ramdisk
-		pushd $TOP_DIR/$RAMDISK_PATH
-		cp $TOP_DIR/$RAMDISK_BUSYBOX_PATH .
-		$TOP_DIR/$RAMDISK_LINUX_GEN_CPIO files.txt > ramdisk.img
+		mkdir -p ${PLATDIR}
+
+		pushd ${TOP_DIR}/${OE_BINARIES_PATH}
+
+		# Copy the binaries
+		cp *.img ${PLATDIR}
+
 		popd
-		# Copy binary to output folder
-		pushd $TOP_DIR
-		mkdir -p ${OUTDIR}
-		cp $RAMDISK_PATH/ramdisk.img ${OUTDIR}/
-		popd
+	fi
+	if [ "$OE_RAMDISK_BUILD_ENABLED" == "1" ]; then
+		if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
+			pushd ${PLATDIR}
+			# OpenEmbedded ramdisks
+			mkdir -p oe
+			touch oe/initrd
+			echo oe/initrd | cpio -ov > ramdisk-oe.img
+			for target in $TARGET_BINS_PLATS; do
+				local addr=TARGET_$target[ramdisk]
+				${UBOOT_MKIMG} -A $LINUX_ARCH -O linux -C none \
+					-T ramdisk -n ramdisk \
+					-a ${!addr} -e ${!addr} \
+					-n "Dummy ramdisk" \
+					-d ramdisk-oe.img uInitrd-oe.${!addr}
+			done
+			popd
+		fi
 	fi
 }
 

@@ -31,14 +31,15 @@ VARIANT_DESC="FVP kernel for BusyBox Software Stack"
 # Absolute path to the aarch64 GCC compoiler binaries (plus prefix)
 # If you wish to specify a path relative to the workspace root, prefix it with "$TOP_DIR/"
 # If your compiler is on your path, you can simply add the prefix, as per the default example.
-export CROSS_COMPILE=${CROSS_COMPILE:-aarch64-linux-gnu-}
+export CROSS_COMPILE=${TOP_DIR}/tools/gcc/gcc-linaro-4.9-2015.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+export CROSS_COMPILE_32=${TOP_DIR}/tools/gcc/gcc-linaro-4.9-2015.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
 BUILD_SCRIPTS=""
 
 LINUX_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-linux.sh "
 LINUX_PATH=linux
 source $DIR/big-LITTLE-conf.sh
-LINUX_CONFIGS="linaro-base vexpress64 $BL_SUPPORT"
+LINUX_CONFIGS="linaro-base $BL_SUPPORT vexpress64"
 LINUX_DEFCONFIG=defconfig
 LINUX_ARCH=arm64
 DEVTREE_TREES=(fvp-base-aemv8a-aemv8a foundation-v8-gicv3)
@@ -47,20 +48,51 @@ UBOOT_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uboot.sh "
 UBOOT_PATH=u-boot
 UBOOT_ARCH=aarch64
+UBOOT_MKIMG=${TOP_DIR}/${UBOOT_PATH}/output/tools/mkimage
+UBOOT_UIMAGE_ADDRS="0x80080000"
 UBOOT_BOARDS="vexpress_aemv8a_dram"
+declare -A UBOOT_OUTPUT_DESTS
 UBOOT_OUTPUT_DESTS[vexpress_aemv8a_dram]=fvp
 
-UEFI_BUILD_ENABLED=0
+UEFI_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uefi.sh "
 UEFI_PATH=uefi/edk2
+UEFI_BUILD_MODE=DEBUG
+UEFI_TOOLCHAIN=GCC49
 UEFI_TOOLS_PATH=tools/uefi-tools
 UEFI_ACPICA_PATH=tools/acpica/generate/unix
 UEFI_PLATFORMS="fvp"
-UEFI_BINARY="FVP_AARCH64_EFI.fd"
-UEFI_BUILD_MODE=DEBUG
-UEFI_TOOLCHAIN=GCC49
-UEFI_OUTPUT_PLATFORMS="ArmVExpress-FVP-AArch64"
-UEFI_OUTPUT_DESTS[fvp]=fvp
+declare -A UEFI_PLAT_fvp
+UEFI_PLAT_fvp[platname]="ArmVExpress-FVP-AArch64"
+UEFI_PLAT_fvp[output]=fvp
+UEFI_PLAT_fvp[defines]=
+UEFI_PLAT_fvp[binary]="FVP_AARCH64_EFI.fd"
+
+# TBBR related definitions, used when TBBR is enabled in TARGET_$plat array at the bottom
+# of this file
+ARM_TF_ROT_KEY=$TOP_DIR/$ARM_TF_PATH/plat/arm/board/common/rotpk/arm_rotprivk_rsa.pem
+ARM_TF_MBEDTLS_DIR=$TOP_DIR/mbedtls
+ARM_TF_TBBR_BUILD_FLAGS="TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 CREATE_KEYS=1 ARM_ROTPK_LOCATION=devel_rsa ROT_KEY=${ARM_TF_ROT_KEY} MBEDTLS_DIR=${ARM_TF_MBEDTLS_DIR}"
+#declare -A TBBR_fvp
+#TBBR_fvp[tbbr]=1
+
+# OPTEE build setup
+# OPTEE OS
+OPTEE_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-optee-os.sh "
+# set trusted firmware to use dram for TEE
+OPTEE_RAM_LOCATION=dram
+OPTEE_ARCH="aarch32"
+OPTEE_PLATS="fvp"
+OPTEE_OS_CROSS_COMPILE=${CROSS_COMPILE_32}
+OPTEE_CLIENT_CROSS_COMPILE=${CROSS_COMPILE}
+OPTEE_OS_PATH=optee/optee_os
+OPTEE_CORE_LOG_LEVEL=4
+OPTEE_OS_BIN_NAME="tee.bin"
+declare -A OPTEE_fvp
+OPTEE_fvp[optee]=1
+OPTEE_fvp[plat]="vexpress"
+OPTEE_fvp[flavor]="fvp"
 
 ARM_TF_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-arm-tf.sh "
@@ -68,31 +100,40 @@ ARM_TF_PATH=arm-tf
 ARM_TF_PLATS="fvp"
 ARM_TF_DEBUG_ENABLED=${ARM_TF_DEBUG_ENABLED:-1}
 
-# trusted board boot
-ARM_TBBR_ENABLED=1
-ROT_KEY=$TOP_DIR/$ARM_TF_PATH/plat/arm/board/common/rotpk/arm_rotprivk_rsa.pem
-MBEDTLS_DIR=$TOP_DIR/mbedtls
-ARM_TF_TBBR_BUILD_FLAGS="TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 CREATE_KEYS=1 ARM_ROTPK_LOCATION=devel_rsa ROT_KEY=${ROT_KEY} MBEDTLS_DIR=${MBEDTLS_DIR}"
-
 BUSYBOX_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-busybox.sh "
 BUSYBOX_PATH=busybox
 BUSYBOX_ARCH=arm
+BUSYBOX_RAMDISK_PATH=ramdisk
+BUSYBOX_RAMDISK_LINUX_GEN_CPIO=$LINUX_PATH/$LINUX_OUT_DIR/usr/gen_init_cpio
+BUSYBOX_RAMDISK_BUSYBOX_PATH=$BUSYBOX_PATH/_install/bin/busybox
 
-RAMDISK_BUILD_ENABLED=1
-BUILD_SCRIPTS=$BUILD_SCRIPTS"build-ramdisk.sh "
-RAMDISK_PATH=ramdisk
-RAMDISK_BUSYBOX_PATH=$BUSYBOX_PATH/_install/bin/busybox
 # this must be the last step for low level code.
 TARGET_BINS_BUILD_ENABLED=1
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-target-bins.sh "
-TARGET_BINS_UINITRD_ADDRS="0x84000000"
-TARGET_BINS_PLATS="fvp"
-TARGET_BINS_HAS_BUSYBOX=1
+FINAL_BUILD_STEP="build-target-bins.sh"
 TARGET_BINS_HAS_DTB_RAMDISK=1
-TARGET_BINS_RAMDISK_ADDR=0x84000000
+DEVTREE_DTC_PATH=$LINUX_PATH/$LINUX_OUT_DIR
 
-TARGET_ARM_TF_fvp="fvp"
-TARGET_UBOOT_fvp="fvp"
-TARGET_UEFI_fvp="fvp"
-TARGET_SCP_fvp="recovery/SOFTWARE"
+TARGET_BINS_PLATS="fvp"
+declare -A TARGET_fvp
+TARGET_fvp[arm-tf]="fvp"
+TARGET_fvp[scp]=""
+TARGET_fvp[uboot]="fvp"
+TARGET_fvp[uefi]="fvp"
+TARGET_fvp[fdts]="fvp-base-aemv8a-aemv8a foundation-v8-gicv3"
+TARGET_fvp[linux]="Image uImage.0x80080000"
+TARGET_fvp[ramdisk]=0x84000000
+#TARGET_fvp[ttbr]=1
+#TARGET_fvp[optee]=1
+
+#Copy binaries into the U-Boot folder
+TARGET_BINS_COPY_ENABLED=1
+declare -a TARGET_BINS_COPY_LIST
+FVP_UBOOT_FOLDER=$PLATDIR/fvp-busybox/uboot
+TARGET_BINS_COPY_LIST[0]="${OUTDIR}/linux/Image ${FVP_UBOOT_FOLDER}/Image"
+TARGET_BINS_COPY_LIST[1]="${OUTDIR}/linux/fvp-base-aemv8a-aemv8a-chosen.dtb ${FVP_UBOOT_FOLDER}/fvp-base-aemv8a-aemv8a.dtb"
+TARGET_BINS_COPY_LIST[2]="${OUTDIR}/linux/foundation-v8-gicv3-chosen.dtb ${FVP_UBOOT_FOLDER}/foundation-v8-gicv3.dtb"
+TARGET_BINS_COPY_LIST[3]="${OUTDIR}/fvp/tf-bl1.bin ${FVP_UBOOT_FOLDER}/bl1.bin"
+TARGET_BINS_COPY_LIST[4]="${PLATDIR}/uInitrd-busybox.0x84000000 ${FVP_UBOOT_FOLDER}/ramdisk.img"
+TARGET_BINS_COPY_LIST[5]="${PLATDIR}/fvp/fip-uboot.bin ${FVP_UBOOT_FOLDER}/fip.bin"

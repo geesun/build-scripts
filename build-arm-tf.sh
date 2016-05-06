@@ -39,29 +39,34 @@
 # ARM_TF_PLATS - List of platforms to be built (from available in arm-tf/plat)
 # ARM_TF_DEBUG_ENABLED - 1 = debug, 0 = release build
 # ARM_TF_BUILD_FLAGS - Additional build flags to pass on the build command line
-# OPTEE_RAM_LOCATION - optee load location (dram/tsram/carveout)
+# ARM_TF_TBBR_BUILD_FLAGS - command line options to enable TBBR in ARM TF build
+# TBBR_{plat} - array of platform parameters, indexed by
+# 	tbbr - flag to indicate if TBBR is enabled
+# OPTEE_{plat} - array of platform parameters, indexed by
+# 	optee - flag to indicate if optee is enabled
 #
 
 do_build ()
 {
 	if [ "$ARM_TF_BUILD_ENABLED" == "1" ]; then
-		export ARM_TSP_RAM_LOCATION=$OPTEE_RAM_LOCATION
-		#if trusted board boot(TBBR) enabled, set corresponding compiliation flags
-		if [ "$ARM_TBBR_ENABLED" == "1" ]; then
-			ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS $ARM_TF_TBBR_BUILD_FLAGS"
-		fi
 		pushd $TOP_DIR/$ARM_TF_PATH
 		for plat in $ARM_TF_PLATS; do
-			local build_cmd="make -j $PARALLELISM PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED $ARM_TF_BUILD_FLAGS all"
-			echo $build_cmd
-			$build_cmd
+			local atf_build_flags=$ARM_TF_BUILD_FLAGS
+			local atf_tbbr_enabled=TBBR_$plat[tbbr]
+			local atf_optee_enabled=OPTEE_$plat[optee]
+			if [ "${!atf_tbbr_enabled}" == "1" ]; then
+				#if trusted board boot(TBBR) enabled, set corresponding compiliation flags
+				atf_build_flags="${atf_build_flags} $ARM_TF_TBBR_BUILD_FLAGS"
+			fi
+			if [ "${!atf_optee_enabled}" == "1" ]; then
+				#if optee enabled, set corresponding compiliation flags
+				atf_build_flags="${atf_build_flags} ARM_TSP_RAM_LOCATION=$OPTEE_RAM_LOCATION SPD=opteed"
+			fi
+			make -j $PARALLELISM PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED ${atf_build_flags} all
 		done
 
-		# tool to create certificates
-		if [ "$ARM_TBBR_ENABLED" == "1" ]; then
-			make certtool
-		fi
-
+		# make tools
+		make certtool
 		make fiptool
 		popd
 	fi

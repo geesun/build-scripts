@@ -33,10 +33,16 @@
 #
 # VARIANT - build variant name
 # TOP_DIR - workspace root directory
-# CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
+# LINUX_COMPILER - PATH to GCC including CROSS-COMPILE prefix
 # BUSYBOX_BUILD_ENABLED - Flag to enable building BusyBox
 # BUSYBOX_PATH - sub-directory containing BusyBox code
 # BUSYBOX_ARCH - Build architecture (arm)
+# BUSYBOX_RAMDISK_PATH - path to where we build the ramdisk
+# BUSYBOX_RAMDISK_LINUX_GEN_CPIO - tool to generate the RD
+# BUSYBOX_RAMDISK_BUSYBOX_PATH - path to the BB binary
+# TARGET_BINS_PLATS - the platforms to create binaries for
+# TARGET_{plat} - array of platform parameters, indexed by
+# 	ramdisk - the address of the ramdisk per platform
 
 do_build ()
 {
@@ -59,7 +65,9 @@ do_clean ()
 
 		pushd $TOP_DIR/$BUSYBOX_PATH
 		make clean
-
+		popd
+		pushd $TOP_DIR/$BUSYBOX_RAMDISK_PATH
+		rm -f ramdisk.img busybox
 		popd
 	fi
 }
@@ -68,6 +76,30 @@ do_package ()
 {
 	if [ "$BUSYBOX_BUILD_ENABLED" == "1" ]; then
 		echo "Packaging BUSYBOX... $VARIANT";
+		# create the ramdisk
+		pushd $TOP_DIR/$BUSYBOX_RAMDISK_PATH
+		cp $TOP_DIR/$BUSYBOX_RAMDISK_BUSYBOX_PATH .
+		$TOP_DIR/$BUSYBOX_RAMDISK_LINUX_GEN_CPIO files.txt > ramdisk.img
+		popd
+		# Copy binary to output folder
+		pushd $TOP_DIR
+		mkdir -p ${OUTDIR}
+		cp $BUSYBOX_RAMDISK_PATH/ramdisk.img \
+			${PLATDIR}/ramdisk-busybox.img
+		popd
+		if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
+			pushd ${PLATDIR}
+			for target in $TARGET_BINS_PLATS; do
+				local addr=TARGET_$target[ramdisk]
+				${UBOOT_MKIMG} -A $LINUX_ARCH -O linux -C none \
+					-T ramdisk -n ramdisk \
+					-a ${!addr} -e ${!addr} \
+					-n "BusyBox ramdisk" \
+					-d ramdisk-busybox.img \
+					uInitrd-busybox.${!addr}
+			done
+			popd
+		fi
 	fi
 }
 

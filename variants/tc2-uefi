@@ -37,3 +37,21 @@ UBOOT_BUILD_ENABLED=
 OPTEE_BUILD_ENABLED=
 BOOTMON_BUILD_ENABLED=
 UEFI_BUILD_ENABLED=1
+
+TARGET_tc2[fdts]=""
+TARGET_tc2[uboot]=""
+
+UEFI_PLATFORMS="tc2"
+declare -A UEFI_PLAT_tc2
+UEFI_PLAT_tc2[platname]="ArmVExpress-CTA15-A7"
+UEFI_PLAT_tc2[output]=tc2
+UEFI_PLAT_tc2[defines]=
+UEFI_PLAT_tc2[binary]="ARM_VEXPRESS_CTA15A7_EFI.fd"
+
+#Copy binaries into the U-Boot folder
+TARGET_BINS_COPY_ENABLED=1
+unset TARGET_BINS_COPY_LIST
+declare -a TARGET_BINS_COPY_LIST
+TC2_UEFI_FOLDER=$PLATDIR/tc2-uefi/uefi
+TARGET_BINS_COPY_LIST[0]="${OUTDIR}/tc2/uefi.bin ${TC2_UEFI_FOLDER}/boot-tc2.bin"
+TARGET_BINS_COPY_LIST[1]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootuefi.txt ${TC2_UEFI_FOLDER}/bootscr.txt"

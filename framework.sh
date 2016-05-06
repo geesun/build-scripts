@@ -48,7 +48,7 @@ trap handle_error ERR
 if [ "$PARALLELISM" != "" ]; then
 	echo "Parallelism set in environment to $PARALLELISM, not overridding"
 else
-	PARALLELISM=`grep -c processor /proc/cpuinfo`
+	PARALLELISM=`getconf _NPROCESSORS_ONLN`
 fi
 
 VARIANT=$1
@@ -59,12 +59,13 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 pushd $DIR/..
 TOP_DIR=`pwd`
 popd
-OUTDIR=${TOP_DIR}/output
+PLATDIR=${TOP_DIR}/output
+OUTDIR=${PLATDIR}/components
 LINUX_OUT_DIR=out/$VARIANT
 
 usage_exit ()
 {
-	echo "Usage: $0 {variant} {build|clean|package}"
+	echo "Usage: $0 {variant} {build|clean|package|all}"
 	exit 1
 }
 
@@ -72,12 +73,28 @@ if [ $# -lt 1 ]; then
 	usage_exit
 fi
 
-# Load the variables from the variant if it exists...
-if [ -f $TOP_DIR/build-scripts/variants/$VARIANT ]; then
-	source $TOP_DIR/build-scripts/variants/$VARIANT $VARIANT
-else
-	echo "Variant $VARIANT doesn't exist in build-scripts/variants"
+# Load the variables from the variant if it exists. We support single nested
+# variant folders which will override the top level variant files. But if
+# multiple subfolders contain the same variant file we'll just use the first
+# found
+VARIANT_FILE=""
+for VDIR in $TOP_DIR/build-scripts/*/variants ; do
+	# Look for variant in that folder
+	if [ -f $VDIR/$VARIANT ]; then
+		VARIANT_FILE="$VDIR/$VARIANT"
+		break
+	fi
+done
+if [ "$VARIANT_FILE" == "" ]; then
+	if [ -f $TOP_DIR/build-scripts/variants/$VARIANT ]; then
+		VARIANT_FILE="$TOP_DIR/build-scripts/variants/$VARIANT"
+	fi
+fi
+if [ "$VARIANT_FILE" == "" ]; then
+	echo "Variant $VARIANT doesn't exist"
 	exit 1
+else
+	source $VARIANT_FILE $VARIANT
 fi
 
 case "$CMD" in

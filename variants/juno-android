@@ -28,9 +28,25 @@
 
 source $DIR/variants/juno-busybox
 
-VARIANT_DESC="Juno kernel for Android Software Stack"
+VARIANT_DESC="Juno Android Software Stack"
 
-LINUX_CONFIGS="linaro-base android vexpress64 $BL_SUPPORT"
+ANDROID_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-android.sh "
+ANDROID_SOURCE_PATH=source-build-disabled
+ANDROID_BINARIES_PATH=prebuilts/android
+ANDROID_BINS_VARIANTS="juno"
+LINUX_CONFIGS="linaro-base $BL_SUPPORT android vexpress64"
 
-TARGET_BINS_HAS_BUSYBOX=
 TARGET_BINS_HAS_ANDROID=1
+
+#Copy binaries into the U-Boot folder
+TARGET_BINS_COPY_ENABLED=1
+declare -a TARGET_BINS_COPY_LIST
+JUNO_UBOOT_FOLDER=$PLATDIR/juno-android/uboot
+TARGET_BINS_COPY_LIST[0]="${OUTDIR}/linux/Image ${JUNO_UBOOT_FOLDER}/Image"
+TARGET_BINS_COPY_LIST[1]="${OUTDIR}/linux/juno.dtb ${JUNO_UBOOT_FOLDER}/juno.dtb"
+TARGET_BINS_COPY_LIST[2]="${OUTDIR}/linux/juno-r1.dtb ${JUNO_UBOOT_FOLDER}/juno-r1.dtb"
+TARGET_BINS_COPY_LIST[3]="${OUTDIR}/linux/juno-r2.dtb ${JUNO_UBOOT_FOLDER}/juno-r2.dtb"
+TARGET_BINS_COPY_LIST[4]="${OUTDIR}/juno/tf-bl1.bin ${JUNO_UBOOT_FOLDER}/bl1.bin"
+TARGET_BINS_COPY_LIST[5]="${PLATDIR}/juno-uInitrd-android.0x84000000 ${JUNO_UBOOT_FOLDER}/ramdisk.img"
+TARGET_BINS_COPY_LIST[6]="${PLATDIR}/juno/fip-uboot.bin ${JUNO_UBOOT_FOLDER}/fip.bin"

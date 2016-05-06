@@ -29,6 +29,21 @@
 source $DIR/variants/tc2-busybox
 
 VARIANT_DESC="TC2 LSK kernel for OpenEmbedded Software Stack"
-LINUX_CONFIGS="linaro-base distribution vexpress $BL_SUPPORT"
-TARGET_BINS_HAS_BUSYBOX=
+LINUX_CONFIGS="linaro-base $BL_SUPPORT distribution vexpress"
+
+OE_BINARIES_BUILD_ENABLED=0
+OE_RAMDISK_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-oe-binaries.sh "
+OE_BINARIES_PATH=prebuilts/oe
+
 TARGET_BINS_HAS_OE=1
+
+#Copy binaries into the U-Boot folder
+TARGET_BINS_COPY_ENABLED=1
+unset TARGET_BINS_COPY_LIST
+declare -a TARGET_BINS_COPY_LIST
+TC2_FOLDER=$PLATDIR/tc2-oe/bootmon
+TARGET_BINS_COPY_LIST[0]="${OUTDIR}/linux/zImage ${TC2_FOLDER}/zImage"
+TARGET_BINS_COPY_LIST[1]="${OUTDIR}/linux/vexpress-v2p-ca15_a7.dtb ${TC2_FOLDER}/tc2.dtb"
+TARGET_BINS_COPY_LIST[2]="${PLATDIR}/ramdisk-oe.img ${TC2_FOLDER}/ramdisk.img"
+TARGET_BINS_COPY_LIST[3]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootkern.txt ${TC2_FOLDER}/bootscr.txt"
