@@ -1,0 +1,152 @@
+# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# Neither the name of ARM nor the names of its contributors may be used
+# to endorse or promote products derived from this software without specific
+# prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+VARIANT_DESC="FVP kernel for BusyBox Software Stack"
+
+# Absolute path to the aarch64 GCC compoiler binaries (plus prefix)
+# If you wish to specify a path relative to the workspace root, prefix it with "$TOP_DIR/"
+# If your compiler is on your path, you can simply add the prefix, as per the default example.
+export CROSS_COMPILE=${TOP_DIR}/tools/gcc/gcc-linaro-4.9-2015.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+export CROSS_COMPILE_32=${TOP_DIR}/tools/gcc/gcc-linaro-4.9-2015.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+BUILD_SCRIPTS=""
+
+LINUX_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-linux.sh "
+LINUX_PATH=linux
+LINUX_ARCH=arm64
+LINUX_CONFIG_LIST="defconfig mobile_bb mobile_oe android"
+LINUX_CONFIG_DEFAULT=mobile_bb
+declare -A LINUX_defconfig
+LINUX_defconfig[path]="linux"
+LINUX_defconfig[config]=""
+LINUX_defconfig[defconfig]=defconfig
+declare -A LINUX_mobile_bb
+LINUX_mobile_bb[path]="linux"
+LINUX_mobile_bb[config]="linaro-base vexpress64 big-LITTLE-MP"
+declare -A LINUX_mobile_oe
+LINUX_mobile_oe[path]="linux"
+LINUX_mobile_oe[config]="linaro-base big-LITTLE-MP distribution vexpress64"
+declare -A LINUX_android
+LINUX_android[path]="linux"
+LINUX_android[config]="linaro-base big-LITTLE-MP android vexpress64"
+
+UBOOT_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uboot.sh "
+UBOOT_PATH=u-boot
+UBOOT_ARCH=aarch64
+UBOOT_MKIMG=${TOP_DIR}/${UBOOT_PATH}/output/tools/mkimage
+UBOOT_UIMAGE_ADDRS="0x80080000"
+UBOOT_BOARDS="vexpress_aemv8a_dram"
+declare -A UBOOT_OUTPUT_DESTS
+UBOOT_OUTPUT_DESTS[vexpress_aemv8a_dram]=fvp
+
+UEFI_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uefi.sh "
+UEFI_PATH=uefi/edk2
+UEFI_BUILD_MODE=DEBUG
+UEFI_TOOLCHAIN=GCC49
+UEFI_TOOLS_PATH=tools/uefi-tools
+UEFI_ACPICA_PATH=tools/acpica/generate/unix
+UEFI_PLATFORMS="fvp"
+declare -A UEFI_PLAT_fvp
+UEFI_PLAT_fvp[platname]="ArmVExpress-FVP-AArch64"
+UEFI_PLAT_fvp[output]=fvp
+UEFI_PLAT_fvp[defines]=
+UEFI_PLAT_fvp[binary]="FVP_AARCH64_EFI.fd"
+
+# TBBR related definitions, used when TBBR is enabled in TARGET_$plat array at the bottom
+# of this file
+ARM_TF_ROT_KEY=$TOP_DIR/$ARM_TF_PATH/plat/arm/board/common/rotpk/arm_rotprivk_rsa.pem
+ARM_TF_MBEDTLS_DIR=$TOP_DIR/mbedtls
+ARM_TF_TBBR_BUILD_FLAGS="TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 CREATE_KEYS=1 ARM_ROTPK_LOCATION=devel_rsa ROT_KEY=${ARM_TF_ROT_KEY} MBEDTLS_DIR=${ARM_TF_MBEDTLS_DIR}"
+#declare -A TBBR_fvp
+#TBBR_fvp[tbbr]=1
+
+# OPTEE build setup
+# OPTEE OS
+OPTEE_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-optee-os.sh "
+# set trusted firmware to use dram for TEE
+OPTEE_RAM_LOCATION=dram
+OPTEE_ARCH="aarch32"
+OPTEE_PLATS="fvp"
+OPTEE_OS_CROSS_COMPILE=${CROSS_COMPILE_32}
+OPTEE_CLIENT_CROSS_COMPILE=${CROSS_COMPILE}
+OPTEE_OS_PATH=optee/optee_os
+OPTEE_CORE_LOG_LEVEL=4
+OPTEE_OS_BIN_NAME="tee.bin"
+declare -A OPTEE_fvp
+OPTEE_fvp[optee]=1
+OPTEE_fvp[plat]="vexpress"
+OPTEE_fvp[flavor]="fvp"
+
+ARM_TF_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-arm-tf.sh "
+ARM_TF_PATH=arm-tf
+ARM_TF_PLATS="fvp"
+ARM_TF_DEBUG_ENABLED=${ARM_TF_DEBUG_ENABLED:-1}
+
+BUSYBOX_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-busybox.sh "
+BUSYBOX_PATH=busybox
+BUSYBOX_ARCH=arm
+BUSYBOX_RAMDISK_PATH=ramdisk
+BUSYBOX_RAMDISK_BUSYBOX_PATH=$BUSYBOX_PATH/_install/bin/busybox
+
+DEVTREE_BUILD_ENABLED=0
+
+ANDROID_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-android.sh "
+ANDROID_SOURCE_PATH=source-build-disabled
+ANDROID_BINARIES_PATH=prebuilts/android
+ANDROID_BINS_VARIANTS="fvp"
+
+OE_BINARIES_BUILD_ENABLED=0
+OE_RAMDISK_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-oe-binaries.sh "
+OE_BINARIES_PATH=prebuilts/oe
+
+# this must be the last step for low level code.
+TARGET_BINS_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-target-bins.sh "
+FINAL_BUILD_STEP="build-target-bins.sh"
+TARGET_BINS_HAS_DTB_RAMDISK=1
+TARGET_BINS_HAS_ANDROID=1
+TARGET_BINS_HAS_OE=1
+
+TARGET_BINS_PLATS="fvp"
+declare -A TARGET_fvp
+TARGET_fvp[arm-tf]="fvp"
+TARGET_fvp[scp]=""
+TARGET_fvp[uboot]="fvp"
+TARGET_fvp[uefi]="fvp"
+TARGET_fvp[fdts]="fvp-base-aemv8a-aemv8a foundation-v8-gicv3 fvp-base-gicv2-psci fvp-foundation-gicv2-psci"
+TARGET_fvp[linux]="Image uImage.0x80080000"
+TARGET_fvp[ramdisk]=0x84000000
+#TARGET_fvp[ttbr]=1
+#TARGET_fvp[optee]=1

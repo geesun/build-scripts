@@ -26,17 +26,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-source $DIR/variants/juno-busybox
+source $DIR/variants/juno
 
 VARIANT_DESC="Juno LSK kernel for OpenEmbedded Software Stack"
-LINUX_CONFIGS="linaro-base $BL_SUPPORT distribution vexpress64"
 
-OE_BINARIES_BUILD_ENABLED=0
-OE_RAMDISK_BUILD_ENABLED=1
-BUILD_SCRIPTS=$BUILD_SCRIPTS"build-oe-binaries.sh "
-OE_BINARIES_PATH=prebuilts/oe
-
-TARGET_BINS_HAS_OE=1
+LINUX_CONFIG_LIST="mobile_oe"
+LINUX_CONFIG_DEFAULT=mobile_oe
+ANDROID_BUILD_ENABLED=0
+TARGET_BINS_HAS_ANDROID=0
 
 #Copy binaries into the format we need to copy them onto the eMMC
 TARGET_BINS_COPY_ENABLED=1

@@ -39,7 +39,6 @@
 # TARGET_BINS_HAS_OE - whether we have OE enabled
 # TARGET_BINS_HAS_DTB_RAMDISK - whether create dtbs with ramdisk chosen node
 # LINUX_ARCH - the architecure to build the output for (arm or arm64)
-# DEVTREE_DTC_PATH - Path to Linux tree containing DT compiler
 # TARGET_BINS_PLATS - the platforms to create binaries for
 # TARGET_{plat} - array of platform parameters, indexed by
 #	arm-tf - where to find the arm-tf binaries
@@ -56,6 +55,9 @@
 # ARM_TF_ROT_KEY - Root Key location for COT generation
 # TARGET_BINS_EXTRA_TAR_LIST - Extra folders that are to be tarred
 # OPTEE_OS_BIN_NAME - optee os binary name
+# LINUX_PATH - Path to Linux tree containing DT compiler and include files
+# LINUX_OUT_DIR - output directory name
+# LINUX_CONFIG_DEFAULT - the default linux build output
 #
 do_build()
 {
@@ -78,7 +80,7 @@ append_chosen_node()
 	# $3 = original dtb name
 	# $4 = ramdisk address
 	local ramdisk_end=$(($4 + $(wc -c < $2)))
-	local DTC=$TOP_DIR/$DEVTREE_DTC_PATH/scripts/dtc/dtc
+	local DTC=$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/$LINUX_CONFIG_DEFAULT/scripts/dtc/dtc
 	# Decode the DTB
 	${DTC} -Idtb -Odts -o$1.dts linux/$3.dtb
 
@@ -329,7 +331,7 @@ do_package()
 					create_tgt_symlinks linux ${target} "${tgt}*"
 				done
 				for item in ${!linux_bins}; do
-					create_tgt_symlinks linux ${target} $item
+					create_tgt_symlinks linux ${target} "${item}*"
 				done
 			done
 		fi

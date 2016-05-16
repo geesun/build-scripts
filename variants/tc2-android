@@ -26,13 +26,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-source $DIR/variants/tc2-busybox
+source $DIR/variants/tc2
 
 VARIANT_DESC="TC2 kernel for Android Software Stack"
 
-LINUX_CONFIGS="linaro-base $BL_SUPPORT android vexpress"
-
 TARGET_BINS_HAS_BUSYBOX=
+TARGET_BINS_HAS_OE=
 TARGET_BINS_HAS_ANDROID=1
 
 #Copy binaries into the U-Boot folder

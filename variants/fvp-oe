@@ -26,17 +26,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-source $DIR/variants/fvp-busybox
+source $DIR/variants/fvp
 
-VARIANT_DESC="FVP LSK kernel for OpenEmbedded Software Stack"
-LINUX_CONFIGS="linaro-base $BL_SUPPORT distribution vexpress64"
+VARIANT_DESC="FVP OE Software Stack"
 
-OE_BINARIES_BUILD_ENABLED=0
-OE_RAMDISK_BUILD_ENABLED=1
-BUILD_SCRIPTS=$BUILD_SCRIPTS"build-oe-binaries.sh "
-OE_BINARIES_PATH=prebuilts/oe
-
-TARGET_BINS_HAS_OE=1
+LINUX_CONFIG_LIST="mobile_oe"
+LINUX_CONFIG_DEFAULT=mobile_oe
+ANDROID_BUILD_ENABLED=0
+TARGET_BINS_HAS_ANDROID=0
 
 #Copy binaries into the U-Boot folder
 TARGET_BINS_COPY_ENABLED=1

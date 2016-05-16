@@ -38,11 +38,13 @@
 # BUSYBOX_PATH - sub-directory containing BusyBox code
 # BUSYBOX_ARCH - Build architecture (arm)
 # BUSYBOX_RAMDISK_PATH - path to where we build the ramdisk
-# BUSYBOX_RAMDISK_LINUX_GEN_CPIO - tool to generate the RD
 # BUSYBOX_RAMDISK_BUSYBOX_PATH - path to the BB binary
 # TARGET_BINS_PLATS - the platforms to create binaries for
 # TARGET_{plat} - array of platform parameters, indexed by
 # 	ramdisk - the address of the ramdisk per platform
+# LINUX_PATH - Path to Linux tree containing DT compiler and include files
+# LINUX_OUT_DIR - output directory name
+# LINUX_CONFIG_DEFAULT - the default linux build output
 
 do_build ()
 {
@@ -79,7 +81,7 @@ do_package ()
 		# create the ramdisk
 		pushd $TOP_DIR/$BUSYBOX_RAMDISK_PATH
 		cp $TOP_DIR/$BUSYBOX_RAMDISK_BUSYBOX_PATH .
-		$TOP_DIR/$BUSYBOX_RAMDISK_LINUX_GEN_CPIO files.txt > ramdisk.img
+		$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/$LINUX_CONFIG_DEFAULT/usr/gen_init_cpio files.txt > ramdisk.img
 		popd
 		# Copy binary to output folder
 		pushd $TOP_DIR

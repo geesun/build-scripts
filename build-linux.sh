@@ -38,8 +38,12 @@
 # LINUX_BUILD_ENABLED - Flag to enable building Linux
 # LINUX_PATH - sub-directory containing Linux code
 # LINUX_ARCH - Build architecture (arm64)
-# LINUX_DEFCONFIG - Single Linux defconfig to build. Ignored if LINUX_CONFIGS set
-# LINUX_CONFIGS - List of Linaro config fragments to use to build
+# LINUX_CONFIG_LIST - List of Linaro configs to use to build
+# LINUX_CONFIG_DEFAULT - the default from the list (for tools)
+# LINUX_{config} - array of linux config options, indexed by
+# 	path - the path to the linux source
+#	defconfig - a defconfig to build
+#	config - the list of config fragments
 # TARGET_BINS_PLATS - the platforms to create binaries for
 # TARGET_{plat} - array of platform parameters, indexed by
 #	fdts - the fdt pattern used by the platform
@@ -56,22 +60,31 @@ do_build ()
 {
 	if [ "$LINUX_BUILD_ENABLED" == "1" ]; then
 		export ARCH=$LINUX_ARCH
+		for name in $LINUX_CONFIG_LIST; do
+			local lpath=LINUX_$name[path];
+			local lconfig=LINUX_$name[config];
 
-		pushd $TOP_DIR/$LINUX_PATH
-		if [ "$LINUX_CONFIGS" != "" ] && [ -d "linaro/configs" ]; then
-			echo "Building using config fragments..."
-			CONFIG=""
-			for config in $LINUX_CONFIGS; do
-				CONFIG=$CONFIG"linaro/configs/${config}.conf "
-			done
-			mkdir -p $LINUX_OUT_DIR
-			scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR $CONFIG
-		else
-			echo "Building using defconfig..."
-			make O=$LINUX_OUT_DIR $LINUX_DEFCONFIG
-		fi
-		make O=$LINUX_OUT_DIR -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
-		popd
+			echo "config: $name"
+			pushd $TOP_DIR/${!lpath};
+			mkdir -p $LINUX_OUT_DIR/$name
+			confs=LINUX_$name[config]
+			echo "confs: ${!confs}"
+			if [ "${!lconfig}" != "" ]; then
+				echo "Building using config fragments..."
+				CONFIG=""
+				for config in ${!lconfig}; do
+					CONFIG=$CONFIG"linaro/configs/${config}.conf "
+				done
+				scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR/$name $CONFIG
+				make O=$LINUX_OUT_DIR/$name -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
+			else
+				echo "Building using defconfig..."
+				lconfig=LINUX_$name[defconfig];
+				make O=$LINUX_OUT_DIR/$name ${!lconfig}
+				make O=$LINUX_OUT_DIR/$name -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
+			fi
+			popd
+		done
 	fi
 }
 
@@ -80,10 +93,12 @@ do_clean ()
 	if [ "$LINUX_BUILD_ENABLED" == "1" ]; then
 		export ARCH=$LINUX_ARCH
 
-		pushd $TOP_DIR/$LINUX_PATH
-
-		make O=$LINUX_OUT_DIR distclean
-		popd
+		for name in $LINUX_CONFIG_LIST; do
+			local lpath=LINUX_$name[path];
+			pushd $TOP_DIR/${!lpath};
+			make O=$LINUX_OUT_DIR/$name distclean
+			popd
+		done
 	fi
 }
 
@@ -93,34 +108,44 @@ do_package ()
 		echo "Packaging Linux... $VARIANT";
 		# Copy binary to output folder
 		pushd $TOP_DIR
-		mkdir -p ${OUTDIR}/$LINUX_PATH/
 
-		for plat in $TARGET_BINS_PLATS; do
-			local fd=TARGET_$plat[fdts]
-			for target in ${!fd}; do
-				for item in $target; do
-					discoveredDTB=$(find $LINUX_PATH/$LINUX_OUT_DIR/arch/$LINUX_ARCH/boot/dts/ -name ${item}.dtb)
-					if [ "${discoveredDTB}" = "" ]; then
-						echo "skipping dtb $item"
-					else
-						cp ${discoveredDTB} ${OUTDIR}/$LINUX_PATH/.
+		for name in $LINUX_CONFIG_LIST; do
+			local lpath=LINUX_$name[path];
+			mkdir -p ${OUTDIR}/${!lpath}
+
+			cp $TOP_DIR/${!lpath}/$LINUX_OUT_DIR/$name/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/${!lpath}/$LINUX_IMAGE_TYPE.$name
+
+			if [ "$LINUX_CONFIG_DEFAULT" = "$name" ]; then
+				for plat in $TARGET_BINS_PLATS; do
+					local fd=TARGET_$plat[fdts]
+					for target in ${!fd}; do
+						for item in $target; do
+							discoveredDTB=$(find $TOP_DIR/${!lpath}/$LINUX_OUT_DIR/$name/arch/$LINUX_ARCH/boot/dts -name ${item}.dtb)
+							if [ "${discoveredDTB}" = "" ]; then
+								echo "skipping dtb $item"
+							else
+								cp ${discoveredDTB} ${OUTDIR}/${!lpath}/.
+							fi
+						done
+					done
+				done
+				cp ${OUTDIR}/${!lpath}/$LINUX_IMAGE_TYPE.$name ${OUTDIR}/${!lpath}/$LINUX_IMAGE_TYPE 
+			fi
+
+			if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
+				pushd ${OUTDIR}/${!lpath}
+				for addr in $UBOOT_UIMAGE_ADDRS; do
+					${UBOOT_MKIMG} -A $LINUX_ARCH -O linux -C none \
+						-T kernel -n Linux \
+						-a $addr -e $addr \
+						-n "Linux" -d $LINUX_IMAGE_TYPE.$name uImage.$addr.$name
+					if [ "$LINUX_CONFIG_DEFAULT" = "$name" ]; then
+						cp uImage.$addr.$name uImage.$addr
 					fi
 				done
-			done
+				popd
+			fi
 		done
-
-		cp $LINUX_PATH/$LINUX_OUT_DIR/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/$LINUX_PATH/.
-		popd
-		if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-			pushd ${OUTDIR}/$LINUX_PATH/
-			for addr in $UBOOT_UIMAGE_ADDRS; do
-				${UBOOT_MKIMG} -A $LINUX_ARCH -O linux -C none \
-					-T kernel -n Linux \
-					-a $addr -e $addr \
-					-n "Linux" -d $LINUX_IMAGE_TYPE uImage.$addr
-			done
-			popd
-		fi
 	fi
 }
 

@@ -1,0 +1,129 @@
+# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# Neither the name of ARM nor the names of its contributors may be used
+# to endorse or promote products derived from this software without specific
+# prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+VARIANT_DESC="TC2 kernel for BusyBox Software Stack"
+
+# Absolute path to the GCC compiler binaries (plus prefix)
+# If you wish to specify a path relative to the workspace root, prefix it with "$TOP_DIR/"
+# If your compiler is on your path, you can simply add the prefix, as per the default example.
+export CROSS_COMPILE=${TOP_DIR}/tools/gcc/gcc-linaro-4.9-2015.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+export CROSS_COMPILE_32=${CROSS_COMPILE}
+BUILD_SCRIPTS=""
+
+LINUX_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-linux.sh "
+LINUX_PATH=linux
+LINUX_ARCH=arm
+LINUX_IMAGE_TYPE=zImage
+LINUX_CONFIG_LIST="defconfig mobile_bb mobile_oe android"
+LINUX_CONFIG_DEFAULT=mobile_bb
+declare -A LINUX_defconfig
+LINUX_defconfig[path]="linux"
+LINUX_defconfig[config]=""
+LINUX_defconfig[defconfig]=defconfig
+declare -A LINUX_mobile_bb
+LINUX_mobile_bb[path]="linux"
+LINUX_mobile_bb[config]="linaro-base big-LITTLE-MP vexpress"
+declare -A LINUX_mobile_oe
+LINUX_mobile_oe[path]="linux"
+LINUX_mobile_oe[config]="linaro-base big-LITTLE-MP distribution vexpress"
+declare -A LINUX_android
+LINUX_android[path]="linux"
+LINUX_android[config]="linaro-base big-LITTLE-MP android vexpress"
+
+BOOTMON_BUILD_ENABLED=1
+BOOTMON_SCRIPT="bootscr.txt"
+
+UBOOT_BUILD_ENABLED=0
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uboot.sh "
+UBOOT_PATH=u-boot
+UBOOT_ARCH=arm
+UBOOT_BOARDS="vexpress_ca15_tc2"
+UBOOT_OUTPUT_DESTS[vexpress_ca15_tc2_defconfig]=tc2
+UBOOT_OUTPUT_FILENAME=boot-tc2.bin
+
+UEFI_BUILD_ENABLED=0
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uefi.sh "
+UEFI_PATH=uefi/edk2
+UEFI_TOOLS_PATH=tools/uefi-tools
+UEFI_ACPICA_PATH=tools/acpica/generate/unix
+UEFI_PLATFORMS="tc2"
+UEFI_BINARY="ARM_VEXPRESS_CTA15A7_EFI.fd"
+UEFI_BUILD_MODE=RELEASE
+UEFI_TOOLCHAIN=GCC49
+UEFI_OUTPUT_PLATFORMS="ArmVExpress-CTA15-A7"
+UEFI_OUTPUT_DESTS[ArmVExpress-CTA15-A7]=tc2
+UEFI_OUTPUT_FILENAME=boot-tc2.bin
+
+ARM_TF_BUILD_ENABLED=0
+
+BUSYBOX_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-busybox.sh "
+BUSYBOX_PATH=busybox
+BUSYBOX_ARCH=arm
+BUSYBOX_RAMDISK_PATH=ramdisk
+BUSYBOX_RAMDISK_BUSYBOX_PATH=$BUSYBOX_PATH/_install/bin/busybox
+
+DEVTREE_BUILD_ENABLED=0
+
+ANDROID_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-android.sh "
+ANDROID_SOURCE_PATH=source-build-disabled
+ANDROID_BINARIES_PATH=prebuilts/android
+ANDROID_BINS_VARIANTS="tc2"
+
+OE_BINARIES_BUILD_ENABLED=0
+OE_RAMDISK_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-oe-binaries.sh "
+OE_BINARIES_PATH=prebuilts/oe
+# this must be the last step for low level code.
+TARGET_BINS_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-target-bins.sh "
+FINAL_BUILD_STEP="build-target-bins.sh"
+TARGET_BINS_HAS_ANDROID=1
+TARGET_BINS_HAS_OE=1
+
+TARGET_BINS_PLATS="tc2"
+declare -A TARGET_tc2
+TARGET_tc2[arm-tf]=""
+TARGET_tc2[scp]=""
+TARGET_tc2[uboot]=""
+TARGET_tc2[uefi]=""
+TARGET_tc2[fdts]="vexpress-v2p-ca15_a7"
+TARGET_tc2[linux]="zImage uImage.0x80080000"
+TARGET_tc2[ramdisk]=0x84000000
+
+UEFI_PLATFORMS="tc2"
+declare -A UEFI_PLAT_tc2
+UEFI_PLAT_tc2[platname]="ArmVExpress-CTA15-A7"
+UEFI_PLAT_tc2[output]=tc2
+UEFI_PLAT_tc2[defines]=
+UEFI_PLAT_tc2[binary]="ARM_VEXPRESS_CTA15A7_EFI.fd"
+
+#Copy binaries into the U-Boot folder
+TARGET_BINS_COPY_ENABLED=1
