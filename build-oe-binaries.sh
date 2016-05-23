@@ -72,12 +72,12 @@ do_package ()
 		popd
 	fi
 	if [ "$OE_RAMDISK_BUILD_ENABLED" == "1" ]; then
+		pushd ${PLATDIR}
+		# OpenEmbedded ramdisks
+		mkdir -p oe
+		touch oe/initrd
+		echo oe/initrd | cpio -ov > ramdisk-oe.img
 		if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-			pushd ${PLATDIR}
-			# OpenEmbedded ramdisks
-			mkdir -p oe
-			touch oe/initrd
-			echo oe/initrd | cpio -ov > ramdisk-oe.img
 			for target in $TARGET_BINS_PLATS; do
 				local addr=TARGET_$target[ramdisk]
 				${UBOOT_MKIMG} -A $LINUX_ARCH -O linux -C none \
@@ -86,8 +86,8 @@ do_package ()
 					-n "Dummy ramdisk" \
 					-d ramdisk-oe.img uInitrd-oe.${!addr}
 			done
-			popd
 		fi
+		popd
 	fi
 }
 
