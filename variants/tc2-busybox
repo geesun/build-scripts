@@ -41,8 +41,19 @@ TARGET_BINS_HAS_OE=0
 TARGET_BINS_COPY_ENABLED=1
 unset TARGET_BINS_COPY_LIST
 declare -a TARGET_BINS_COPY_LIST
+i=0
 TC2_FOLDER=$PLATDIR/tc2-busybox/bootmon
-TARGET_BINS_COPY_LIST[0]="${OUTDIR}/linux/zImage ${TC2_FOLDER}/zImage"
-TARGET_BINS_COPY_LIST[1]="${OUTDIR}/linux/vexpress-v2p-ca15_a7.dtb ${TC2_FOLDER}/tc2.dtb"
-TARGET_BINS_COPY_LIST[2]="${PLATDIR}/ramdisk-busybox.img ${TC2_FOLDER}/ramdisk.img"
-TARGET_BINS_COPY_LIST[3]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootkern.txt ${TC2_FOLDER}/bootscr.txt"
+#Copy binaries into the U-Boot folder
+TC2_BOOTMON_FOLDER=$PLATDIR/tc2-busybox/bootmon
+TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/linux/zImage ${TC2_BOOTMON_FOLDER}/Image"
+TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/linux/vexpress-v2p-ca15_a7.dtb ${TC2_BOOTMON_FOLDER}/tc2.dtb"
+TARGET_BINS_COPY_LIST[((i++))]="${PLATDIR}/ramdisk-busybox.img ${TC2_FOLDER}/ramdisk.img"
+TARGET_BINS_COPY_LIST[((i++))]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootkern.txt ${TC2_BOOTMON_FOLDER}/bootscr.txt"
+if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
+	TC2_UBOOT_FOLDER=$PLATDIR/tc2-busybox/uboot
+	TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/linux/uImage.0x80080000 ${TC2_UBOOT_FOLDER}/Image"
+	TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/linux/vexpress-v2p-ca15_a7.dtb ${TC2_UBOOT_FOLDER}/tc2.dtb"
+	TARGET_BINS_COPY_LIST[((i++))]="${PLATDIR}/uInitrd-busybox.0x84000000 ${TC2_UBOOT_FOLDER}/ramdisk.img"
+	TARGET_BINS_COPY_LIST[((i++))]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootscr.txt ${TC2_UBOOT_FOLDER}/bootscr.txt"
+	TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/tc2/uboot.bin ${TC2_UBOOT_FOLDER}/boot-tc2.bin"
+fi

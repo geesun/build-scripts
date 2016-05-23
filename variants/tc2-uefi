@@ -50,6 +50,7 @@ TARGET_tc2[uboot]=""
 TARGET_BINS_COPY_ENABLED=1
 unset TARGET_BINS_COPY_LIST
 declare -a TARGET_BINS_COPY_LIST
+i=0
 TC2_UEFI_FOLDER=$PLATDIR/tc2-uefi/uefi
-TARGET_BINS_COPY_LIST[0]="${OUTDIR}/tc2/uefi.bin ${TC2_UEFI_FOLDER}/boot-tc2.bin"
-TARGET_BINS_COPY_LIST[1]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootuefi.txt ${TC2_UEFI_FOLDER}/bootscr.txt"
+TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/tc2/uefi.bin ${TC2_UEFI_FOLDER}/boot-tc2.bin"
+TARGET_BINS_COPY_LIST[((i++))]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootuefi.txt ${TC2_UEFI_FOLDER}/bootscr.txt"
