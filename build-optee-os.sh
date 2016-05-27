@@ -33,14 +33,16 @@
 #
 # OUTDIR - output dir for final packaging
 # TOP_DIR - workspace root directory
+# CROSS_COMPILE - aarch64 cross compiler
+# CROSS_COMPILE_32 - aarch32 cross compiler
 # OPTEE_BUILD_ENABLED - Flag to enable building optee
 # OPTEE_OS_PATH - path to optee os code
-# OPTEE_OS_CROSS_COMPILE - gcc for compiling tee (optee os)
 # OPTEE_OS_BIN_NAME - name of the optee os executable bin
 # OPTEE_CORE_LOG_LEVEL - 1-> least debug logs, 4-> most debug logs
 # OPTEE_$plat[plat] - optee platform
 # OPTEE_$plat[flavor] - optee platform flavor
 # OPTEE_PLATS - List of platforms to be built
+# OPTEE_OS_AARCH64_CORE - Flag to decide aarch32 or aarch64 build
 #
 
 do_build ()
@@ -50,10 +52,12 @@ do_build ()
 			echo "Building OPTEE for OPTEE_plat[$plat]"
 			local optee_plat=OPTEE_$plat[plat]
 			local optee_plat_flavor=OPTEE_$plat[flavor]
-			export CROSS_COMPILE=$OPTEE_OS_CROSS_COMPILE
+			export CROSS_COMPILE64=$CROSS_COMPILE
+			export CROSS_COMPILE32=$CROSS_COMPILE_32
 			export PLATFORM=${!optee_plat}
 			export PLATFORM_FLAVOR=${!optee_plat_flavor}
 			export CFG_TEE_CORE_LOG_LEVEL=$OPTEE_CORE_LOG_LEVEL
+			export CFG_ARM64_core=$OPTEE_OS_AARCH64_CORE
 			pushd $TOP_DIR/$OPTEE_OS_PATH
 			make -j$PARALLELISM
 			## temp patch: to be fixed by proper memory mapping of TEE
@@ -61,11 +65,12 @@ do_build ()
 			${CROSS_COMPILE}objcopy -O binary out/arm-plat-${PLATFORM}/core/tee.elf out/arm-plat-${PLATFORM_FLAVOR}/core/${OPTEE_OS_BIN_NAME}
 			popd
 		done
+
 		# optee client build
 		# temp patch: this will be removed once we have the client built in the LCR/OE
 		echo "Build optee client.."
 		pushd $TOP_DIR/optee/optee_client
-		make -j$PARALLELISM CROSS_COMPILE=${OPTEE_CLIENT_CROSS_COMPILE}
+		make -j$PARALLELISM CROSS_COMPILE=${CROSS_COMPILE}
 		popd
 	fi
 }
