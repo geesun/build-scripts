@@ -200,6 +200,9 @@ declare -a TARGET_BINS_COPY_LIST_OE
 #TARGET_BINS_COPY_LIST_ANDROID - An array just like TARGET_BINS_COPY_LIST
 #       except it only applies if the android filesystem is being built
 declare -a TARGET_BINS_COPY_LIST_ANDROID
+#TARGET_BINS_COPY_LIST_UEFI - An array just like TARGET_BINS_COPY_LIST
+#       except it only applies if the UEFI only "filesystem" is being built
+declare -a TARGET_BINS_COPY_LIST_UEFI
 #TARGET_BINS_EXTRA_TAR_LIST - A string list of folders that need to be
 #       tarred up. Space delimited. The tar name is just the folder name
 #       with ".tar.gz" appended on the end.
@@ -221,6 +224,6 @@ fi
 #   platform. If your platform only supports particular platforms, then reduce
 #   this list. This means the build scripts will only source files under the
 #   filesystems directory that apply to your platform.
-VALID_FILESYSTEMS="android oe busybox"
+VALID_FILESYSTEMS="android oe busybox uefi"
 
 COMPONENT_FLAVOUR=$FLAVOUR

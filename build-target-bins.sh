@@ -230,8 +230,12 @@ do_package()
 			for target in $TARGET_BINS_PLATS; do
 				local tf_out=TARGET_$target[arm-tf]
 				local scp_out=TARGET_$target[scp]
-				local uboot_out=TARGET_$target[uboot]
-				local uefi_out=TARGET_$target[uefi]
+				if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
+					local uboot_out=TARGET_$target[uboot]
+				fi
+				if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
+					local uefi_out=TARGET_$target[uefi]
+				fi
 				local fdt_pattern=TARGET_$target[fdts]
 				local linux_bins=TARGET_$target[linux]
 				local bl2_fip_param="${bl2_param_id} ${OUTDIR}/${!tf_out}/tf-bl2.bin"
