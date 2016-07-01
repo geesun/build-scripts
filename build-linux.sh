@@ -99,6 +99,8 @@ do_clean ()
 			make O=$LINUX_OUT_DIR/$name distclean
 			popd
 		done
+
+		rm -rf $TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR
 	fi
 }
 
@@ -111,9 +113,10 @@ do_package ()
 
 		for name in $LINUX_CONFIG_LIST; do
 			local lpath=LINUX_$name[path];
-			mkdir -p ${OUTDIR}/${!lpath}
+			local outpath=LINUX_$name[outpath];
+			mkdir -p ${OUTDIR}/${!outpath}
 
-			cp $TOP_DIR/${!lpath}/$LINUX_OUT_DIR/$name/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/${!lpath}/$LINUX_IMAGE_TYPE.$name
+			cp $TOP_DIR/${!lpath}/$LINUX_OUT_DIR/$name/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/${!outpath}/$LINUX_IMAGE_TYPE.$name
 
 			if [ "$LINUX_CONFIG_DEFAULT" = "$name" ]; then
 				for plat in $TARGET_BINS_PLATS; do
@@ -124,16 +127,16 @@ do_package ()
 							if [ "${discoveredDTB}" = "" ]; then
 								echo "skipping dtb $item"
 							else
-								cp ${discoveredDTB} ${OUTDIR}/${!lpath}/.
+								cp ${discoveredDTB} ${OUTDIR}/${!outpath}/.
 							fi
 						done
 					done
 				done
-				cp ${OUTDIR}/${!lpath}/$LINUX_IMAGE_TYPE.$name ${OUTDIR}/${!lpath}/$LINUX_IMAGE_TYPE 
+				cp ${OUTDIR}/${!outpath}/$LINUX_IMAGE_TYPE.$name ${OUTDIR}/${!outpath}/$LINUX_IMAGE_TYPE
 			fi
 
 			if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-				pushd ${OUTDIR}/${!lpath}
+				pushd ${OUTDIR}/${!outpath}
 				for addr in $UBOOT_UIMAGE_ADDRS; do
 					${UBOOT_MKIMG} -A $LINUX_ARCH -O linux -C none \
 						-T kernel -n Linux \
@@ -150,4 +153,4 @@ do_package ()
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source $DIR/framework.sh $1 $2
+source $DIR/framework.sh $@

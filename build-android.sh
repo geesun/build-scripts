@@ -58,7 +58,6 @@ do_build ()
 			lunch ${ANDROID_LUNCH_TARGET}
 			make -j $PARALLELISM TARGET_NO_KERNEL=true \
 				BUILD_KERNEL_MODULES=false \
-				TARGET_PREBUILT_KERNEL=yes \
 				systemimage userdataimage ramdisk
 
 			popd
@@ -153,4 +152,4 @@ do_package ()
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source $DIR/framework.sh $1 $2
+source $DIR/framework.sh $@

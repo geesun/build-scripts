@@ -34,53 +34,72 @@
 # VARIANT - build variant name
 # TOP_DIR - workspace root directory
 # CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
-# UBOOT_BUILD_ENABLED - Flag to enable building u-boot
-# UBOOT_PATH - sub-directory containing u-boot code
-# UBOOT_ARCH - Build architecture (aarch64)
-# UBOOT_BOARDS - List of board images to build
-#
-# To create uImage in package step Linux must be before uboot in the variant
-# file
+# DEVTREE_BUILD_ENABLED - Flag to enable building Device Trees
+# DEVTREE_PATH - sub-directory containing Device Tree source files
+# TARGET_BINS_PLATS - the platforms to create binaries for
+# TARGET_{plat} - array of platform parameters, indexed by
+#	fdts - the fdt pattern used by the platform
+# LINUX_PATH - Path to Linux tree containing DT compiler and include files
+# LINUX_OUT_DIR - output directory name
+# LINUX_CONFIG_DEFAULT - the default linux build output
 
 do_build ()
 {
-	if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-		export ARCH=$UBOOT_ARCH
-
-		pushd $TOP_DIR/$UBOOT_PATH
-		for item in $UBOOT_BOARDS; do
-			local outdir=output/$item
-			make -j $PARALLELISM O=$outdir ${item}_config
-			make -j $PARALLELISM O=$outdir
-			cp -R $outdir/tools output
-		done
-		popd
+	if [ "$DEVTREE_BUILD_ENABLED" == "1" ]; then
+		if [ -d $TOP_DIR/$DEVTREE_PATH ]; then
+			pushd $TOP_DIR/$DEVTREE_PATH
+			for plat in $TARGET_BINS_PLATS; do
+				local target=TARGET_$plat[fdts]
+				for item in ${!target}; do
+					if [ -f ${item}.dts ]; then
+						echo ${item}
+						${CROSS_COMPILE}cpp -I$TOP_DIR/$LINUX_PATH/include -x assembler-with-cpp -o $item.pre $item.dts
+						sed -i '/stdc-predef.h/d' $item.pre
+						$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/$LINUX_CONFIG_DEFAULT/scripts/dtc/dtc -O dtb -o $item.dtb -i $item.dts -b 0 $item.pre
+					else
+						echo "skipping linux dts file ${item}.dts"
+					fi
+				done
+			done
+			popd
+		fi
 	fi
 }
 
 do_clean ()
 {
-	if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-		export ARCH=$UBOOT_ARCH
-
-		pushd $TOP_DIR/$UBOOT_PATH
-		make distclean
-		rm -rf output
-		popd
+	if [ "$DEVTREE_BUILD_ENABLED" == "1" ]; then
+		if [ -d $TOP_DIR/$DEVTREE_PATH ]; then
+			pushd $TOP_DIR/$DEVTREE_PATH
+			rm -f *.dtb *.pre
+			popd
+		fi
 	fi
 }
 
 do_package ()
 {
-	if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-		echo "Packaging uboot... $VARIANT";
-		# Copy binaries to output folder
-		pushd $TOP_DIR
-		for item in $UBOOT_BOARDS; do
-			mkdir -p ${OUTDIR}/${UBOOT_OUTPUT_DESTS[$item]}
-			cp ./$UBOOT_PATH/output/$item/u-boot.bin ${OUTDIR}/${UBOOT_OUTPUT_DESTS[$item]}/uboot.bin
-		done
-		popd
+	if [ "$DEVTREE_BUILD_ENABLED" == "1" ]; then
+		if [ -d $TOP_DIR/$DEVTREE_PATH ]; then
+			echo "Packaging Devtrees... $VARIANT";
+			# Copy binary to output folder - put in Linux folder
+			pushd $TOP_DIR/$DEVTREE_PATH
+			mkdir -p ${OUTDIR}/$LINUX_PATH
+			for plat in $TARGET_BINS_PLATS; do
+				local fd=TARGET_$plat[fdts]
+				for target in ${!fd}; do
+					for item in $target; do
+						if [ -f ${item}.dts ]; then
+							echo ${item}
+							cp $item.dtb ${OUTDIR}/$LINUX_PATH/.
+						else
+							echo "skipping linux ${item}.dts file"
+						fi
+					done
+				done
+			done
+			popd
+		fi
 	fi
 }
 

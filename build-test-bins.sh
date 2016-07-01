@@ -33,33 +33,61 @@
 #
 # VARIANT - build variant name
 # TOP_DIR - workspace root directory
-# OPTEE_CLIENT_CROSS_COMPILE - PATH to GCC
-# OPTEE_BUILD_ENABLED - Flag to enable building optee
-# OPTEE_CLIENT_PATH - sub-directory containing optee client code
-#
+# ARM_TF_PATH - for the fip tool and output images
+# UBOOT_PATH - for output images
+# TFTF_PATH - for TFTF output images
+# TEST_BINS_PLATS - the platforms to create binaries for
+# TARGET_{plat} - array of platform parameters, indexed by
+#	arm-tf - where to find the arm-tf binaries
+#	scp - the scp output directory
+# 	tftf - the tftf output directory
 
-do_build ()
+do_build()
 {
-	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
-		pushd $TOP_DIR/$OPTEE_CLIENT_PATH
-		make -j$PARALLELISM CROSS_COMPILE=$OPTEE_CLIENT_CROSS_COMPILE
-		popd
+	if [ "$TEST_BINS_BUILD_ENABLED" == "1" ]; then
+		echo "Build"
 	fi
 }
 
-do_clean ()
+do_clean()
 {
-	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
-		pushd $TOP_DIR/$OPTEE_CLIENT_PATH
-		make clean
-		popd
+	if [ "$TEST_BINS_BUILD_ENABLED" == "1" ]; then
+		echo "clean"
 	fi
 }
 
-do_package ()
+do_package()
 {
-	echo "packaging optee client.. nothing to be done"
+	if [ "$TEST_BINS_BUILD_ENABLED" == "1" ]; then
+		echo "Packaging test binaries $VARIANT";
+		# Create FIPs
+		local fip_tool=$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create
+		for target in $TARGET_BINS_PLATS; do
+			local tf_out=TARGET_$target[arm-tf]
+			local scp_out=TARGET_$target[scp]
+			local tftf_out=TARGET_$target[tftf]
+			local bl2_fip_param="--bl2  ${OUTDIR}/${!tf_out}/tf-bl2.bin"
+			local bl31_fip_param="--bl31 ${OUTDIR}/${!tf_out}/tf-bl31.bin"
+			local bl30_fip_param=
+
+			if [ "${!scp_out}" != "" ]; then
+				bl30_fip_param="--bl30 ${OUTDIR}/scp/${!scp_out}/scp-ram.bin"
+			fi
+
+			if [ "${!tftf_out}" != "" ]; then
+				#remove all the old fips
+				rm -rf ${OUTDIR}/$target/fip-tftf.bin
+				mkdir -p ${OUTDIR}/$target/
+				${fip_tool} --dump  \
+					${bl2_fip_param} \
+					${bl31_fip_param} \
+					${bl30_fip_param} \
+					--bl33 ${OUTDIR}/${!tftf_out}/tftf.bin \
+					${PLATTDIR}/$target/fip-tftf.bin
+			fi
+		done
+	fi
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source $DIR/framework.sh $1 $2
+source $DIR/framework.sh $@

@@ -38,7 +38,9 @@ handle_error ()
 	local func=${callinfo% *}
 	func=${func#* }
 	echo
-	echo "Build failed: error while running ${func} at line ${lineno} in ${script} for variant ${VARIANT}."
+	echo -en "${BOLD}${RED}Build failed: error while running ${func} at line "
+	echo -en "${lineno} in ${script} for ${PLATFORM}[$FLAVOUR]"
+	echo -e "[$FILESYSTEM_CONFIGURATION].${NORMAL}"
 	echo
 	exit 1
 }
@@ -51,51 +53,64 @@ else
 	PARALLELISM=`getconf _NPROCESSORS_ONLN`
 fi
 
-VARIANT=$1
-CMD=$2
-
 # Directory variables provided by the framework
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+source $DIR/parse_params.sh
+parse_params $@
+set_formatting
+
 pushd $DIR/..
 TOP_DIR=`pwd`
 popd
-PLATDIR=${TOP_DIR}/output
+PLATDIR=${TOP_DIR}/output/$PLATFORM/output.$FLAVOUR
 OUTDIR=${PLATDIR}/components
-LINUX_OUT_DIR=out/$VARIANT
+LINUX_OUT_DIR=out/$PLATFORM/$COMPONENT_FLAVOUR
 
-usage_exit ()
-{
-	echo "Usage: $0 {variant} {build|clean|package|all}"
-	exit 1
-}
-
-if [ $# -lt 1 ]; then
-	usage_exit
+platform_folder=$(find $DIR/platforms -mindepth 1 -maxdepth 1 -type d -name $PLATFORM)
+if [ -z "$platform_folder" ] ; then
+	echo -e "${BOLD}${RED}Could not find platform $PLATFORM.${NORMAL}"
+	exit 2
+fi
+#Find flavours of the platform in question
+if [ "$CMD" != "clean" ] && [ "$CMD" != "ignore" ] ; then
+	check_not_missing "Flavour" $FLAVOUR
+fi
+flavour_file=$platform_folder/$FLAVOUR
+if [ "$CMD" != "clean" ] && [ "$CMD" != "ignore" ]  && [ ! -f $flavour_file ] ; then
+	echo -en "${BOLD}${RED}Couldn't find flavour $FLAVOUR for platform " >&2
+	echo -e "$PLATFORM$NORMAL" >&2
+	exit 2
 fi
 
-# Load the variables from the variant if it exists. We support single nested
-# variant folders which will override the top level variant files. But if
-# multiple subfolders contain the same variant file we'll just use the first
-# found
-VARIANT_FILE=""
-for VDIR in $TOP_DIR/build-scripts/*/variants ; do
-	# Look for variant in that folder
-	if [ -f $VDIR/$VARIANT ]; then
-		VARIANT_FILE="$VDIR/$VARIANT"
-		break
+#Source the flavour file
+if [ -f $flavour_file ] ; then
+	source $flavour_file
+elif [ "$CMD" = "clean" ] || [ "$CMD" = "ignore" ] ; then
+	#We're cleaning so pick the first flavour otherwise we won't clean anything
+	flavour_file=$(find $platform_folder -type f | head -n 1)
+	if [ ! -f $flavour_file ] ; then
+		echo -en "$BOLD${RED}Attempted to run 'clean' without specifying" >&2
+		echo -e " a flavour of platform." >&2
+		echo -e "Couldn't find a valid flavour to clean.$NORMAL" >&2
+		exit 3
+	fi
+	source $flavour_file
+fi
+#Source all applicable
+for fs in $DIR/filesystems/$FILESYSTEM_CONFIGURATION ; do
+	if [ ! -f $fs ] ; then
+		echo -en "${BOLD}${RED}Couldn't find filesystem " >&2
+		echo -e "$FILESYSTEM_CONFIGURATION${NORMAL}" >&2
+		exit 2
+	fi
+	fs_name=$(basename $fs)
+	if [[ $VALID_FILESYSTEMS == *"$fs_name"* ]] ; then
+		source $fs
+	else
+		echo "Ignoring filesystem $fs_name for $PLATFORM[$FLAVOUR]"
 	fi
 done
-if [ "$VARIANT_FILE" == "" ]; then
-	if [ -f $TOP_DIR/build-scripts/variants/$VARIANT ]; then
-		VARIANT_FILE="$TOP_DIR/build-scripts/variants/$VARIANT"
-	fi
-fi
-if [ "$VARIANT_FILE" == "" ]; then
-	echo "Variant $VARIANT doesn't exist"
-	exit 1
-else
-	source $VARIANT_FILE $VARIANT
-fi
 
 case "$CMD" in
 	"") do_build
@@ -113,6 +128,6 @@ case "$CMD" in
 	ignore) echo "Parsing variant"
 	;;
 
-	*) usage_exit
+	*) usage_exit 1
 	;;
 esac

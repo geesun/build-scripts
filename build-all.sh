@@ -28,63 +28,105 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-#Parse the arguments passed in from the command line
-if [ $# == 2 ]; then
-	CMD=$2
-	VARIANT=$1
-elif [ $# == 1 ]; then
-	CMD="build"
-	VARIANT=$1
-else
-	echo $"Usage: $0 {variant} {build|clean|package}"
-	exit 1
-fi
+set -e
 
 # find the script directory...
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-# load the variant so we get access to the BUILD_SCRIPTS
-SAVE_CMD=$CMD
-source $DIR/framework.sh $VARIANT "ignore"
-CMD=$SAVE_CMD
+__do_sort_scripts() {
+	if [ "$FINAL_BUILD_STEP" != "" ]; then
+		echo "Sorting the build scripts for correctness."
+		echo $BUILD_SCRIPTS
+		BUILD_SCRIPTS=`echo "$BUILD_SCRIPTS" | sed "s/$FINAL_BUILD_STEP/ /g"`
+		BUILD_SCRIPTS=$BUILD_SCRIPTS$FINAL_BUILD_STEP
+		echo $BUILD_SCRIPTS
+		echo "Done."
+	fi
+}
 
-if [ "$FINAL_BUILD_STEP" != "" ]; then
-	echo "Sorting the build scripts for correctness."
-	echo $BUILD_SCRIPTS
-	BUILD_SCRIPTS=`echo "$BUILD_SCRIPTS" | sed "s/$FINAL_BUILD_STEP/ /g"`
-	BUILD_SCRIPTS=$BUILD_SCRIPTS$FINAL_BUILD_STEP
-	echo $BUILD_SCRIPTS
-	echo "Done."
-fi
+__do_single_cmd() {
+	local CMD=$1
+	echo "***********************************"
+	section_descriptor="$CMD for $build on $PLATFORM[$FLAVOUR][$FILESYSTEM_CONFIGURATION]"
+	echo "Execute $section_descriptor"
+	${DIR}/$build $@
+	if [ "$?" -ne 0 ]; then
+		echo -e "${BOLD}${RED}Command failed: $section_descriptor${NORMAL}"
+		exit 1
+	fi
 
-# $1 - cmd to execute
+
+	echo "Execute $section_descriptor done."
+	echo "-----------------------------------"
+}
+
+__do_build_all_loop() {
+	if [ -z "$FLAVOUR" ] ; then
+		FLAVOURS=$(ls $DIR/platforms/$PLATFORM | grep -v '.base$')
+	else
+		FLAVOURS=$FLAVOUR
+	fi
+	initial=1
+	for flavour in $FLAVOURS ; do
+		source $DIR/platforms/$PLATFORM/$flavour
+		#Source all applicable
+		for fs in $DIR/filesystems/$FILESYSTEM_CONFIGURATION ; do
+			if [ ! -f $fs ] ; then
+				echo -en "${BOLD}${RED}Couldn't find filesystem " >&2
+				echo -e "$FILESYSTEM_CONFIGURATION${NORMAL}" >&2
+				exit 2
+			fi
+			source $fs
+		done
+		export FLAVOUR=$flavour
+		__do_sort_scripts
+		if [ "$initial" = "1" ] ; then
+			#For the first flavour clean and build all components.
+			build_scripts=$BUILD_SCRIPTS
+		else
+			#For the other flavours build just the changed components
+			build_scripts=$FLAVOUR_BUILD_SCRIPTS
+		fi
+		initial=0
+		for build in $build_scripts ; do
+			__do_single_cmd clean
+			__do_single_cmd build
+		done
+		for build in $BUILD_SCRIPTS ; do
+			__do_single_cmd package
+		done
+	done
+}
+
 __do_build_all()
 {
+	local CMD=$1
+	SAVE_CMD=$CMD
+	source $DIR/framework.sh ignore $@
+	CMD=$SAVE_CMD
+	if [ -z "$CMD" ] ; then
+		CMD="build"
+	fi
+	__do_sort_scripts
 	# Now to execute each component build in turn
 	for build in $BUILD_SCRIPTS; do
-		echo "***********************************"
-		echo "Execute $1 for $build on $VARIANT"
-		${DIR}/$build $VARIANT $1
-		if [ "$?" -ne 0 ]; then
-			echo "Command failed: $1 for $build on $VARIANT"
-			exit 1
-		fi
-		echo "Execute $1 for $build on $VARIANT done."
-		echo "-----------------------------------"
+		__do_single_cmd $@
 	done
 
-	if [ "$1" = "clean" ]; then
-		echo "Finishing clean by removing $OUTDIR and $PLATDIR"
+	if [ "$CMD" = "clean" ]; then
+		echo -e "${GREEN}Finishing clean by removing $OUTDIR and $PLATDIR${NORMAL}"
 		rm -rf $OUTDIR
 		rm -rf $PLATDIR
 	fi
 }
 
-if [ "$CMD" != "all" ]; then
-	__do_build_all $CMD
-else
-	__do_build_all clean
-	__do_build_all build
-	__do_build_all package
+#Parse the arguments passed in from the command line
+source $DIR/parse_params.sh
+parse_params $@
 
+if [ "$CMD" = "all" ] ; then
+	__do_build_all_loop
+else
+	__do_build_all $CMD
 fi
+

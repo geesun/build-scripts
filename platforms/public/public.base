@@ -26,23 +26,4 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-source $DIR/variants/fvp
-
-VARIANT_DESC="FVP OE Software Stack"
-
-LINUX_CONFIG_LIST="mobile_oe"
-LINUX_CONFIG_DEFAULT=mobile_oe
-ANDROID_BUILD_ENABLED=0
-TARGET_BINS_HAS_ANDROID=0
-
-#Copy binaries into the U-Boot folder
-TARGET_BINS_COPY_ENABLED=1
-unset TARGET_BINS_COPY_LIST
-declare -a TARGET_BINS_COPY_LIST
-FVP_UBOOT_FOLDER=$PLATDIR/fvp-oe/uboot
-TARGET_BINS_COPY_LIST[0]="${OUTDIR}/linux/Image ${FVP_UBOOT_FOLDER}/Image"
-TARGET_BINS_COPY_LIST[1]="${OUTDIR}/linux/fvp-base-aemv8a-aemv8a-chosen.dtb ${FVP_UBOOT_FOLDER}/fvp-base-aemv8a-aemv8a.dtb"
-TARGET_BINS_COPY_LIST[2]="${OUTDIR}/linux/foundation-v8-gicv3-chosen.dtb ${FVP_UBOOT_FOLDER}/foundation-v8-gicv3.dtb"
-TARGET_BINS_COPY_LIST[3]="${OUTDIR}/fvp/tf-bl1.bin ${FVP_UBOOT_FOLDER}/bl1.bin"
-TARGET_BINS_COPY_LIST[4]="${PLATDIR}/uInitrd-oe.0x84000000 ${FVP_UBOOT_FOLDER}/ramdisk.img"
-TARGET_BINS_COPY_LIST[5]="${PLATDIR}/fvp/fip-uboot.bin ${FVP_UBOOT_FOLDER}/fip.bin"
+source $DIR/platforms/common/common.base

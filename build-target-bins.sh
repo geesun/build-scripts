@@ -82,7 +82,7 @@ append_chosen_node()
 	local ramdisk_end=$(($4 + $(wc -c < $2)))
 	local DTC=$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/$LINUX_CONFIG_DEFAULT/scripts/dtc/dtc
 	# Decode the DTB
-	${DTC} -Idtb -Odts -o$1.dts linux/$3.dtb
+	${DTC} -Idtb -Odts -o$1.dts $LINUX_PATH/$3.dtb
 
 	echo "" >> $1.dts
 	echo "/ {" >> $1.dts
@@ -93,7 +93,7 @@ append_chosen_node()
 	echo "};" >> $1.dts
 
 	# Recode the DTB
-	${DTC} -Idts -Odtb -olinux/$1.dtb $1.dts
+	${DTC} -Idts -Odtb -o$LINUX_PATH/$1.dtb $1.dts
 
 	# And clean up
 	rm $1.dts
@@ -159,20 +159,23 @@ create_tgt_symlinks()
 
 # $1: ramdisk address
 # $2: devtree
-# $3: plat name
 update_devtree()
 {
 	if [ "$TARGET_BINS_HAS_ANDROID" = "1" ]; then
-		if [ -e ${PLATDIR}/$3-ramdisk-android.img ]; then
+		local name=${ANDROID_BINS_VARIANTS_PLAT}
+		if [ -e ${PLATDIR}/$name-ramdisk-android.img ]; then
 			append_chosen_node $2-chosen-android \
-				 ${PLATDIR}/$3-ramdisk-android.img $2 $1
+				 ${PLATDIR}/$name-ramdisk-android.img $2 $1
 		else
-			echo "Skipping non-existing android RD for $3."
+			echo "Skipping non-existing android RD for $name."
 		fi
-	elif [ "$TARGET_BINS_HAS_OE" = "1" ]; then
+	fi
+	if [ "$TARGET_BINS_HAS_OE" = "1" ]; then
 		append_chosen_node $2-chosen-oe ${PLATDIR}/ramdisk-oe.img $2 $1
 	fi
-	append_chosen_node $2-chosen ${PLATDIR}/ramdisk-busybox.img $2 $1
+	if [ "$TARGET_BINS_HAS_BUSYBOX" = "1" ] ; then
+		append_chosen_node $2-chosen ${PLATDIR}/ramdisk-busybox.img $2 $1
+	fi
 }
 
 do_package()
@@ -182,18 +185,19 @@ do_package()
 		# Add chosen node for ramdisk to dtbs
 		if [ "$TARGET_BINS_HAS_DTB_RAMDISK" = "1" ]; then
 			pushd ${OUTDIR}
-			rm -f linux/*chosen*.dtb
+			rm -f $LINUX_PATH/*chosen*.dtb
 			for plat in $TARGET_BINS_PLATS; do
 				local fd=TARGET_$plat[fdts]
 				for target in ${!fd}; do
-					local data=`ls linux/${target}.dtb || echo ""`
+					local data=`ls $LINUX_PATH/${target}.dtb || echo ""`
+					local plat_name=TARGET_$plat[output]
 					for item in $data; do
 						local tempy=TARGET_$plat[ramdisk]
 						# remove dir and extension..
 						x="$item"
 						y=${x%.dtb}
 						z=${y##*/}
-						update_devtree ${!tempy} $z $plat
+						update_devtree ${!tempy} $z
 					done
 				done
 			done
@@ -238,6 +242,7 @@ do_package()
 				local cert_tool_param=
 				local atf_tbbr_enabled=TARGET_$target[tbbr]
 				local optee_enabled=TARGET_$target[optee]
+				local target_name=TARGET_$target[output]
 
 				if [ "${!scp_out}" != "" ]; then
 					bl30_fip_param="${bl30_param_id} ${OUTDIR}/${!scp_out}/scp-ram.bin"
@@ -248,7 +253,7 @@ do_package()
 					echo ${OUTDIR}/${!tf_out}/
 					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!tf_out}/${OPTEE_OS_BIN_NAME}"
 				fi
-				local fip_param="${bl2_fip_param} ${bl31_fip_param}  ${bl30_fip_param} ${bl32_fip_param}"
+				local fip_param="${bl2_fip_param} ${bl31_fip_param}  ${bl30_fip_param} ${bl32_fip_param} ${EXTRA_FIP_PARAM}"
 				echo "fip_param is $fip_param"
 
 				if [ "${!atf_tbbr_enabled}" == "1" ]; then
@@ -270,7 +275,7 @@ do_package()
 					fip_param="${fip_param} ${trusted_key_cert_param} \
 						   ${bl30_tbbr_param} ${bl31_tbbr_param} \
 						   ${bl32_tbbr_param} ${bl33_tbbr_param} \
-						   ${bl2_tbbr_param}"
+						   ${bl2_tbbr_param} ${EXTRA_TBBR_PARAM}"
 
 					#fip_create tool and cert_create tool take almost identical params
 					cert_tool_param="${fip_param} --rot-key ${ARM_TF_ROT_KEY} -n --tfw-nvctr 31 --ntfw-nvctr 223"
@@ -279,8 +284,8 @@ do_package()
 
 				if [ "${!uboot_out}" != "" ]; then
 					# remove existing fip
-					rm -f ${PLATDIR}/$target/fip-uboot.bin
-					mkdir -p ${PLATDIR}/$target
+					rm -f ${PLATDIR}/${!target_name}/fip-uboot.bin
+					mkdir -p ${PLATDIR}/${!target_name}
 
 					# if TBBR is enabled, generate certificates
 					if [ "${!atf_tbbr_enabled}" == "1" ]; then
@@ -292,15 +297,15 @@ do_package()
 					${fip_tool} --dump  \
 							${fip_param} \
 							${bl33_param_id} ${OUTDIR}/${!uboot_out}/uboot.bin \
-							${PLATDIR}/$target/fip-uboot.bin
+							${PLATDIR}/${!target_name}/fip-uboot.bin
 
 					local outfile=${outdir}/fip.bin
 					rm -f $outfile
 				fi
 				if [ "${!uefi_out}" != "" ]; then
 					# remove existing fip
-					rm -f ${PLATDIR}/$target/fip-uefi.bin
-					mkdir -p ${PLATDIR}/$target
+					rm -f ${PLATDIR}/${!target_name}/fip-uefi.bin
+					mkdir -p ${PLATDIR}/${!target_name}
 					# if TBBR is enabled, generate certificates
 					if [ "${!atf_tbbr_enabled}" == "1" ]; then
 						$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
@@ -311,27 +316,27 @@ do_package()
 					${fip_tool} --dump  \
 						${fip_param} \
 						${bl33_param_id} ${OUTDIR}/${!uefi_out}/uefi.bin \
-						${PLATDIR}/$target/fip-uefi.bin
+						${PLATDIR}/${!target_name}/fip-uefi.bin
 				fi
 
 				# Create symlinks to common binaries
 				if [ "${!tf_out}" != "" ]; then
-					create_tgt_symlinks ${!tf_out} ${target} "tf-*"
+					create_tgt_symlinks ${!tf_out} ${!target_name} "tf-*"
 				fi
 				if [ "${!scp_out}" != "" ]; then
-					create_tgt_symlinks ${!scp_out} ${target} "*cp-*"
+					create_tgt_symlinks ${!scp_out} ${!target_name} "*cp-*"
 				fi
 				if [ "${!uboot_out}" != "" ]; then
-					create_tgt_symlinks ${!uboot_out} ${target} "uboot*"
+					create_tgt_symlinks ${!uboot_out} ${!target_name} "uboot*"
 				fi
 				if [ "${!uefi_out}" != "" ]; then
-					create_tgt_symlinks ${!uefi_out} ${target} "uefi*"
+					create_tgt_symlinks ${!uefi_out} ${!target_name} "uefi*"
 				fi
 				for tgt in ${!fdt_pattern}; do
-					create_tgt_symlinks linux ${target} "${tgt}*"
+					create_tgt_symlinks linux ${!target_name} "${tgt}*"
 				done
 				for item in ${!linux_bins}; do
-					create_tgt_symlinks linux ${target} "${item}*"
+					create_tgt_symlinks linux ${!target_name} "${item}*"
 				done
 			done
 		fi
@@ -350,11 +355,13 @@ do_package()
 	fi
 	for tarDir in $TARGET_BINS_EXTRA_TAR_LIST ; do
 		tarname=$(basename $tarDir).tar.gz
-		pushd $tarDir
-			tar -czf ../$tarname *
-		popd
+		if [ -d "$tarDir" ] ; then
+			pushd $tarDir
+				tar -czf ../$tarname *
+			popd
+		fi
 	done
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source $DIR/framework.sh $1 $2
+source $DIR/framework.sh $@

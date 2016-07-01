@@ -26,34 +26,20 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-source $DIR/variants/tc2
+OE_RAMDISK_BUILD_ENABLED=1
+BUILD_SCRIPTS=$BUILD_SCRIPTS"build-oe-binaries.sh "
+OE_BINARIES_PATH=prebuilts/oe
 
-VARIANT_DESC="TC2 LSK kernel for Busybox Software Stack"
+TARGET_BINS_HAS_DTB_RAMDISK=1
+TARGET_BINS_HAS_OE=1
 
-LINUX_CONFIG_LIST="mobile_bb"
-LINUX_CONFIG_DEFAULT=mobile_bb
-ANDROID_BUILD_ENABLED=0
-TARGET_BINS_HAS_ANDROID=0
-OE_BINARIES_BUILD_ENABLED=0
-TARGET_BINS_HAS_OE=0
+LINUX_CONFIG_LIST="$LINUX_CONFIG_LIST $OE_LINUX_CONFIG_LIST"
+LINUX_CONFIG_DEFAULT=$OE_LINUX_CONFIG_LIST
 
-#Copy binaries into the U-Boot folder
-TARGET_BINS_COPY_ENABLED=1
-unset TARGET_BINS_COPY_LIST
-declare -a TARGET_BINS_COPY_LIST
-i=0
-TC2_FOLDER=$PLATDIR/tc2-busybox/bootmon
-#Copy binaries into the U-Boot folder
-TC2_BOOTMON_FOLDER=$PLATDIR/tc2-busybox/bootmon
-TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/linux/zImage ${TC2_BOOTMON_FOLDER}/Image"
-TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/linux/vexpress-v2p-ca15_a7.dtb ${TC2_BOOTMON_FOLDER}/tc2.dtb"
-TARGET_BINS_COPY_LIST[((i++))]="${PLATDIR}/ramdisk-busybox.img ${TC2_FOLDER}/ramdisk.img"
-TARGET_BINS_COPY_LIST[((i++))]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootkern.txt ${TC2_BOOTMON_FOLDER}/bootscr.txt"
-if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-	TC2_UBOOT_FOLDER=$PLATDIR/tc2-busybox/uboot
-	TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/linux/uImage.0x80080000 ${TC2_UBOOT_FOLDER}/Image"
-	TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/linux/vexpress-v2p-ca15_a7.dtb ${TC2_UBOOT_FOLDER}/tc2.dtb"
-	TARGET_BINS_COPY_LIST[((i++))]="${PLATDIR}/uInitrd-busybox.0x84000000 ${TC2_UBOOT_FOLDER}/ramdisk.img"
-	TARGET_BINS_COPY_LIST[((i++))]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootscr.txt ${TC2_UBOOT_FOLDER}/bootscr.txt"
-	TARGET_BINS_COPY_LIST[((i++))]="${OUTDIR}/tc2/uboot.bin ${TC2_UBOOT_FOLDER}/boot-tc2.bin"
-fi
+#Append TARGET_BINS_COPY_LIST_OE into TARGET_BINS_COPY_LIST
+
+index=${#TARGET_BINS_COPY_LIST[@]}
+oe_length=${#TARGET_BINS_COPY_LIST_OE[@]}
+for (( i=0; i<$oe_length; i++ )); do
+    TARGET_BINS_COPY_LIST[$[index++]]="${TARGET_BINS_COPY_LIST_OE[$i]}"
+done

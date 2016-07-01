@@ -31,35 +31,65 @@
 #
 # This script uses the following environment variables from the variant
 #
+# VARIANT - build variant name
 # TOP_DIR - workspace root directory
-# LINUX_PATH - path to linux kernel
-# CROSS_COMPILE - gcc cross compiler for kernel
-# OPTEE_LINUXDRIVER_PATH - path to optee kernel driver source
+# CROSS_COMPILE - PATH to Embedded GCC
+# MBEDV2_BUILD_ENABLED - Flag to enable building mbed V2 code
+# MBEDV2_PATH - sub-directory containing mbed V2 code
+# MBEDV2_PLATS - List of platforms to be built
+# MBEDV2_APPS - List of applications to be built for each platform
+#
 
 do_build ()
 {
-	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
-		# use linux build system to build the kernel module
-		pushd $TOP_DIR/$LINUX_PATH
-		make O=$LINUX_OUT_DIR ARCH=$LINUX_ARCH CROSS_COMPILE=$CROSS_COMPILE LOCALVERSION= M=$TOP_DIR/$OPTEE_LINUXDRIVER_PATH modules
+	if [ "$MBEDV2_BUILD_ENABLED" == "1" ]; then
+		pushd $TOP_DIR/$MBEDV2_PATH/workspace_tools
+
+		export CROSS_COMPILE=$CROSS_COMPILE
+
+		for app in $MBEDV2_APPS; do
+			for plat in $MBEDV2_PLATS; do
+				python build.py -m $plat -t GCC_ARM -j 16
+				python make.py -m $plat -t GCC_ARM -n $app -j 16
+				python project.py -m $plat -i gcc_arm -n $app
+			done
+		done
+
 		popd
 	fi
 }
 
 do_clean ()
 {
-	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
-		# use linux build system to build the kernel module
-		pushd $TOP_DIR/$LINUX_PATH
-		make O=$LINUX_OUT_DIR ARCH=$LINUX_ARCH CROSS_COMPILE=$CROSS_COMPILE LOCALVERSION= M=$TOP_DIR/$OPTEE_LINUXDRIVER_PATH clean
+	if [ "$MBEDV2_BUILD_ENABLED" == "1" ]; then
+		pushd $TOP_DIR/$MBEDV2_PATH/build
+		# The "python build.py -c" option seems to just rebuild rather than
+		# clean so clean for plats manually
+		for plat in $MBEDV2_PLATS; do
+			rm -rf mbed/TARGET_$plat
+			rm -rf test/$plat
+			rm -f export/*$plat.zip
+		done
+
 		popd
 	fi
 }
 
 do_package ()
 {
-	echo "packaging optee kernel driver... nothing to be done"
+	if [ "$MBEDV2_BUILD_ENABLED" == "1" ]; then
+		echo "Packaging mbed V2... $VARIANT";
+		# Copy binaries to output folder
+		pushd $TOP_DIR
+
+		for plat in $MBEDV2_PLATS; do
+			mkdir -p ${OUTDIR}/$plat
+			cp $TOP_DIR/$MBEDV2_PATH/build/export/*$plat.zip ${OUTDIR}/$plat/.
+		done
+
+		popd
+	fi
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source $DIR/framework.sh $1 $2
+source $DIR/framework.sh $@

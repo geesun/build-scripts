@@ -40,10 +40,9 @@
 # ARM_TF_DEBUG_ENABLED - 1 = debug, 0 = release build
 # ARM_TF_BUILD_FLAGS - Additional build flags to pass on the build command line
 # ARM_TF_TBBR_BUILD_FLAGS - command line options to enable TBBR in ARM TF build
+# OPTEE_BUILD_ENABLED - Flag to indicate if optee is enabled
 # TBBR_{plat} - array of platform parameters, indexed by
 # 	tbbr - flag to indicate if TBBR is enabled
-# OPTEE_{plat} - array of platform parameters, indexed by
-# 	optee - flag to indicate if optee is enabled
 #
 
 do_build ()
@@ -53,7 +52,7 @@ do_build ()
 		for plat in $ARM_TF_PLATS; do
 			local atf_build_flags=$ARM_TF_BUILD_FLAGS
 			local atf_tbbr_enabled=TBBR_$plat[tbbr]
-			local atf_optee_enabled=OPTEE_$plat[optee]
+			local atf_optee_enabled=OPTEE_BUILD_ENABLED
 			if [ "${!atf_tbbr_enabled}" == "1" ]; then
 				#if trusted board boot(TBBR) enabled, set corresponding compiliation flags
 				atf_build_flags="${atf_build_flags} $ARM_TF_TBBR_BUILD_FLAGS"
@@ -104,4 +103,4 @@ do_package ()
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source $DIR/framework.sh $1 $2
+source $DIR/framework.sh $@

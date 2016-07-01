@@ -86,22 +86,22 @@ do_clean ()
 
 do_package ()
 {
-	pushd $TOP_DIR
 	for plat in $SCP_PLATFORMS; do
 		if [ "$SCP_BUILD_ENABLED" == "1" ]; then
-			mkdir -p ${OUTDIR}/${plat}
-			cp ./${SCP_PATH}/output/${plat}/scp/ramfw.bin ${OUTDIR}/${plat}/scp-ram.bin
-			cp ./${SCP_PATH}/output/${plat}/scp/romfw.bin ${OUTDIR}/${plat}/scp-rom.bin
-			if [ -d ${TOP_DIR}/${SCP_PATH}/output/${plat}/mcp ]; then
-				cp ./${SCP_PATH}/output/${plat}/mcp/ramfw.bin ${OUTDIR}/${plat}/mcp-ram.bin
-				cp ./${SCP_PATH}/output/${plat}/mcp/romfw.bin ${OUTDIR}/${plat}/mcp-rom.bin
-			fi
+			pushd $TOP_DIR
+				p1=${plat%%_*}
+				mkdir -p ${OUTDIR}/${plat}
+				cp ./${SCP_PATH}/output/${plat}/scp/ramfw.bin ${OUTDIR}/${plat}/scp-ram.bin
+				cp ./${SCP_PATH}/output/${plat}/scp/romfw.bin ${OUTDIR}/${plat}/scp-rom.bin
+				if [ -d ${TOP_DIR}/${SCP_PATH}/output/${plat}/mcp ]; then
+					cp ./${SCP_PATH}/output/${plat}/mcp/ramfw.bin ${OUTDIR}/${plat}/mcp-ram.bin
+					cp ./${SCP_PATH}/output/${plat}/mcp/romfw.bin ${OUTDIR}/${plat}/mcp-rom.bin
+				fi
 
-			p1=${plat%%_*}
-			if [ "${SCP_BYPASS_ROM_SUPPORT[$p1]}" = true ]; then
-				cp ./${SCP_PATH}/output/${plat}/scp/romfw_bypass.bin ${OUTDIR}/${plat}/scp-rom-bypass.bin
-			fi
-
+				if [ "${SCP_BYPASS_ROM_SUPPORT[$p1]}" = true ]; then
+					cp ./${SCP_PATH}/output/${plat}/scp/romfw_bypass.bin ${OUTDIR}/${plat}/scp-rom-bypass.bin
+				fi
+			popd
 		else
 			mkdir -p ${OUTDIR}/${plat}
 			local var=SCP_PREBUILT_RAMFW_${plat}
@@ -109,15 +109,36 @@ do_package ()
 			if [ -e "$fw" ]; then
 				cp $fw ${OUTDIR}/${plat}/scp-ram.bin
 			fi
+			var=SCP_PREBUILT_ROMFW_${plat}
+			fw=${!var}
+			if [ -e "$fw" ]; then
+				cp ${fw} ${OUTDIR}/${plat}/scp-rom.bin
+			fi
 			var=SCP_PREBUILT_ROMFW_BYPASS_${plat}
 			fw=${!var}
 			if [ -e "$fw" ]; then
 				cp ${fw} ${OUTDIR}/${plat}/scp-rom-bypass.bin
 			fi
+			#MCP
+			set -x
+			local mcp_var=MCP_PREBUILT_RAMFW_${plat}
+			local mcp_fw=${!mcp_var}
+			if [ -e "$mcp_fw" ]; then
+				cp $mcp_fw ${OUTDIR}/${plat}/mcp-ram.bin
+			fi
+			mcp_var=MCP_PREBUILT_ROMFW_${plat}
+			mcp_fw=${!mcp_var}
+			if [ -e "$mcp_fw" ]; then
+				cp ${mcp_fw} ${OUTDIR}/${plat}/mcp-rom.bin
+			fi
+			mcp_var=MCP_PREBUILT_ROMFW_BYPASS_${plat}
+			mcp_fw=${!mcp_var}
+			if [ -e "$mcp_fw" ]; then
+				cp ${mcp_fw} ${OUTDIR}/${plat}/mcp-rom-bypass.bin
+			fi
 		fi
 	done
-	popd
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source $DIR/framework.sh $1 $2
+source $DIR/framework.sh $@
