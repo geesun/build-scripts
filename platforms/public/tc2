@@ -29,8 +29,8 @@
 #Android options
 ANDROID_BINS_VARIANTS_PLAT="tc2"
 ANDROID_SOURCE_VARIANT=$ANDROID_BINS_VARIANTS_PLAT
-ANDROID_LUNCH_TARGET_PREBUILT="tc2-userdebug"
-ANDROID_LUNCH_TARGET_SRC="tc2-userdebug"
+ANDROID_LUNCH_TARGET_PREBUILT="vexpress-userdebug"
+ANDROID_LUNCH_TARGET_SRC="vexpress-userdebug"
 VARIANT_DESC="TC2 kernel for BusyBox Software Stack"
 source $DIR/platforms/public/public.base
 
