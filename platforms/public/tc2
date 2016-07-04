@@ -132,4 +132,4 @@ if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
 	TARGET_BINS_COPY_LIST_ANDROID[$[index++]]="${OUTDIR}/tc2/uboot.bin ${TC2_ANDROID_UBOOT_FOLDER}/boot-tc2.bin"
 fi
 
-FLAVOUR_BUILD_SCRIPTS="build-uboot.sh build-uefi.sh build-linux.sh build-devtrees.sh build-scp.sh build-arm-tf.sh build-optee-os.sh build-target-bins.sh"
+FLAVOUR_BUILD_SCRIPTS="build-uboot.sh build-uefi.sh build-linux.sh build-devtrees.sh build-scp.sh build-arm-tf.sh build-optee-os.sh build-android.sh build-target-bins.sh"
