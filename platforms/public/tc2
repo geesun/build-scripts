@@ -39,9 +39,9 @@ export CROSS_COMPILE=${CROSS_COMPILE_32}
 LINUX_IMAGE_TYPE=zImage
 LINUX_ARCH=arm
 #Override the configs, no vexpress64
-LINUX_mobile_bb[config]="linaro-base big-LITTLE-MP vexpress"
-LINUX_mobile_oe[config]="linaro-base big-LITTLE-MP distribution vexpress"
-LINUX_android[config]="linaro-base big-LITTLE-MP android vexpress"
+LINUX_mobile_bb[config]="linaro-base EAS vexpress"
+LINUX_mobile_oe[config]="linaro-base EAS distribution vexpress"
+LINUX_android[config]="linaro-base EAS android vexpress"
 LINUX_CONFIG_LIST=""
 
 BOOTMON_BUILD_ENABLED=1

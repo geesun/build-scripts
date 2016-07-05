@@ -74,15 +74,15 @@ LINUX_defconfig[defconfig]=defconfig
 declare -A LINUX_mobile_oe
 LINUX_mobile_oe[path]="linux"
 LINUX_mobile_oe[outpath]="linux"
-LINUX_mobile_oe[config]="linaro-base big-LITTLE-MP distribution vexpress64"
+LINUX_mobile_oe[config]="linaro-base EAS distribution vexpress64"
 declare -A LINUX_mobile_bb
 LINUX_mobile_bb[path]="linux"
 LINUX_mobile_bb[outpath]="linux"
-LINUX_mobile_bb[config]="linaro-base vexpress64 big-LITTLE-MP"
+LINUX_mobile_bb[config]="linaro-base vexpress64 EAS"
 declare -A LINUX_android
 LINUX_android[path]="linux"
 LINUX_android[outpath]="linux"
-LINUX_android[config]="linaro-base big-LITTLE-MP android vexpress64"
+LINUX_android[config]="linaro-base EAS android vexpress64"
 #Default linux configs per OS - These can be overridden.
 BUSYBOX_LINUX_CONFIG_LIST=mobile_bb
 OE_LINUX_CONFIG_LIST=mobile_oe
