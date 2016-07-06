@@ -178,7 +178,12 @@ parse_params() {
 				platform_loop="$platform_loop $platform_name"
 			fi
 		done
-		echo -e "${BOLD}Building for for all platforms: ${platform_loop}${NORMAL}"
+		if [ "$CMD" = "all" ] ; then
+			action=Building
+		else
+			action=Cleaning
+		fi
+		echo -e "${BOLD}$action for all platforms: ${platform_loop}${NORMAL}"
 		if [ "$(get_shell_type)" = "INTERACTIVE" ] ; then
 			sleep 5
 		fi
@@ -187,8 +192,14 @@ parse_params() {
 			if [ "$platform_entry" = "css-iot" ] ; then
 				continue
 			fi
-			$(get_root_script) -p $platform_entry all
+			$(get_root_script) -p $platform_entry $CMD
 		done
+		if [ "$CMD" = "clean" ] ; then
+			this_dir=$(dirname $(get_root_script))
+			entire_output=$(readlink -f ${this_dir}/../output)
+			echo -e "${GREEN}Finishing clean by removing $entire_output${NORMAL}"
+			rm -rf $entire_output
+		fi
 		exit 0
 	fi
 }
