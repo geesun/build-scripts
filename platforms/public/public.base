@@ -27,3 +27,5 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 source $DIR/platforms/common/common.base
+
+SCP_BUILD_MODE=release
