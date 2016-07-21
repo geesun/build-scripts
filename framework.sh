@@ -88,7 +88,7 @@ if [ -f $flavour_file ] ; then
 	source $flavour_file
 elif [ "$CMD" = "clean" ] || [ "$CMD" = "ignore" ] ; then
 	#We're cleaning so pick the first flavour otherwise we won't clean anything
-	flavour_file=$(find $platform_folder -type f | head -n 1)
+	flavour_file=$(find $platform_folder -mindepth 1 -maxdepth 1 -type f | head -n 1)
 	if [ ! -f $flavour_file ] ; then
 		echo -en "$BOLD${RED}Attempted to run 'clean' without specifying" >&2
 		echo -e " a flavour of platform." >&2
