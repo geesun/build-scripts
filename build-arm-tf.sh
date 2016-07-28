@@ -79,7 +79,12 @@ do_clean ()
 		for plat in $ARM_TF_PLATS; do
 			make PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED clean
 		done
-		make -C tools/fip_create clean
+		if [ -e tools/fip_create/Makefile ]; then
+			make -C tools/fip_create clean
+		fi
+		if [ -e tools/fiptool/Makefile ]; then
+			make -C tools/fiptool clean
+		fi
 		popd
 	fi
 }

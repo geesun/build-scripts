@@ -294,9 +294,11 @@ do_package()
 							${bl33_param_id} ${OUTDIR}/${!uboot_out}/uboot.bin
 					fi
 
-					${fip_tool} --dump  \
+					${fip_tool} \
 							${fip_param} \
 							${bl33_param_id} ${OUTDIR}/${!uboot_out}/uboot.bin \
+							${PLATDIR}/${!target_name}/fip-uboot.bin
+					${fip_tool} --dump  \
 							${PLATDIR}/${!target_name}/fip-uboot.bin
 
 					local outfile=${outdir}/fip.bin
@@ -313,9 +315,11 @@ do_package()
 							${bl33_param_id} ${OUTDIR}/${!uefi_out}/uefi.bin
 					fi
 
-					${fip_tool} --dump  \
+					${fip_tool} \
 						${fip_param} \
 						${bl33_param_id} ${OUTDIR}/${!uefi_out}/uefi.bin \
+						${PLATDIR}/${!target_name}/fip-uefi.bin
+					${fip_tool} --dump  \
 						${PLATDIR}/${!target_name}/fip-uefi.bin
 				fi
 
