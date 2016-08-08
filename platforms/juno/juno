@@ -33,7 +33,7 @@ ANDROID_LUNCH_TARGET_PREBUILT="juno-userdebug"
 ANDROID_LUNCH_TARGET_SRC="juno-userdebug"
 
 VARIANT_DESC="Juno kernel for BusyBox Software Stack"
-source $DIR/platforms/public/public.base
+source $DIR/platforms/common/common.base
 
 UBOOT_BOARDS="vexpress_aemv8a_juno"
 UBOOT_OUTPUT_DESTS[vexpress_aemv8a_juno]=juno
@@ -138,6 +138,7 @@ SCP_PLATFORMS="juno_SILICON"
 SCP_BYPASS_ROM_SUPPORT[juno]=true
 
 if [ "$SCP_BUILD_ENABLED" = "1" ] ; then
+    SCP_BUILD_MODE=release
     #Do bundle scp into the fip
     firmware_folder=$PLATDIR/juno/firmware/juno-oe-uefi
     TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${OUTDIR}/juno_SILICON/scp-rom-bypass.bin ${firmware_folder}/SOFTWARE/bl0.bin"

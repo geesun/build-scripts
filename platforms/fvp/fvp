@@ -33,7 +33,7 @@ ANDROID_LUNCH_TARGET_PREBUILT="fvp-userdebug"
 ANDROID_LUNCH_TARGET_SRC="fvp-userdebug"
 
 VARIANT_DESC="FVP kernel for BusyBox Software Stack"
-source $DIR/platforms/public/public.base
+source $DIR/platforms/common/common.base
 
 UBOOT_BOARDS="vexpress_aemv8a_dram"
 UBOOT_OUTPUT_DESTS[vexpress_aemv8a_dram]=fvp

@@ -63,11 +63,19 @@ set_formatting
 pushd $DIR/..
 TOP_DIR=`pwd`
 popd
-PLATDIR=${TOP_DIR}/output/$PLATFORM/output.$FLAVOUR
+declare -i num_flavours
+num_flavours=$(get_num_flavours $PLATFORM)
+first_flavour_file=$(get_flavour_files $PLATFORM | head -n1)
+first_flavour=$(basename $first_flavour_file)
+if [ $num_flavours -eq 1 ] && [ "$first_flavour" = "$PLATFORM" ] ; then
+	PLATDIR=${TOP_DIR}/output/$PLATFORM
+else
+	PLATDIR=${TOP_DIR}/output/$PLATFORM/$FLAVOUR
+fi
 OUTDIR=${PLATDIR}/components
 LINUX_OUT_DIR=out/$PLATFORM/$COMPONENT_FLAVOUR
 
-platform_folder=$(find $DIR/platforms -mindepth 1 -maxdepth 1 -type d -name $PLATFORM)
+platform_folder="$DIR/platforms/$PLATFORM"
 if [ -z "$platform_folder" ] ; then
 	echo -e "${BOLD}${RED}Could not find platform $PLATFORM.${NORMAL}"
 	exit 2
@@ -88,7 +96,7 @@ if [ -f $flavour_file ] ; then
 	source $flavour_file
 elif [ "$CMD" = "clean" ] || [ "$CMD" = "ignore" ] ; then
 	#We're cleaning so pick the first flavour otherwise we won't clean anything
-	flavour_file=$(find $platform_folder -mindepth 1 -maxdepth 1 -type f | head -n 1)
+	flavour_file=$(get_flavour_files $PLATFORM | head -n1)
 	if [ ! -f $flavour_file ] ; then
 		echo -en "$BOLD${RED}Attempted to run 'clean' without specifying" >&2
 		echo -e " a flavour of platform." >&2
@@ -128,6 +136,6 @@ case "$CMD" in
 	ignore) echo "Parsing variant"
 	;;
 
-	*) usage_exit 1
+	*) simple_usage_exit 1
 	;;
 esac

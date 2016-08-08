@@ -62,7 +62,16 @@ __do_single_cmd() {
 
 __do_build_all_loop() {
 	if [ -z "$FLAVOUR" ] ; then
-		FLAVOURS=$(ls $DIR/platforms/$PLATFORM | grep -v '.base$')
+		flavours=$(get_flavour_files $PLATFORM | tr '\n' ' ')
+		FLAVOURS=""
+		for flavour_file in $flavours ; do
+			flavour_name=$(basename $flavour_file)
+			if [ -z "$FLAVOURS" ] ; then
+				FLAVOURS="$flavour_name"
+			else
+				FLAVOURS="$FLAVOURS $flavour_name"
+			fi
+		done
 	else
 		FLAVOURS=$FLAVOUR
 	fi

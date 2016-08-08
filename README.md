@@ -83,7 +83,7 @@ build script from anywhere withing workspace (i.e. from the root or further in).
 ```
 #Set some variables used by commands
 BUILD_SCRIPT_DIR=$(pwd) # Assuming we're in the build-script directory
-PLATFORM=public
+PLATFORM=juno
 FLAVOUR=juno
 FILESYSTEM=busybox
 COMMAND=build #Can be build/clean/package
@@ -110,18 +110,22 @@ $BUILD_SCRIPT_DIR/build-linux.sh \
 The following examples assume that the present working directory is one folder
 up from this directory.
 
---------------------------------------------------------------------------------
-
-```
-./build-scripts/build-all.sh -p public -t juno
-```
- - The above builds for the juno flavour of the public platforms. All
- filesystems are also built. No packaging steps are done.
+If you are unsure what platforms, flavours or filesystems are available in this
+workspace, then just run `./build-scripts/build-all.sh -h`. This will show the
+available choices.
 
 --------------------------------------------------------------------------------
 
 ```
-./build-scripts/build-all.sh -p public -t juno package
+./build-scripts/build-all.sh -p juno -f all
+```
+ - The above builds for the juno platform. All filesystems are also built. No
+ packaging steps are done.
+
+--------------------------------------------------------------------------------
+
+```
+./build-scripts/build-all.sh -p juno -f all package
 ```
  - Packages juno binaries into the output directory. This *must* be run
 after the build for juno (previous example). For more reliable results, use the
@@ -130,26 +134,33 @@ following example for a more reliable way of building and packaging in one go.
 --------------------------------------------------------------------------------
 
 ```
-./build-scripts/build-all.sh -p public -t juno all
+#Set platform and flavour and filesystem
+#For single flavour platforms like Juno, flavour is set to platform.
+./build-scripts/build-all.sh -p $platform -f $filesystem -t $flavour all
+
+#For single flavour platform builds "-t" can be omitted.
+#For example for juno, packaging for OE:
+#./build-scripts/build-all.sh -p juno -f oe all
 ```
- - Cleans the source directories, then builds the juno flavour of the public
- platforms. Then packages up the output.
+ - Cleans the source directories, then builds the a particular flavour of the
+ given platforms. Then packages up the output.
 
 --------------------------------------------------------------------------------
 
 ```
-./build-scripts/build-all.sh -p public clean
+./build-scripts/build-all.sh -p all -t all -f all clean
 ```
 
- - Cleans the source directories for all components used by public platform.
+ - Cleans the source directories for all components for all components.
 
 --------------------------------------------------------------------------------
 
 ```
-./build-scripts/build-all.sh -p public all
+#Set 'platform' to an avaliable platform
+./build-scripts/build-all.sh -p $platform all
 ```
- - Cleans the source directories, then for each flavour of the public
- platforms, it will build source directories, and then package up the output.
+ - Cleans the source directories, then for each flavour of the given platform,
+ it will build source directories, and then package up the output.
 
 --------------------------------------------------------------------------------
 
@@ -210,5 +221,8 @@ Built binaries will be stored in a folder named output, in the same directory as
 the build-scripts folder. Under this output folder, a sub-directory will be
 named after platforms, and then platform flavour name will be one below that.
 
-Output for the juno flavour of the public platforms will be stored under
-`output/public/output.juno/`.
+This is not the case for platforms with only a single flavour, and they will be
+stored in a subfolder with the name of the platform under the output folder.
+
+Output for the juno flavour of the juno platform will be stored under
+`output/juno/`.

@@ -57,6 +57,92 @@ set_formatting() {
 	fi
 }
 
+get_platform_dirs() {
+	find $DIR/platforms/ -mindepth 1 -maxdepth 1 -type d \
+		| grep -v -e "common\$" -e "\/\."
+}
+
+get_num_platforms() {
+	get_platform_dirs | wc -l
+}
+
+#Requires PLATFORM as a parameter
+get_flavour_files() {
+	if [ "$1" == "all" ] ; then
+		return
+	fi
+	find $DIR/platforms/$1 -mindepth 1 -maxdepth 1 -type f \
+		| grep -v -e "$DIR/platforms/$1/\." -e "\.base"
+}
+
+#Requires PLATFORM as a parameter
+get_num_flavours() {
+	get_flavour_files $1 | wc -l
+}
+
+get_filesystem_files() {
+	find $DIR/filesystems -mindepth 1 -maxdepth 1 -type f \
+		| grep -v -e "^\."
+}
+
+get_num_filesystems() {
+	get_filesystem_files | wc -l
+}
+
+#If missing the platform, and there's only one platform, use that
+#If missing the platform, and there's many platforms, show a warning but then
+#continue to build everything
+set_default_platform() {
+	declare -i no_platforms
+	no_platforms=$(get_num_platforms)
+	if [ $no_platforms -eq 1 ] ; then
+		plat=$(get_platform_dirs)
+		PLATFORM=$(basename $plat)
+	fi
+	if [ -z "$PLATFORM" ] ; then
+		set_formatting
+		echo -e "${RED}Could not deduce which platform to build.${NORMAL}"
+		echo -e "${RED}Proceeding to build all available platforms.${NORMAL}"
+		if [ "$(get_shell_type)" = "INTERACTIVE" ] ; then
+			sleep 5
+		fi
+		PLATFORM="all"
+	fi
+}
+
+print_fs() {
+	echo -en "<fileystems>: $BOLD${BLUE}"
+	for fs_file in $(find $DIR/filesystems -mindepth 1 -maxdepth 1 -type f) ; do
+		echo -n "$(basename $fs_file)|"
+	done
+	echo -e "${BOLD}all$NORMAL"
+	echo -en "${BLUE}<filesystem>$NORMAL can be set to 'all' to build all "
+	echo -e "filesystems available."
+}
+
+#Print a simple usage case for the event when this is being used from a generated
+#release. However, it can appear with multiple platforms and will be more confusing.
+simple_usage_exit() {
+	set_formatting
+	local flavour_cmd_list="clean/build/package"
+	if [[ "$(get_root_script)" == *"build-all.sh" ]] ; then
+		flavour_cmd_list="$flavour_cmd_list/all"
+	fi
+	echo -e "${BOLD}Usage:"
+	if [[ "$(get_num_filesystems)" == "1" ]] ; then
+		local fs_arg=""
+	else
+		local fs_arg="${BLUE}-f <filesystem>${NORMAL}"
+	fi
+	echo -en "	$0 $fs_arg "
+	echo -e "${CYAN}$flavour_cmd_list${NORMAL}"
+	if [[ "$(get_num_filesystems)" != "1" ]] ; then
+		print_fs
+	fi
+	echo "For in depth help, please run: $0 -g"
+	exit $1
+}
+
 #Print usage and exit with given return code
 usage_exit ()
 {
@@ -64,34 +150,60 @@ usage_exit ()
 	#(but non in automated build systems as logging gets confusing)
 	set_formatting
 	local flavour_cmd_list="clean/build/package"
-	local no_flavour_cmd_list="clean"
 	if [[ "$(get_root_script)" == *"build-all.sh" ]] ; then
 		flavour_cmd_list="$flavour_cmd_list/all"
-		no_flavour_cmd_list="$no_flavour_cmd_list/all"
 	fi
 	echo -e "${BOLD}Usage: ${NORMAL}"
-	echo -en "	$0 ${RED}-p PLATFORM${NORMAL} ${GREEN}-t FLAVOUR${NORMAL} "
-	echo -e "${BLUE}[-f FILESYSTEM]${NORMAL} [-d] ${CYAN}[$flavour_cmd_list]${NORMAL}"
-	echo -en "	$0 ${RED}-p PLATFORM${NORMAL} "
-	echo -e "${BLUE}[-f FILESYSTEM]${NORMAL} [-d] ${CYAN}[$no_flavour_cmd_list]${NORMAL}"
+	declare -i num_plats
+	num_plats=$(get_num_platforms)
+	if [ $num_plats -eq 1 ] ; then
+		#If there's only one platform, then -p flag is optional
+		echo -en "	$0 ${RED}[-p <platform>]${NORMAL} ${GREEN}-t <flavour>${NORMAL} "
+	else
+		#If not just one platform, -p flag is required.
+		echo -en "	$0 ${RED}-p <platform>${NORMAL} ${GREEN}-t <flavour>${NORMAL} "
+	fi
+	echo -e "${BLUE}-f <filesystem>${NORMAL} ${CYAN}$flavour_cmd_list${NORMAL}"
 	echo -e "$extra_message"
-	echo "Valid platforms and flavours:"
-	for platform_dir in $(find $DIR/platforms/ -mindepth 1 -maxdepth 1 -type d) ; do
-		flavours=$(ls $platform_dir | grep -v '.base$'| tr '\n' ' ')
-		platform=$(basename $platform_dir)
-		if [ ! -z "$flavours" ] ; then
-			echo -e "Platform $BOLD$RED$platform$NORMAL has flavours $BOLD$GREEN$flavours$NORMAL"
+	plat_list=""
+	for plat in $(get_platform_dirs) ; do
+		if [ -z "$plat_list" ] ; then
+			plat_list="${RED}$(basename $plat)${NORMAL}"
+		else
+			plat_list="$plat_list|${RED}$(basename $plat)${NORMAL}"
 		fi
 	done
-	echo -e "If ${GREEN}FLAVOUR$NORMAL option is omitted, all flavours for that platform will be assumed."
-	echo -e "${GREEN}FLAVOUR$NORMAL must be specified for the ${CYAN}build/package$NORMAL options."
+	echo -e "<platform>: $plat_list|${RED}${BOLD}all${NORMAL}"
+	echo "Valid platforms and flavours:"
+	for platform_dir in $(get_platform_dirs) ; do
+		platform=$(basename $platform_dir)
+		flavours=$(get_flavour_files $platform)
+		flavour_names=""
+		for flavour in $flavours; do
+			flavour_names="$flavour_names $(basename $flavour)"
+		done
+		if [ ! -z "$flavours" ] ; then
+			declare -i num_flavs
+			num_flavs=$(get_num_flavours $platform)
+			first_flavour_file=$(get_flavour_files $platform | head -n1)
+			first_flavour=$(basename $first_flavour_file)
+			if [ $num_flavs -eq 1 ] && [ "$first_flavour" = "$platform" ]; then
+				#This means that for platforms that have one flavour, named the same,
+				#like juno, don't bother showing the flavour at all.
+				echo -e "Platform configure$RED$platform$NORMAL has no flavours."
+			else
+				echo -e "Platform $BOLD$RED$platform$NORMAL has flavours $BOLD$GREEN$flavour_names$NORMAL"
+			fi
+		fi
+	done
 	echo
-	echo -e "Valid fileystems: $BOLD${BLUE}$(ls $DIR/filesystems | tr '\n' ' ')$NORMAL"
-	echo -e "If ${BLUE}FILESYSTEM$NORMAL option is omitted, all filesystems will be assumed."
-	echo
-	echo "If the '-d' option is present, MPG and SCP will be built from source,"
-	echo "otherwise MPG and SCP artifacts will be used when building android"
-	echo "and SCP will also be built instead of using the prebuilt artifacts."
+	echo -en "Valid fileystems: $BOLD${BLUE}"
+	for fs_file in $(get_filesystem_files) ; do
+		echo -n "$(basename $fs_file) "
+	done
+	echo -e "$NORMAL"
+	echo -en "${BLUE}FILESYSTEM$NORMAL can be set to 'all' to build all "
+	echo -e "filesystems available."
 	echo
 	echo -e "${CYAN}Commands:${NORMAL}"
 	echo -e "	${CYAN}clean${NORMAL}	 Cleans any binaries produced during build command."
@@ -109,8 +221,8 @@ check_not_missing() {
 	local description=$1
 	local value=$2
 	if [ -z "$value" ] ; then
-		echo "$BOLD$RED$description is not set.$NORMAL" >&2
-		usage_exit 1
+		echo -e "$BOLD$RED$description is not set.$NORMAL" >&2
+		simple_usage_exit 1
 	fi
 }
 
@@ -120,7 +232,7 @@ parse_params() {
 	unset CMD
 
 	#Parse the named parameters
-	while getopts "p:f:ht:d" opt; do
+	while getopts "p:f:hgt:d" opt; do
 		case $opt in
 			p)
 				export PLATFORM="$OPTARG"
@@ -135,10 +247,13 @@ parse_params() {
 				source $PARSE_PARAMS_DIR/.debug
 				;;
 			h)
+				simple_usage_exit 0
+				;;
+			g)
 				usage_exit 0
 				;;
 			\?)
-				usage_exit 1
+				simple_usage_exit 1
 				;;
 		esac
 	done
@@ -147,30 +262,59 @@ parse_params() {
 	#So grab the parameters after the named param option index
 	export CMD=${@:$OPTIND:1}
 
-	loop=0
-	if [ -z "$FILESYSTEM_CONFIGURATION" ] || [ "$FILESYSTEM_CONFIGURATION" = "all" ] ; then
+	if [ -z "$CMD" ] ; then
+		set_formatting
+		echo -e "${RED}No command given.${NORMAL}"
+		simple_usage_exit 1
+	fi
+
+	if [ "$FILESYSTEM_CONFIGURATION" = "all" ] ; then
 		FILESYSTEM_CONFIGURATION='*'
 	fi
 
-	if [ "$FLAVOUR" = "all" ] ; then
+	if [ -z "$PLATFORM" ] ; then
+		set_default_platform
+	fi
+
+	if [ -z "$FLAVOUR" ] ; then
+		set_formatting
+		#If there's one flavour, use it
+		declare -i num_flavours
+		num_flavours=$(get_num_flavours $PLATFORM)
+		if [ $num_flavours -eq 1 ] ; then
+			flav_file=$(get_flavour_files $PLATFORM)
+			FLAVOUR=$(basename $flav_file)
+		else
+			echo -e "${RED}Could not deduce which flavour to build.${NORMAL}"
+			echo -e "${RED}Proceeding to build all available flavours${NORMAL}"
+		fi
+	fi
+
+	loop=0
+	if [ -z "$FILESYSTEM_CONFIGURATION" ] ; then
+		declare -i num_fs
+		num_fs=$(get_num_filesystems)
+		if [ $num_fs -eq 1 ] ; then
+			fs_file=$(get_filesystem_files)
+			FILESYSTEM_CONFIGURATION=$(basename $fs_file)
+		else
+			set_formatting
+			echo -e "${RED}Could not deduce which filesystem to build.${NORMAL}"
+			echo -e "${RED}Proceeding to build all available filesystems${NORMAL}"
+			FILESYSTEM_CONFIGURATION="*"
+		fi
+	fi
+
+	if [ -z "$FLAVOUR" ] || [ "$FLAVOUR" = "all" ] ; then
 		#Flavour looping is done elsewhere if FLAVOUR is not set.
 		unset FLAVOUR
 	fi
 
-	if [ -z "$FLAVOUR" ] ; then
-		if [ "$CMD" = "build" ] || [ "$CMD" = "package" ] ; then
-			set_formatting
-			echo -en "${RED}Command ${BOLD}$CMD${NORMAL}${RED} is unavailable if no "
-			echo -e "${BOLD}single flavour${NORMAL}${RED} is specified.${NORMAL}\n"
-			usage_exit 1
-		fi
-	fi
-
-	#If missing the platform, loop over the platforms
+	#If all platforms, loop over the platforms
 	if [ -z "$PLATFORM" ] || [ "$PLATFORM" = "all" ] ; then
 		set_formatting
 		platform_loop=""
-		for platform_dir in $(find $DIR/platforms/ -mindepth 1 -maxdepth 1 -type d) ; do
+		for platform_dir in $(get_platform_dirs) ; do
 			flavours=$(ls $platform_dir | grep -v '.base$'| tr '\n' ' ')
 			#Don't build platforms with no flavours
 			if [ ! -z "$flavours" ] ; then
