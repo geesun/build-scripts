@@ -33,8 +33,6 @@ if [ "$BUSYBOX_BUILD_ENABLED" != "1" ]; then
 	# If we're building "all", we don't want to disable this stuff.
 	LINUX_BUILD_ENABLED=0
 	UBOOT_BUILD_ENABLED=0
-	OPTEE_BUILD_ENABLED=0
-	TARGET_juno[optee]=0
 fi
 
 #Append TARGET_BINS_COPY_LIST_UEFI into TARGET_BINS_COPY_LIST
