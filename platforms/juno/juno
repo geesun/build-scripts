@@ -56,8 +56,8 @@ OPTEE_FLAVOUR="juno"
 ANDROID_BINS_VARIANTS="juno"
 
 #Requires a manifest change
-SCP_PREBUILT_ROMFW_BYPASS_juno_SILICON=${TOP_DIR}/recovery/SOFTWARE/bl0.bin
-SCP_PREBUILT_RAMFW_juno_SILICON=${TOP_DIR}/recovery/SOFTWARE/bl30.bin
+SCP_PREBUILT_ROMFW_BYPASS_juno_SILICON=${TOP_DIR}/recovery/SOFTWARE/scp_bl1.bin
+SCP_PREBUILT_RAMFW_juno_SILICON=${TOP_DIR}/recovery/SOFTWARE/scp_bl2.bin
 
 TARGET_BINS_PLATS="juno"
 declare -A TARGET_juno
@@ -118,7 +118,7 @@ firmware_folder=$PLATDIR/juno/firmware/juno-oe-uefi
 #First copy in Standard firmware
 TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${TOP_DIR}/recovery $firmware_folder"
 #Then paste our output over the top
-TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${TOP_DIR}/recovery/SOFTWARE/bl0.bin ${firmware_folder}/SOFTWARE/bl0.bin"
+TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${TOP_DIR}/recovery/SOFTWARE/scp_bl1.bin ${firmware_folder}/SOFTWARE/scp_bl1.bin"
 TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${OUTDIR}/juno/tf-bl1.bin ${firmware_folder}/SOFTWARE/bl1.bin"
 TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${PLATDIR}/juno/fip-uefi.bin ${firmware_folder}/SOFTWARE/fip.bin"
 TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${OUTDIR}/linux/*.dtb ${firmware_folder}/SOFTWARE/"
@@ -130,7 +130,7 @@ firmware_folder=$PLATDIR/juno/firmware/juno-oe-uboot
 #First copy in standard firmware
 TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${TOP_DIR}/recovery $firmware_folder"
 #Then paste our output over the top
-TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${TOP_DIR}/recovery/SOFTWARE/bl0.bin ${firmware_folder}/SOFTWARE/bl0.bin"
+TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${TOP_DIR}/recovery/SOFTWARE/scp_bl1.bin ${firmware_folder}/SOFTWARE/scp_bl1.bin"
 TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${OUTDIR}/juno/tf-bl1.bin ${firmware_folder}/SOFTWARE/bl1.bin"
 TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${PLATDIR}/juno/fip-uboot.bin ${firmware_folder}/SOFTWARE/fip.bin"
 TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${OUTDIR}/linux/*.dtb ${firmware_folder}/SOFTWARE/"
@@ -146,12 +146,12 @@ if [ "$SCP_BUILD_ENABLED" = "1" ] ; then
     SCP_BUILD_MODE=release
     #Do bundle scp into the fip
     firmware_folder=$PLATDIR/juno/firmware/juno-oe-uefi
-    TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${OUTDIR}/juno_SILICON/scp-rom-bypass.bin ${firmware_folder}/SOFTWARE/bl0.bin"
+    TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${OUTDIR}/juno_SILICON/scp-rom-bypass.bin ${firmware_folder}/SOFTWARE/scp_bl1.bin"
     firmware_folder=$PLATDIR/juno/firmware/juno-oe-uboot
-    TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${OUTDIR}/juno_SILICON/scp-rom-bypass.bin ${firmware_folder}/SOFTWARE/bl0.bin"
+    TARGET_BINS_COPY_LIST_OE[$[oe_copy_index++]]="${OUTDIR}/juno_SILICON/scp-rom-bypass.bin ${firmware_folder}/SOFTWARE/scp_bl1.bin"
 else
-    SCP_PREBUILT_ROMFW_BYPASS_juno_SILICON=${TOP_DIR}/recovery/SOFTWARE/bl0.bin
-    SCP_PREBUILT_RAMFW_juno_SILICON=${TOP_DIR}/recovery/SOFTWARE/bl30.bin
+    SCP_PREBUILT_ROMFW_BYPASS_juno_SILICON=${TOP_DIR}/recovery/SOFTWARE/scp_bl1.bin
+    SCP_PREBUILT_RAMFW_juno_SILICON=${TOP_DIR}/recovery/SOFTWARE/scp_bl2.bin
 fi
 
 FLAVOUR_BUILD_SCRIPTS="build-uboot.sh build-uefi.sh build-arm-tf.sh build-optee-os.sh build-target-bins.sh build-android.sh build-linux.sh build-scp.sh"
