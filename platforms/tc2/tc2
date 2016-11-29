@@ -89,7 +89,7 @@ TARGET_BINS_COPY_ENABLED=1
 #Busybox copies
 TC2_BB_BOOTMON_FOLDER=$PLATDIR/tc2-busybox/bootmon
 index=${#TARGET_BINS_COPY_LIST_BUSYBOX[@]}
-TARGET_BINS_COPY_LIST_BUSYBOX[$[index++]]="${OUTDIR}/linux/zImage.mobile_bb ${TC2_BB_BOOTMON_FOLDER}/zImage"
+TARGET_BINS_COPY_LIST_BUSYBOX[$[index++]]="${OUTDIR}/linux/zImage.mobile_bb ${TC2_BB_BOOTMON_FOLDER}/Image"
 TARGET_BINS_COPY_LIST_BUSYBOX[$[index++]]="${OUTDIR}/linux/vexpress-v2p-ca15_a7.dtb ${TC2_BB_BOOTMON_FOLDER}/tc2.dtb"
 TARGET_BINS_COPY_LIST_BUSYBOX[$[index++]]="${PLATDIR}/ramdisk-busybox.img ${TC2_BB_BOOTMON_FOLDER}/ramdisk.img"
 TARGET_BINS_COPY_LIST_BUSYBOX[$[index++]]="${TOP_DIR}/vexpress-firmware/SOFTWARE/bootkern.txt ${TC2_BB_BOOTMON_FOLDER}/bootscr.txt"
