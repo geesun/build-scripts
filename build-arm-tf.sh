@@ -34,6 +34,7 @@
 # VARIANT - build variant name
 # TOP_DIR - workspace root directory
 # CROSS_COMPILE - PATH to GCC including CROSS-COMPILE prefix
+# ARM_TF_ARCH - aarch64 or aarch32
 # ARM_TF_BUILD_ENABLED - Flag to enable building ARM Trusted Firmware
 # ARM_TF_PATH - sub-directory containing ARM Trusted Firmware code
 # ARM_TF_PLATS - List of platforms to be built (from available in arm-tf/plat)
@@ -61,7 +62,7 @@ do_build ()
 				#if optee enabled, set corresponding compiliation flags
 				atf_build_flags="${atf_build_flags} ARM_TSP_RAM_LOCATION=$OPTEE_RAM_LOCATION SPD=opteed"
 			fi
-			make -j $PARALLELISM PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED ${atf_build_flags} all
+			make -j $PARALLELISM PLAT=$plat ARCH=$ARM_TF_ARCH DEBUG=$ARM_TF_DEBUG_ENABLED ${atf_build_flags} all
 		done
 
 		# make tools

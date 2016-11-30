@@ -241,6 +241,9 @@ do_package()
 				local bl2_fip_param="${bl2_param_id} ${OUTDIR}/${!tf_out}/tf-bl2.bin"
 				local bl31_fip_param="${bl31_param_id} ${OUTDIR}/${!tf_out}/tf-bl31.bin"
 				local bl32_fip_param=
+				if [ "$ARM_TF_ARCH" == "aarch32" ]; then
+					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!tf_out}/tf-bl32.bin"
+				fi
 				local bl30_fip_param=
 				local bl30_tbbr_param=
 				local cert_tool_param=
@@ -257,7 +260,10 @@ do_package()
 					echo ${OUTDIR}/${!tf_out}/
 					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!tf_out}/${OPTEE_OS_BIN_NAME}"
 				fi
-				local fip_param="${bl2_fip_param} ${bl31_fip_param}  ${bl30_fip_param} ${bl32_fip_param} ${EXTRA_FIP_PARAM}"
+				local fip_param="${bl2_fip_param} ${bl30_fip_param} ${bl32_fip_param} ${EXTRA_FIP_PARAM}"
+				if [ "$ARM_TF_ARCH" == "aarch64" ]; then
+					fip_param="$fip_param ${bl31_fip_param}"
+				fi
 				echo "fip_param is $fip_param"
 
 				if [ "${!atf_tbbr_enabled}" == "1" ]; then
