@@ -50,6 +50,9 @@ do_build ()
 {
 	if [ "$BUSYBOX_BUILD_ENABLED" == "1" ]; then
 		export ARCH=$BUSYBOX_ARCH
+		if [ "$ARCH" == "arm" ]; then
+			CROSS_COMPILE=$CROSS_COMPILE_32
+		fi
 
 		pushd $TOP_DIR/$BUSYBOX_PATH
 		make defconfig
