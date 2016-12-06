@@ -28,6 +28,7 @@
 
 #Set the default toolchain
 export CROSS_COMPILE=${TOP_DIR}/tools/gcc/gcc-linaro-4.9-2015.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+export CROSS_COMPILE_64=$CROSS_COMPILE
 export CROSS_COMPILE_32=${TOP_DIR}/tools/gcc/gcc-linaro-4.9-2015.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
 
 #BUILD_SCRIPTS - A list of scripts to be run, relative to this repository
