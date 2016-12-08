@@ -54,8 +54,6 @@
 #
 # LINUX_IMAGE_TYPE - Image or zImage (Image is the default if not specified)
 
-LINUX_IMAGE_TYPE=${LINUX_IMAGE_TYPE:-Image}
-
 do_build ()
 {
 	if [ "$LINUX_BUILD_ENABLED" == "1" ]; then
