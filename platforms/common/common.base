@@ -140,7 +140,7 @@ TARGET_BINS_BUILD_ENABLED=1
 #       UEFI_PLAT_juno[binary]="BL33_AP_UEFI.fd"
 #   For meanings of options above, refer to build-uefi.sh
 #   Defaults are listed below.
-UEFI_BUILD_ENABLED=1
+UEFI_BUILD_ENABLED=${UEFI_BUILD_ENABLED:-1}
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uefi.sh "
 UEFI_PATH=uefi/edk2
 UEFI_BUILD_MODE=DEBUG
