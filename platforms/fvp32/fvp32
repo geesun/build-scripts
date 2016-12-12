@@ -31,7 +31,7 @@ LINUX_IMAGE_TYPE=zImage
 UEFI_BUILD_ENABLED=0
 
 # fvp32 is mostly fvp with some tweaks, so include it
-source ${DIR}/platforms/fvp/fvp
+source ${DIR}/platforms/common/common.fvp
 
 # over-ride some things from fvp that are specific to fvp32
 export CROSS_COMPILE=${CROSS_COMPILE_32}
