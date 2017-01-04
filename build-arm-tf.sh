@@ -60,7 +60,7 @@ do_build ()
 			fi
 			if [ "${!atf_optee_enabled}" == "1" ]; then
 				#if optee enabled, set corresponding compiliation flags
-				atf_build_flags="${atf_build_flags} ARM_TSP_RAM_LOCATION=$OPTEE_RAM_LOCATION SPD=opteed"
+				atf_build_flags="${atf_build_flags} ARM_TSP_RAM_LOCATION=$OPTEE_RAM_LOCATION"
 			fi
 			make -j $PARALLELISM PLAT=$plat ARCH=$ARM_TF_ARCH DEBUG=$ARM_TF_DEBUG_ENABLED ${atf_build_flags} all
 		done
