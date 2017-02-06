@@ -82,10 +82,10 @@ do_clean ()
 		export PLATFORM_FLAVOR=${!optee_plat_flavor}
 		export CFG_ARM64_core=$OPTEE_OS_AARCH64_CORE
 		pushd $TOP_DIR/$OPTEE_OS_PATH
-		make clean
+		make clean || true
 		popd
 		pushd $TOP_DIR/optee/optee_client
-		make clean
+		make clean || true
 		popd
 		rm -rf $TOP_DIR/$OPTEE_OS_PATH/out
 		PLATFORM=$SAVE_PLATFORM
