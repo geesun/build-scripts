@@ -76,6 +76,11 @@ do_clean ()
 	if [ "$OPTEE_BUILD_ENABLED" == "1" ]; then
 		SAVE_PLATFORM=$PLATFORM
 		unset PLATFORM
+		local optee_plat=OPTEE_PLATFORM
+		local optee_plat_flavor=OPTEE_FLAVOUR
+		export PLATFORM=${!optee_plat}
+		export PLATFORM_FLAVOR=${!optee_plat_flavor}
+		export CFG_ARM64_core=$OPTEE_OS_AARCH64_CORE
 		pushd $TOP_DIR/$OPTEE_OS_PATH
 		make clean
 		popd
