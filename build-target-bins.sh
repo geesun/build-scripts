@@ -241,7 +241,7 @@ do_package()
 				local bl2_fip_param="${bl2_param_id} ${OUTDIR}/${!tf_out}/tf-bl2.bin"
 				local bl31_fip_param="${bl31_param_id} ${OUTDIR}/${!tf_out}/tf-bl31.bin"
 				local bl32_fip_param=
-				if [ "$ARM_TF_ARCH" == "aarch32" ]; then
+				if [ "$ARM_TF_ARCH" == "aarch32" ] || [ "$ARM_TF_AARCH32_EL3_RUNTIME" == "1" ]; then
 					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!tf_out}/tf-bl32.bin"
 				fi
 				local bl30_fip_param=

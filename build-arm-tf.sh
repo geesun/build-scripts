@@ -62,7 +62,22 @@ do_build ()
 				#if optee enabled, set corresponding compiliation flags
 				atf_build_flags="${atf_build_flags} ARM_TSP_RAM_LOCATION=$OPTEE_RAM_LOCATION"
 			fi
-			make -j $PARALLELISM PLAT=$plat ARCH=$ARM_TF_ARCH DEBUG=$ARM_TF_DEBUG_ENABLED ${atf_build_flags} all
+			if [ "$ARM_TF_AARCH32_EL3_RUNTIME" == "1" ]; then
+				CROSS_COMPILE=$CROSS_COMPILE_32 \
+				make -j $PARALLELISM PLAT=$plat ARCH=aarch32 DEBUG=$ARM_TF_DEBUG_ENABLED $ARM_TF_BL32_FLAGS bl32
+				targets="bl1 bl2 bl31"
+			else
+				targets="all"
+			fi
+			# HACK: this is to deal with juno32 building ARM-TF BL1 and BL2 as Aarch64
+			#       but everything else as Aarch32
+			if [ "$ARM_TF_ARCH" == "aarch32" ]; then
+				TMP_CROSS_COMPILE=$CROSS_COMPILE_32
+			else
+				TMP_CROSS_COMPILE=$CROSS_COMPILE_64
+			fi
+			CROSS_COMPILE=$TMP_CROSS_COMPILE \
+			make -j $PARALLELISM PLAT=$plat ARCH=$ARM_TF_ARCH DEBUG=$ARM_TF_DEBUG_ENABLED ${atf_build_flags} ${targets}
 		done
 
 		# make tools
