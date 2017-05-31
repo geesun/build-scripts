@@ -55,9 +55,10 @@ do_build ()
 		fi
 
 		pushd $TOP_DIR/$BUSYBOX_PATH
-		make defconfig
-		sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=y/g' .config
-		make -j $PARALLELISM install
+		mkdir -p $BUSYBOX_OUT_DIR
+		make O=$BUSYBOX_OUT_DIR defconfig
+		sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=y/g' $BUSYBOX_OUT_DIR/.config
+		make O=$BUSYBOX_OUT_DIR -j $PARALLELISM install
 		# do some commands to build
 		popd
 	fi
@@ -69,7 +70,8 @@ do_clean ()
 		export ARCH=$BUSYBOX_ARCH
 
 		pushd $TOP_DIR/$BUSYBOX_PATH
-		make clean
+		mkdir -p $BUSYBOX_OUT_DIR
+		make O=$BUSYBOX_OUT_DIR clean
 		popd
 		pushd $TOP_DIR/$BUSYBOX_RAMDISK_PATH
 		rm -f ramdisk.img busybox
@@ -96,7 +98,7 @@ do_package ()
 			pushd ${PLATDIR}
 			for target in $TARGET_BINS_PLATS; do
 				local addr=TARGET_$target[ramdisk]
-				${UBOOT_MKIMG} -A $LINUX_ARCH -O linux -C none \
+				${UBOOT_MKIMG} -A $BUSYBOX_ARCH -O linux -C none \
 					-T ramdisk -n ramdisk \
 					-a ${!addr} -e ${!addr} \
 					-n "BusyBox ramdisk" \
