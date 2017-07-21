@@ -61,7 +61,7 @@ ARM_TF_ARCH=aarch64
 #       declare -A LINUX_foo
 #       LINUX_foo[path]="linux" - Path
 #       LINUX_foo[config]="" - List of configs to use.
-LINUX_CONFIG_LIST="defconfig"
+LINUX_CONFIG_LIST=""
 LINUX_CONFIG_DEFAULT=defconfig
 LINUX_PATH=linux
 LINUX_ARCH=arm64
