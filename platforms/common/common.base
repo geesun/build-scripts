@@ -85,7 +85,7 @@ LINUX_mobile_bb[config]="linaro-base linaro-base-arm64 $BL_SUPPORT vexpress64"
 declare -A LINUX_android
 LINUX_android[path]="linux"
 LINUX_android[outpath]="linux"
-LINUX_android[config]="linaro-base linaro-base-arm64 $BL_SUPPORT android vexpress64"
+LINUX_android[config]="linaro-base linaro-base-arm64 $BL_SUPPORT android vexpress64 mali"
 #Default linux configs per OS - These can be overridden.
 BUSYBOX_LINUX_CONFIG_LIST=mobile_bb
 OE_LINUX_CONFIG_LIST=mobile_oe
