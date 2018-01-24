@@ -261,8 +261,10 @@ do_package()
 					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!tf_out}/${OPTEE_OS_BIN_NAME}"
 				fi
 				local fip_param="${bl2_fip_param} ${bl30_fip_param} ${bl32_fip_param} ${EXTRA_FIP_PARAM}"
-				if [ "$ARM_TF_ARCH" == "aarch64" ]; then
+				if [ "$ARM_TF_ARCH" == "aarch64" ] && [ "$ARM_TF_AARCH32_EL3_RUNTIME" != "1" ]; then
 					fip_param="$fip_param ${bl31_fip_param}"
+				else
+					fip_param="$fip_param"
 				fi
 				echo "fip_param is $fip_param"
 
