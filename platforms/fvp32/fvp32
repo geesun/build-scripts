@@ -47,7 +47,7 @@ UBOOT_BOARDS="vexpress_aemv8a_aarch32"
 UBOOT_OUTPUT_DESTS[vexpress_aemv8a_aarch32]=fvp
 
 OPTEE_BUILD_ENABLED=0
-ARM_TF_BUILD_FLAGS="AARCH32_SP=sp_min"
+ARM_TF_BUILD_FLAGS="AARCH32_SP=sp_min AARCH32=1"
 ARM_TF_ARCH=aarch32
 ARM_TF_DEBUG_ENABLED=0
 TARGET_fvp[fdts]="fvp-base-aemv8a-aemv8a fvp-base-aemv8a-aemv8a-t1"
