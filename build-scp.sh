@@ -103,6 +103,7 @@ do_package ()
 				fi
 			popd
 		else
+
 			mkdir -p ${OUTDIR}/${plat}
 			local var=SCP_PREBUILT_RAMFW_${plat}
 			local fw=${!var}

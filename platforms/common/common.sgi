@@ -1,0 +1,101 @@
+# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# Neither the name of ARM nor the names of its contributors may be used
+# to endorse or promote products derived from this software without specific
+# prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+source $DIR/platforms/common/common.base
+
+LINUX_CONFIG_DEFAULT=enterprise
+declare -A LINUX_enterprise
+LINUX_enterprise[path]="linux"
+LINUX_enterprise[outpath]="linux"
+LINUX_enterprise[config]=
+LINUX_enterprise[defconfig]=defconfig
+
+LINUX_CONFIG_LIST=""
+BUSYBOX_LINUX_CONFIG_LIST="enterprise"
+OE_LINUX_CONFIG_LIST="enterprise"
+ANDROID_LINUX_CONFIG_LIST=""
+
+#UBoot is not supported
+UBOOT_BUILD_ENABLED=0
+
+#Grub Build options
+GRUB_BUILD_ENABLED=1
+GRUB_PATH=grub
+GRUB_BUILD_SCRIPT="build-grub.sh "
+GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/sgi575/grub_config/sgi575.cfg
+GRUB_FS_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/sgi575/grub_config/busybox.cfg
+GRUB_FS_VALIDATION_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/sgi575/grub_config/busybox-dhcp.cfg
+
+# Enable build for RAS solution
+RAS_BUILD_ENABLED=0
+
+# ARM_TF Flags
+ARM_TF_PLATS="sgi575"
+ARM_TF_DEBUG_ENABLED=1
+ARM_TF_PATH=arm-tf
+
+#tbbr defs
+ARM_TF_ROT_KEY=$TOP_DIR/$ARM_TF_PATH/plat/arm/board/common/rotpk/arm_rotprivk_rsa.pem
+ARM_TF_MBEDTLS_DIR=$TOP_DIR/mbedtls
+ARM_TF_TBBR_BUILD_FLAGS="TRUSTED_BOARD_BOOT=1 GENERATE_COT=1 CREATE_KEYS=1 ARM_ROTPK_LOCATION=devel_rsa ROT_KEY=${ARM_TF_ROT_KEY} MBEDTLS_DIR=${ARM_TF_MBEDTLS_DIR}"
+
+VALID_FILESYSTEMS="busybox oe"
+
+COMPONENT_FLAVOUR=css-enterprise
+
+#UEFI Options.
+UEFI_PLATFORMS="sgi575"
+declare -A UEFI_PLAT_sgi575
+UEFI_PLAT_sgi575[platname]="arm_sgi_platform"
+UEFI_PLAT_sgi575[output]=css-common
+UEFI_PLAT_sgi575[defines]="-D EDK2_PLAT=sgi575 -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
+UEFI_PLAT_sgi575[binary]="BL33_AP_UEFI.fd"
+#Standalone MM Build Options
+UEFI_SMM_BUILD_ENABLED=0
+ARM_TF_RAS_BUILD_FLAGS=""
+UEFI_PLAT_sgi575[smm_output]="StandaloneSmmPkg"
+
+#SCP options
+SCP_PLATFORMS="sgi575"
+SCP_PREBUILT_RAMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/scp/ramfw.bin
+SCP_PREBUILT_ROMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/scp/romfw.bin
+MCP_PREBUILT_RAMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/mcp/ramfw.bin
+MCP_PREBUILT_ROMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/mcp/romfw.bin
+SCP_BUILD_ENABLED=${SCP_BUILD_ENABLED:="0"}
+
+TARGET_BINS_PLATS="sgi575"
+declare -A TARGET_sgi575
+TARGET_sgi575[arm-tf]="sgi575"
+TARGET_sgi575[output]=enterprise
+TARGET_sgi575[uefi]="css-common"
+TARGET_sgi575[linux]="Image"
+TARGET_sgi575[ramdisk]=0x88000000
+TARGET_sgi575[tbbr]=1
+TARGET_sgi575[scp]="sgi575"
+SCP_BYPASS_ROM_SUPPORT[sgi575]=false
+BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-linux.sh build-devtrees.sh build-busybox.sh build-grub.sh build-scp.sh build-target-bins.sh "
