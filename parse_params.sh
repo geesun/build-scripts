@@ -158,10 +158,10 @@ usage_exit ()
 	num_plats=$(get_num_platforms)
 	if [ $num_plats -eq 1 ] ; then
 		#If there's only one platform, then -p flag is optional
-		echo -en "	$0 ${RED}[-p <platform>]${NORMAL} ${GREEN}-t <flavour>${NORMAL} "
+		echo -en "	$0 ${RED}[-p <platform>]${NORMAL} ${GREEN}-t <flavour>${NORMAL} ${YELLOW}-a <true/false>${NORMAL} "
 	else
 		#If not just one platform, -p flag is required.
-		echo -en "	$0 ${RED}-p <platform>${NORMAL} ${GREEN}-t <flavour>${NORMAL} "
+		echo -en "	$0 ${RED}-p <platform>${NORMAL} ${GREEN}-t <flavour>${NORMAL} ${YELLOW}-a <true/false>${NORMAL} "
 	fi
 	echo -e "${BLUE}-f <filesystem>${NORMAL} ${CYAN}$flavour_cmd_list${NORMAL}"
 	echo -e "$extra_message"
@@ -205,6 +205,11 @@ usage_exit ()
 	echo -en "${BLUE}FILESYSTEM$NORMAL can be set to 'all' to build all "
 	echo -e "filesystems available."
 	echo
+	echo -e "${YELLOW}-a option:${NORMAL}"
+	echo -e "	This option is used when using FVP_Base_AEMv8A-AEMv8A model that doesn't has PCI & SMMU IPs."
+	echo -e "	Pass -a true for FVP_Base_AEMv8A-AEMv8A model which disables PCI & SMMU nodes in device tree."
+	echo -e "	Can be ignored for FVP_Base_RevC-2xAEMv8A model."
+	echo
 	echo -e "${CYAN}Commands:${NORMAL}"
 	echo -e "	${CYAN}clean${NORMAL}	 Cleans any binaries produced during build command."
 	echo -e "	${CYAN}build${NORMAL}	 Build source."
@@ -232,7 +237,7 @@ parse_params() {
 	unset CMD
 
 	#Parse the named parameters
-	while getopts "p:f:hgt:d" opt; do
+	while getopts "p:f:a:hgt:d" opt; do
 		case $opt in
 			p)
 				export PLATFORM="$OPTARG"
@@ -242,6 +247,9 @@ parse_params() {
 				;;
 			t)
 				export FLAVOUR="$OPTARG"
+				;;
+			a)
+				export AEMV8A="$OPTARG"
 				;;
 			d)
 				source $PARSE_PARAMS_DIR/.debug
@@ -274,6 +282,26 @@ parse_params() {
 
 	if [ -z "$PLATFORM" ] ; then
 		set_default_platform
+	fi
+
+	CUR_DIR=`pwd`
+	DTS_FILE=$CUR_DIR/linux/arch/arm64/boot/dts/arm/fvp-base-aemv8a-aemv8a.dts
+	DTSI_FILE=$CUR_DIR/linux/arch/arm64/boot/dts/arm/fvp-base-aemv8a-aemv8a.dtsi
+	if [ -f "$DTS_FILE" ] ; then
+		CNT=$(grep "delete-node" $DTS_FILE | wc -l)
+		CNTI=$(grep "pci" $DTSI_FILE | wc -l)
+		if [ "$AEMV8A" = "true" ] ; then
+			if [ "$CNTI" != "0" ] && [ "$CNT" = "0" ] ; then
+				sed -i -e "\$a/delete-node/&{/pci@40000000};" $DTS_FILE
+				sed -i -e "\$a/delete-node/&{/smmu@2b400000};" $DTS_FILE
+			elif [ "$CNTI" = "0" ] && [ "$CNT" != "0" ] ; then
+				sed -i '/delete-node/d' $DTS_FILE
+			fi
+		else
+			if [ "$CNT" != "0" ] ; then
+				sed -i '/delete-node/d' $DTS_FILE
+			fi
+		fi
 	fi
 
 	if [ -z "$FLAVOUR" ] ; then
