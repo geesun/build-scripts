@@ -205,28 +205,15 @@ do_package()
 
 		if [ "$ARM_TF_PATH" != "" ]; then
 			# Now do the platform stuff...
-			local fip_tool=$TOP_DIR/$ARM_TF_PATH/tools/fip_create/fip_create
+			local fip_tool=$TOP_DIR/$ARM_TF_PATH/tools/fiptool/fiptool
 
-			# From LT release 16.01 onwards, fip tool param identifiers have changed
-			# To maintain backward compatibility within build script, dynamically
-			# select identifiers
+			echo "Using TBBR spec terminology for image name identifiers"
+			local bl2_param_id="--tb-fw"
+			local bl30_param_id="--scp-fw"
+			local bl31_param_id="--soc-fw"
+			local bl32_param_id="--tos-fw"
+			local bl33_param_id="--nt-fw"
 
-			if(${fip_tool} --help | grep "\-\-scp-fwu-cfg")
-			then
-				echo "Using TBBR spec terminology for image name identifiers"
-				local bl2_param_id="--tb-fw"
-				local bl30_param_id="--scp-fw"
-				local bl31_param_id="--soc-fw"
-				local bl32_param_id="--tos-fw"
-				local bl33_param_id="--nt-fw"
-			else
-				echo "Using legacy terminology for image name identifiers"
-				local bl2_param_id="--bl2"
-				local bl30_param_id="--bl30"
-				local bl31_param_id="--bl31"
-				local bl32_param_id="--bl32"
-				local bl33_param_id="--bl33"
-			fi
 			for target in $TARGET_BINS_PLATS; do
 				local tf_out=TARGET_$target[arm-tf]
 				local scp_out=TARGET_$target[scp]
@@ -327,11 +314,11 @@ do_package()
 							${bl33_param_id} ${OUTDIR}/${!uefi_out}/uefi.bin
 					fi
 
-					${fip_tool} \
+					${fip_tool} update \
 						${fip_param} \
 						${bl33_param_id} ${OUTDIR}/${!uefi_out}/uefi.bin \
 						${PLATDIR}/${!target_name}/fip-uefi.bin
-					${fip_tool} --dump  \
+					${fip_tool} info  \
 						${PLATDIR}/${!target_name}/fip-uefi.bin
 				fi
 
