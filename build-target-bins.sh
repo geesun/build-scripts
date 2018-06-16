@@ -213,6 +213,8 @@ do_package()
 			local bl31_param_id="--soc-fw"
 			local bl32_param_id="--tos-fw"
 			local bl33_param_id="--nt-fw"
+			local fw_config_param_id="--tb-fw-config"
+			local hw_config_param_id="--hw-config"
 
 			for target in $TARGET_BINS_PLATS; do
 				local tf_out=TARGET_$target[arm-tf]
@@ -242,12 +244,20 @@ do_package()
 					bl30_fip_param="${bl30_param_id} ${OUTDIR}/${!scp_out}/scp-ram.bin"
 				fi
 
+				if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb" ]; then
+					local fw_config_fip_param="${fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb"
+					local hw_config_fip_param="${hw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}.dtb"
+				else
+					local fw_config_fip_param=""
+					local hw_config_fip_param=""
+				fi
+
 				#only if a TEE implementation is available and built
 				if [ "${!optee_enabled}" == "1" ]; then
 					echo ${OUTDIR}/${!tf_out}/
 					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!tf_out}/${OPTEE_OS_BIN_NAME}"
 				fi
-				local fip_param="${bl2_fip_param} ${bl30_fip_param} ${bl32_fip_param} ${EXTRA_FIP_PARAM}"
+				local fip_param="${bl2_fip_param} ${bl30_fip_param} ${bl32_fip_param} ${EXTRA_FIP_PARAM} ${hw_config_fip_param} ${fw_config_fip_param}"
 				if [ "$ARM_TF_ARCH" == "aarch64" ] && [ "$ARM_TF_AARCH32_EL3_RUNTIME" != "1" ]; then
 					fip_param="$fip_param ${bl31_fip_param}"
 				else
