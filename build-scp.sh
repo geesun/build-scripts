@@ -35,35 +35,36 @@
 # TOP_DIR - workspace root directory
 # SCP_BUILD_ENABLED - Flag to enable building SCP
 # SCP_PATH - sub-directory containing SCP code
-# SCP_ARM_COMPILER_PATH - PATH to ARMCC compiler binaries, not needed if
-#			SCP_GCC_COMPILER_PREFIX is used.
-# SCP_GCC_COMPILER_PREFIX - Prefix for gcc binaries
 # SCP_PLATFORMS - List of images to build in format <PLATFORM>-<PLAT>
 # SCP_BUILD_MODE - release or debug
 # SCP_BYPASS_ROM_SUPPORT - Mapping of platforms that require bypass ROM support
 
+check_cmsis_source ()
+{
+	# Check whether the cmsis submodule has been fetched, if not
+	# fetch it
+	if [[ -d "$TOP_DIR/$SCP_PATH" ]]; then
+		pushd $TOP_DIR/$SCP_PATH
+		echo "Fetching cmsis submodule for SCP build ... "
+		git submodule update --init
+		popd
+	fi
+}
+
 do_build ()
 {
 	if [ "$SCP_BUILD_ENABLED" == "1" ]; then
+
+		check_cmsis_source
+
 		pushd $TOP_DIR/$SCP_PATH
 		PATH=$SCP_ARM_COMPILER_PATH:$PATH
 		for item in $SCP_PLATFORMS; do
-			p1=${item%%_*}
-			p2=${item#*_}
-			local outdir=$TOP_DIR/$SCP_PATH/output/$item
+			local outdir=$TOP_DIR/$SCP_PATH/output
 			mkdir -p ${outdir}
 
-			local COMPILER_OPTIONS=""
-			if [ ! -z "$SCP_GCC_COMPILER_PREFIX" ] ; then
-				COMPILER_OPTIONS="TOOLCHAIN=GCC GCC32_TOOLCHAIN=$SCP_GCC_COMPILER_PREFIX"
-			fi
-
-			make -j $PARALLELISM PLATFORM=$p1 PLAT=$p2 MODE=$SCP_BUILD_MODE ${COMPILER_OPTIONS}
-
-			if [ "${SCP_BYPASS_ROM_SUPPORT[$p1]}" = true ]; then
-				make -j $PARALLELISM PLATFORM=$p1 PLAT=$p2 MODE=$SCP_BUILD_MODE ${COMPILER_OPTIONS} scp-bypassrom
-			fi
-			cp -r build/artefacts/* ${outdir}/
+			CROSS_COMPILE=${SCP_COMPILER_PATH}/arm-none-eabi- make PRODUCT=$item MODE=$SCP_BUILD_MODE
+			cp -r build/product/$item/* ${outdir}/
 		done
 		popd
 	fi
@@ -74,10 +75,10 @@ do_clean ()
 	if [ "$SCP_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$SCP_PATH
 		for item in $SCP_PLATFORMS; do
-			p1=${item%%_*}
-			p2=${item#*_}
 			local outdir=$TOP_DIR/$SCP_PATH/output/$item
-			make PLATFORM=$p1 clean
+
+			make PLATFORM=$item clean
+
 			rm -rf ${outdir}
 		done
 		popd
@@ -89,16 +90,16 @@ do_package ()
 	for plat in $SCP_PLATFORMS; do
 		if [ "$SCP_BUILD_ENABLED" == "1" ]; then
 			pushd $TOP_DIR
-				p1=${plat%%_*}
 				mkdir -p ${OUTDIR}/${plat}
-				cp ./${SCP_PATH}/output/${plat}/scp/ramfw.bin ${OUTDIR}/${plat}/scp-ram.bin
-				cp ./${SCP_PATH}/output/${plat}/scp/romfw.bin ${OUTDIR}/${plat}/scp-rom.bin
+				cp ./${SCP_PATH}/output/scp_ramfw/${SCP_BUILD_MODE}/bin/firmware.bin ${OUTDIR}/${plat}/scp-ram.bin
+				cp ./${SCP_PATH}/output/scp_romfw/${SCP_BUILD_MODE}/bin/firmware.bin ${OUTDIR}/${plat}/scp-rom.bin
+
 				if [ -d ${TOP_DIR}/${SCP_PATH}/output/${plat}/mcp ]; then
 					cp ./${SCP_PATH}/output/${plat}/mcp/ramfw.bin ${OUTDIR}/${plat}/mcp-ram.bin
 					cp ./${SCP_PATH}/output/${plat}/mcp/romfw.bin ${OUTDIR}/${plat}/mcp-rom.bin
 				fi
 
-				if [ "${SCP_BYPASS_ROM_SUPPORT[$p1]}" = true ]; then
+				if [[ "${SCP_BYPASS_ROM_SUPPORT[$plat]}" = true ]]; then
 					cp ./${SCP_PATH}/output/${plat}/scp/romfw_bypass.bin ${OUTDIR}/${plat}/scp-rom-bypass.bin
 				fi
 			popd
@@ -120,12 +121,12 @@ do_package ()
 			if [ -e "$fw" ]; then
 				cp ${fw} ${OUTDIR}/${plat}/scp-rom-bypass.bin
 			fi
+
 			#MCP
-			set -x
 			local mcp_var=MCP_PREBUILT_RAMFW_${plat}
-			local mcp_fw=${!mcp_var}
+			mcp_fw=${!mcp_var}
 			if [ -e "$mcp_fw" ]; then
-				cp $mcp_fw ${OUTDIR}/${plat}/mcp-ram.bin
+				cp ${mcp_fw} ${OUTDIR}/${plat}/mcp-ram.bin
 			fi
 			mcp_var=MCP_PREBUILT_ROMFW_${plat}
 			mcp_fw=${!mcp_var}
