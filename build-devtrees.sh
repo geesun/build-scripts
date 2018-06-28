@@ -92,6 +92,7 @@ do_package ()
 						if [ -f ${item}.dts ]; then
 							echo ${item}
 							cp $item.dtb ${OUTDIR}/$LINUX_PATH/.
+							cp $item.dtb ${OUTDIR}/$PLATFORM/.
 						else
 							echo "skipping linux ${item}.dts file"
 						fi
