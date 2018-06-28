@@ -99,7 +99,7 @@ do_package ()
 		export PLATFORM_FLAVOR=${!optee_plat_flavor}
 		pushd $TOP_DIR/$OPTEE_OS_PATH
 		mkdir -p ${OUTDIR}/$OPTEE_FLAVOUR
-		cp out/arm-plat-${PLATFORM_FLAVOR}/core/${OPTEE_OS_BIN_NAME}  ${OUTDIR}/$OPTEE_FLAVOUR/${OPTEE_OS_BIN_NAME}
+		cp out/arm-plat-${PLATFORM_FLAVOR}/core/${OPTEE_OS_BIN_NAME}  ${OUTDIR}/$PLATFORM/${OPTEE_OS_BIN_NAME}
 		popd
 
 		# optee client is independent of platform config,
