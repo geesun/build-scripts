@@ -71,7 +71,7 @@ COMPONENT_FLAVOUR=css-enterprise
 #UEFI Options.
 UEFI_PLATFORMS="sgi575"
 declare -A UEFI_PLAT_sgi575
-UEFI_PLAT_sgi575[platname]="arm_sgi_platform"
+UEFI_PLAT_sgi575[platname]="ArmSgi"
 UEFI_PLAT_sgi575[output]=css-common
 UEFI_PLAT_sgi575[defines]="-D EDK2_PLAT=sgi575 -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
 UEFI_PLAT_sgi575[binary]="BL33_AP_UEFI.fd"
