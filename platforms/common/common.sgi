@@ -84,7 +84,6 @@ UEFI_PLAT_sgi575[smm_output]="StandaloneSmmPkg"
 SCP_PLATFORMS="sgi575"
 SCP_PREBUILT_RAMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/scp/ramfw.bin
 SCP_PREBUILT_ROMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/scp/romfw.bin
-MCP_PREBUILT_RAMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/mcp/ramfw.bin
 MCP_PREBUILT_ROMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/mcp/romfw.bin
 SCP_BUILD_ENABLED=${SCP_BUILD_ENABLED:="0"}
 
