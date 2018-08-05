@@ -93,6 +93,7 @@ do_package ()
 				mkdir -p ${OUTDIR}/${plat}
 				cp ./${SCP_PATH}/output/scp_ramfw/${SCP_BUILD_MODE}/bin/firmware.bin ${OUTDIR}/${plat}/scp-ram.bin
 				cp ./${SCP_PATH}/output/scp_romfw/${SCP_BUILD_MODE}/bin/firmware.bin ${OUTDIR}/${plat}/scp-rom.bin
+				cp ./${SCP_PATH}/output/mcp_romfw/${SCP_BUILD_MODE}/bin/firmware.bin ${OUTDIR}/${plat}/mcp-rom.bin
 
 				if [ -d ${TOP_DIR}/${SCP_PATH}/output/${plat}/mcp ]; then
 					cp ./${SCP_PATH}/output/${plat}/mcp/ramfw.bin ${OUTDIR}/${plat}/mcp-ram.bin
