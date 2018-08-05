@@ -81,11 +81,11 @@ ARM_TF_RAS_BUILD_FLAGS=""
 UEFI_PLAT_sgi575[smm_output]="StandaloneSmmPkg"
 
 #SCP options
+SCP_BUILD_ENABLED=1
+SCP_PATH=scp
 SCP_PLATFORMS="sgi575"
-SCP_PREBUILT_RAMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/scp/ramfw.bin
-SCP_PREBUILT_ROMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/scp/romfw.bin
-MCP_PREBUILT_ROMFW_sgi575=${TOP_DIR}/scp-bins/sgi_575/mcp/romfw.bin
-SCP_BUILD_ENABLED=${SCP_BUILD_ENABLED:="0"}
+SCP_BUILD_MODE=release
+SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-none-eabi-5_4-2016q3/bin
 
 TARGET_BINS_PLATS="sgi575"
 declare -A TARGET_sgi575
