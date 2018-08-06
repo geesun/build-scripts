@@ -92,15 +92,16 @@ modify_bl_config() {
     fi
 }
 
-
-# do nothing if the user has already defined it to be empty
-# but do the replacement if it is not.
-if [ -z ${BL_SUPPORT+x} ] ; then
-    modify_bl_config
-else
-    if [ -n "${BL_SUPPORT}" ] ; then
-        modify_bl_config
-    else
-        echo "BL_SUPPORT was defined to be empty. Leaving it alone."
-    fi
+if [ "$ENABLE_BL_CONFIG" == "1" ]; then
+	# do nothing if the user has already defined it to be empty
+	# but do the replacement if it is not.
+	if [ -z ${BL_SUPPORT+x} ] ; then
+	    modify_bl_config
+	else
+	    if [ -n "${BL_SUPPORT}" ] ; then
+	        modify_bl_config
+	    else
+		echo "BL_SUPPORT was defined to be empty. Leaving it alone."
+	    fi
+	fi
 fi

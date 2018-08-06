@@ -34,6 +34,8 @@ ANDROID_LUNCH_TARGET_SRC="vexpress-userdebug"
 VARIANT_DESC="TC2 kernel for BusyBox Software Stack"
 source $DIR/platforms/common/common.base
 
+ENABLE_BL_CONFIG=1
+
 export CROSS_COMPILE=${CROSS_COMPILE_32}
 
 LINUX_IMAGE_TYPE=zImage

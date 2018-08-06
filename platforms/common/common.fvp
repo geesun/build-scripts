@@ -32,6 +32,8 @@ ANDROID_SOURCE_VARIANT=$ANDROID_BINS_VARIANTS_PLAT
 ANDROID_LUNCH_TARGET_PREBUILT="fvp-userdebug"
 ANDROID_LUNCH_TARGET_SRC="fvp-userdebug"
 
+ENABLE_BL_CONFIG=1
+
 VARIANT_DESC="FVP kernel for BusyBox Software Stack"
 source $DIR/platforms/common/common.base
 

@@ -76,6 +76,7 @@ LINUX_defconfig[defconfig]=defconfig
 declare -A LINUX_mobile_oe
 LINUX_mobile_oe[path]="linux"
 LINUX_mobile_oe[outpath]="linux"
+ENABLE_BL_CONFIG=0
 source $DIR/big-LITTLE-conf.sh
 LINUX_mobile_oe[config]="linaro-base linaro-base-arm64 $BL_SUPPORT distribution vexpress64"
 declare -A LINUX_mobile_bb
