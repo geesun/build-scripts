@@ -35,6 +35,7 @@ ANDROID_LUNCH_TARGET_SRC="juno-userdebug"
 VARIANT_DESC="Juno kernel for BusyBox Software Stack"
 source $DIR/platforms/common/common.base
 
+UBOOT_BUILD_ENABLED=1
 UBOOT_BOARDS="vexpress_aemv8a_juno"
 UBOOT_OUTPUT_DESTS[vexpress_aemv8a_juno]=juno
 

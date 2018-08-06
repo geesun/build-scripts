@@ -99,7 +99,7 @@ ANDROID_LINUX_CONFIG_LIST=android
 #   Then for each of the UBOOT_BOARDS values, set the name of the output folder
 #   that artifacts should be copied into:
 #       UBOOT_OUTPUT_DESTS[vexpress_aemv8a_juno]=juno
-UBOOT_BUILD_ENABLED=1
+UBOOT_BUILD_ENABLED=0
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uboot.sh "
 UBOOT_PATH=u-boot
 UBOOT_ARCH=aarch64
