@@ -34,4 +34,5 @@ TBBR_juno[tbbr]=1
 TARGET_juno[tbbr]=1
 TARGET_juno[optee]=1
 
+ARM_TF_DEBUG_ENABLED=0
 ARM_TF_BUILD_FLAGS="CSS_USE_SCMI_SDS_DRIVER=1 SPD=opteed"
