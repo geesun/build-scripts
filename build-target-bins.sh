@@ -253,7 +253,7 @@ do_package()
 				#Skip hw-configuration for fvp.
 				#ToDo: This should be ideally be handled using additional flags for hardware
 				# config fdts from the platform config files.
-				if [[ "$PLATFORM" != "fvp" ]]; then
+				if [ "$PLATFORM" != "fvp" ] && [ "$PLATFORM" != "fvp32" ]; then
 					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb" ]; then
 						tb_fw_config_fip_param="${tb_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb"
 					fi
