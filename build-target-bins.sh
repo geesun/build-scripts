@@ -250,17 +250,25 @@ do_package()
 					bl30_fip_param="${bl30_param_id} ${OUTDIR}/${!scp_out}/scp-ram.bin"
 				fi
 
-				if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb" ]; then
-					tb_fw_config_fip_param="${tb_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb"
-				fi
-				if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_nt_fw_config.dtb" ]; then
-					nt_fw_config_fip_param="${nt_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_nt_fw_config.dtb"
-				fi
-				if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_soc_fw_config.dtb" ]; then
-					soc_fw_config_fip_param="${soc_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_soc_fw_config.dtb"
-				fi
-				if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}.dtb" ]; then
-					hw_config_fip_param="${hw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}.dtb"
+				#Skip hw-configuration for fvp.
+				#ToDo: This should be ideally be handled using additional flags for hardware
+				# config fdts from the platform config files.
+				if [[ "$PLATFORM" != "fvp" ]]; then
+					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb" ]; then
+						tb_fw_config_fip_param="${tb_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb"
+					fi
+					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_nt_fw_config.dtb" ]; then
+						nt_fw_config_fip_param="${nt_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_nt_fw_config.dtb"
+					fi
+					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_soc_fw_config.dtb" ]; then
+						soc_fw_config_fip_param="${soc_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_soc_fw_config.dtb"
+					fi
+					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}.dtb" ]; then
+						hw_config_fip_param="${hw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}.dtb"
+					fi
+					if [ -f "${OUTDIR}/${!tf_out}/fvp-base-gicv3-psci.dtb" ]; then
+	                                       hw_config_fip_param="${hw_config_param_id} ${OUTDIR}/${!tf_out}/fvp-base-gicv3-psci.dtb"
+					fi
 				fi
 
 				#only if a TEE implementation is available and built
