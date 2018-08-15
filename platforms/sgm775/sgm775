@@ -51,6 +51,13 @@ TARGET_sgm775[scp]="sgm775"
 
 COMPONENT_FLAVOUR=css-mobile
 
-LINUX_android_64[config]="linaro-base android mali-v0 vexpress64 EAS"
 LINUX_mobile_bb_64[config]="linaro-base vexpress64"
 
+ANDROID_BINS_VARIANTS="sgm775"
+
+declare -A LINUX_android_64
+LINUX_android_64[path]="linux"
+LINUX_android_64[outpath]="linux"
+LINUX_android_64[config]="linaro-base mali-v0 android vexpress64 EAS"
+
+ANDROID_LINUX_CONFIG_LIST=android_64

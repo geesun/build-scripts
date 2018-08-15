@@ -33,7 +33,6 @@ set -e
 MAKE_EXT4FS=${MAKE_EXT4FS:-make_ext4fs}
 
 IMG=${IMG:-android.img}
-IMAGE_LEN=${IMAGE_LEN:-2048}
 
 size_in_mb() {
 	local size_in_bytes
@@ -49,15 +48,10 @@ USERDATA_SIZE=$(size_in_mb ${USERDATA_IMG})
 
 CACHE_IMG=${CACHE_IMG:-cache.img}
 CACHE_DIR=cache
-CACHE_SIZE=$((IMAGE_LEN - SYSTEM_SIZE - USERDATA_SIZE - 4))
-CACHE_MIN_SIZE=128
+CACHE_SIZE=596
 CACHE_LABEL=cache
 
-# sanity size check
-if [[ $CACHE_SIZE -le $CACHE_MIN_SIZE ]]; then
-	echo "You can't fit everything into a ${IMAGE_LEN}MB image whilst having a ${CACHE_MIN_SIZE}M cache."
-	exit 1
-fi
+IMAGE_LEN=$((SYSTEM_SIZE + CACHE_SIZE + USERDATA_SIZE + 4))
 
 # measured in MBytes
 PART1_START=1
@@ -87,7 +81,7 @@ $PARTED $IMG unit s mkpart p fat32 $((PART1_START * SEC_PER_MB)) $((PART1_END * 
 $PARTED $IMG unit s mkpart p ext4 $((PART2_START * SEC_PER_MB)) $((PART2_END * SEC_PER_MB - 1))
 $PARTED $IMG unit s mkpart p ext4 $((PART3_START * SEC_PER_MB)) $((PART3_END * SEC_PER_MB - 1))
 $PARTED $IMG unit s mkpart e $((PART4_START * SEC_PER_MB)) $((PART4_END * SEC_PER_MB - 1))
-$PARTED $IMG unit s mkpart l ext4 $((PART4_START * SEC_PER_MB + 1)) $((PART4_END * SEC_PER_MB - 1))
+$PARTED $IMG unit s mkpart l ext4 $((PART4_START * SEC_PER_MB + 8)) $((PART4_END * SEC_PER_MB - 1))
 
 # Create an ext4 partition for the cache partition
 mkdir -p $CACHE_DIR
@@ -96,4 +90,4 @@ $MAKE_EXT4FS -l $CACHE_LEN -L $CACHE_LABEL $CACHE_IMG $CACHE_DIR
 # Assemble all the images into one final image
 dd if=$SYSTEM_IMG of=$IMG bs=1M seek=${PART2_START} conv=notrunc
 dd if=$CACHE_IMG of=$IMG bs=1M seek=${PART3_START} conv=notrunc
-dd if=$USERDATA_IMG of=$IMG seek=$((PART4_START * SEC_PER_MB + 1)) conv=notrunc
+dd if=$USERDATA_IMG of=$IMG seek=$((PART4_START * SEC_PER_MB + 8)) conv=notrunc

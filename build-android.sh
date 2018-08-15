@@ -42,10 +42,11 @@
 # LINUX_ARCH - the arch
 # UBOOT_BUILD_ENABLED - flag to indicate the need for uimages.
 # ANDROID_BINS_VARIANTS - list of binary distros
-# ANDROID_SOURCE_VARIANT - the output name for the build
 # TARGET_{plat} - array of platform parameters, indexed by
 # 	ramdisk - the address of the ramdisk per platform
-
+# OPTEE_OS_PATH - path to optee os
+# OPTEE_PLATFORM - optee build target
+#
 
 do_build ()
 {
@@ -54,9 +55,15 @@ do_build ()
 			pushd $TOP_DIR/$ANDROID_SOURCE_PATH
 
 			echo "Android source build starting."
+			# android build system allows to specify external (to android) optee_os build path.
+			# This is done to ensure that TAs built from android build system are linked/compiled
+			#  against right secure world libraries and headers.
+			# Also, the path has to be relative to android top dir.
+			export TA_DEV_KIT_DIR=../$OPTEE_OS_PATH/out/arm-plat-$OPTEE_PLATFORM/export-ta_arm64
+			echo "export TA_DEV_KIT_DIR=../$OPTEE_OS_PATH/out/arm-plat-$OPTEE_PLATFORM/export-ta_arm64"
 			source build/envsetup.sh
 			lunch ${ANDROID_LUNCH_TARGET}
-			make -j $PARALLELISM TARGET_NO_KERNEL=true \
+			make -j $PARALLELISM USE_NINJA=false TARGET_NO_KERNEL=true \
 				BUILD_KERNEL_MODULES=false \
 				systemimage userdataimage ramdisk
 
@@ -104,48 +111,40 @@ do_package ()
 			pushd ${product_out}
 			# Create an image file
 			MAKE_EXT4FS=${make_ext4fs} \
-				IMG=${PLATDIR}/${ANDROID_SOURCE_VARIANT}-android.img \
+				IMG=${PLATDIR}/${ANDROID_BINS_VARIANTS}-android.img \
 				$TOP_DIR/build-scripts/android-image.sh
 
 			# Copy the ramdisk
 			cp ${product_out}/ramdisk.img \
-				${PLATDIR}/${ANDROID_SOURCE_VARIANT}-ramdisk-android.img
-			ANDROID_BINS_VARIANTS=${ANDROID_SOURCE_VARIANT}
+				${PLATDIR}/${ANDROID_BINS_VARIANTS}-ramdisk-android.img
 			popd
 		else
-			pushd ${TOP_DIR}/${ANDROID_BINARIES_PATH}
+			pushd ${TOP_DIR}/${ANDROID_BINARIES_PATH}/${PLATFORM}
 			echo "Packaging Android binary build..."
-
-			for item in $ANDROID_BINS_VARIANTS; do
-				pushd $item
-				# Create an image file
-				if [ -e "system.img" ]; then
-					IMG=${PLATDIR}/${item}-android.img \
-						${TOP_DIR}/build-scripts/android-image.sh
-				elif [ -e "${item}.img" ]; then
-					# platform image already created
-					cp ${item}.img ${PLATDIR}/${item}-android.img
-				else
-					echo "Error: no system image available for ${item}"
-				fi
-				# Copy the ramdisk
-				cp ramdisk.img ${PLATDIR}/${item}-ramdisk-android.img
-				popd
-			done
+			# Create an image file
+			if [ -e "system.img" ]; then
+				IMG=${PLATDIR}/${ANDROID_BINS_VARIANTS}-android.img \
+					${TOP_DIR}/build-scripts/android-image.sh
+			elif [ -e "${ANDROID_BINS_VARIANTS}.img" ]; then
+				# platform image already created
+				cp ${ANDROID_BINS_VARIANTS}.img ${PLATDIR}/${ANDROID_BINS_VARIANTS}-android.img
+			else
+				echo "Error: no system image available for ${ANDROID_BINS_VARIANTS}"
+			fi
+			# Copy the ramdisk
+			cp ramdisk.img ${PLATDIR}/${ANDROID_BINS_VARIANTS}-ramdisk-android.img
 			popd
 		fi
 		if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
 			# Android ramdisks for uboot
 			pushd ${PLATDIR}
-			for var in $ANDROID_BINS_VARIANTS; do
-				local addr=TARGET_$var[ramdisk]
+				local addr=TARGET_$ANDROID_BINS_VARIANTS[ramdisk]
 				${UBOOT_MKIMG} -A $LINUX_ARCH -O linux -C none \
 					-T ramdisk -n ramdisk \
 					-a ${!addr} -e ${!addr} \
 					-n "Android ramdisk" \
-					-d ${var}-ramdisk-android.img \
-					${var}-uInitrd-android.${!addr}
-			done
+					-d ${ANDROID_BINS_VARIANTS}-ramdisk-android.img \
+					${ANDROID_BINS_VARIANTS}-uInitrd-android.${!addr}
 			popd
 		fi
 	fi

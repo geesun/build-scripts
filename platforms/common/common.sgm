@@ -30,13 +30,7 @@ FLAVOUR_NAME="sgm"
 
 #Android options
 ANDROID_BINS_VARIANTS="mobile"
-ANDROID_LUNCH_TARGET_PREBUILT_SWR="css_swr-userdebug"
 ANDROID_LUNCH_TARGET_PREBUILT="css_gpu-userdebug"
-ANDROID_LUNCH_TARGET_SRC_SWR="css_swr_src-userdebug"
-ANDROID_LUNCH_TARGET_SRC="css_gpu_src-userdebug"
-
-ENABLE_BL_CONFIG=1
-
 VARIANT_DESC="System Guidance for Mobile $FLAVOUR_NAME"
 source $DIR/platforms/common/common.base
 
