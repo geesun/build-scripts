@@ -89,6 +89,12 @@ __do_build_all_loop() {
 		done
 		export FLAVOUR=$flavour
 		__do_sort_scripts
+
+		# Optionally, override build options before build starts
+		if [ "$(type -t __do_override_build_configs)" == 'function' ]; then
+			__do_override_build_configs
+		fi
+
 		if [ "$initial" = "1" ] ; then
 			#For the first flavour clean and build all components.
 			build_scripts=$BUILD_SCRIPTS
@@ -117,6 +123,12 @@ __do_build_all()
 		CMD="build"
 	fi
 	__do_sort_scripts
+
+	# Optionally, override build options before build starts
+	if [ "$(type -t __do_override_build_configs)" == 'function' ]; then
+		__do_override_build_configs
+	fi
+
 	# Now to execute each component build in turn
 	for build in $BUILD_SCRIPTS; do
 		__do_single_cmd $@
