@@ -37,8 +37,6 @@ GRUB_BUILD_ENABLED=1
 GRUB_PATH=grub
 GRUB_BUILD_SCRIPT="build-grub.sh "
 GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/sgi575/grub_config/sgi575.cfg
-GRUB_FS_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/sgi575/grub_config/busybox.cfg
-GRUB_FS_VALIDATION_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/sgi575/grub_config/busybox-dhcp.cfg
 
 # ARM_TF Flags
 ARM_TF_PLATS="sgi575"
