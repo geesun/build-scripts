@@ -73,7 +73,7 @@ do_build ()
 				IASL_PREFIX=${TOP_DIR}/${UEFI_ACPICA_PATH}/bin/ make -f ${!makefile} EDK2_BUILD=$UEFI_BUILD_MODE
 			else
 				outdir=UEFI_PLAT_$item[platname]
-				EXTRA_OPTIONS="-s" IASL_PREFIX=${TOP_DIR}/${UEFI_ACPICA_PATH}/bin/ ${TOP_DIR}/${UEFI_TOOLS_PATH}/edk2-build.sh -e ${TOP_DIR}/uefi/edk2 -p ${TOP_DIR}/uefi/edk2/edk2-platforms -D EDK2_OUT_DIR=Build/${!outdir} -b $UEFI_BUILD_MODE $item
+				EXTRA_OPTIONS="-s" IASL_PREFIX=${TOP_DIR}/${UEFI_ACPICA_PATH}/bin/ ${TOP_DIR}/${UEFI_TOOLS_PATH}/edk2-build.sh -e ${TOP_DIR}/uefi/edk2 -p ${TOP_DIR}/uefi/edk2/edk2-platforms -D EDK2_OUT_DIR=Build/${!outdir} $UEFI_EXTRA_BUILD_PARAMS -b $UEFI_BUILD_MODE $item
 			fi
 		done
 		popd
