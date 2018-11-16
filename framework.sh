@@ -120,6 +120,11 @@ for fs in $DIR/filesystems/$FILESYSTEM_CONFIGURATION ; do
 	fi
 done
 
+# Optionally, override build options before build starts
+if [ "$(type -t __do_override_build_configs)" == 'function' ]; then
+	__do_override_build_configs
+fi
+
 case "$CMD" in
 	"") do_build
 	;;
