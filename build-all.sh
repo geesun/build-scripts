@@ -93,6 +93,7 @@ __do_build_all_loop() {
 		# Optionally, override build options before build starts
 		if [ "$(type -t __do_override_build_configs)" == 'function' ]; then
 			__do_override_build_configs
+			export -f __do_override_build_configs
 		fi
 
 		if [ "$initial" = "1" ] ; then
@@ -127,6 +128,7 @@ __do_build_all()
 	# Optionally, override build options before build starts
 	if [ "$(type -t __do_override_build_configs)" == 'function' ]; then
 		__do_override_build_configs
+		export -f __do_override_build_configs
 	fi
 
 	# Now to execute each component build in turn
