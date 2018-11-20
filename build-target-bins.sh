@@ -332,6 +332,28 @@ do_package()
 					local outfile=${outdir}/fip.bin
 					rm -f $outfile
 				fi
+
+				if [ "$TFTF_BUILD_ENABLED" == "1" ]; then
+					local tftf_out=TARGET_$target[tftf]
+					# remove existing fip
+					rm -f ${PLATDIR}/${!target_name}/fip-uefi.bin
+					mkdir -p ${PLATDIR}/${!target_name}
+
+					# if TBBR is enabled, generate certificates
+					if [ "${!atf_tbbr_enabled}" == "1" ]; then
+						$TOP_DIR/$ARM_TF_PATH/tools/cert_create/cert_create  \
+							${cert_tool_param} \
+							${bl33_param_id} ${OUTDIR}/${!tftf_out}/tftf.bin
+					fi
+
+					${fip_tool} update \
+						${fip_param} \
+						${bl33_param_id} ${OUTDIR}/${!tftf_out}/tftf.bin \
+						${PLATDIR}/${!target_name}/fip-uefi.bin
+					${fip_tool} info  \
+						${PLATDIR}/${!target_name}/fip-uefi.bin
+				fi
+
 				if [ "${!uefi_out}" != "" ]; then
 					# remove existing fip
 					rm -f ${PLATDIR}/${!target_name}/fip-uefi.bin
