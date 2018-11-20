@@ -30,6 +30,7 @@
 export CROSS_COMPILE_64=${TOP_DIR}/tools/gcc/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
 export CROSS_COMPILE=$CROSS_COMPILE_64
 export CROSS_COMPILE_32=${TOP_DIR}/tools/gcc/gcc-linaro-6.2.1-2016.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+export LINUX_COMPILER=tools/gcc/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
 
 #BUILD_SCRIPTS - A list of scripts to be run, relative to this repository
 #       root. This variable is added to throughout this file.
