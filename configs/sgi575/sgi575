@@ -42,6 +42,12 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/sgi575/grub_config/sgi575
 ARM_TF_PLATS="sgi575"
 ARM_TF_DEBUG_ENABLED=1
 
+#TFTF Flags
+TFTF_DEBUG_ENABLED=1
+TFTF_PATH=validation/comp-test/trusted-firmware-tf
+TFTF_PLATS="sgi575"
+TFTF_REPORTS="uart:raw"
+
 # Filesystem options
 VALID_FILESYSTEMS="busybox"
 
@@ -76,6 +82,7 @@ TARGET_sgi575[linux]="Image"
 TARGET_sgi575[ramdisk]=0x88000000
 TARGET_sgi575[tbbr]=1
 TARGET_sgi575[scp]="sgi575"
+TARGET_sgi575[tftf]="sgi575"
 SCP_BYPASS_ROM_SUPPORT[sgi575]=false
 BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-grub.sh build-scp.sh build-target-bins.sh "
 
