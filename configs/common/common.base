@@ -179,6 +179,10 @@ SCP_GCC_COMPILER_PREFIX=${TOP_DIR}/tools/gcc/gcc-arm-none-eabi-4_9-2015q3/bin/ar
 SCP_BUILD_MODE=debug
 declare -A SCP_BYPASS_ROM_SUPPORT
 
+#TFTF Options
+#   Defaults are set below. By default tftf is not built.
+TFTF_BUILD_ENABLED=0
+
 ###########################
 # Extra packaging options #
 ###########################
