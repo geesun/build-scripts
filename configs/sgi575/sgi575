@@ -78,3 +78,6 @@ TARGET_sgi575[tbbr]=1
 TARGET_sgi575[scp]="sgi575"
 SCP_BYPASS_ROM_SUPPORT[sgi575]=false
 BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-grub.sh build-scp.sh build-target-bins.sh "
+
+# UEFI SCT Options
+SCT_OUT_DIR=$TOP_DIR/output/sgi575/uefisct
