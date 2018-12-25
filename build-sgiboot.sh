@@ -108,10 +108,13 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 TOP_DIR=`pwd`
 PLATDIR=${TOP_DIR}/output/$SGI_PLATFORM
 OUTDIR=${PLATDIR}/components
-GRUB_FS_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/sgi575/grub_config/busybox.cfg
-GRUB_FS_VALIDATION_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/sgi575/grub_config/busybox-dhcp.cfg
+GRUB_FS_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/$SGI_PLATFORM/grub_config/busybox.cfg
+GRUB_FS_VALIDATION_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/$SGI_PLATFORM/grub_config/busybox-dhcp.cfg
+BLOCK_SIZE=512
+SEC_PER_MB=$((1024*2))
+EXT3PART_UUID=535add81-5875-4b4a-b44a-464aee5f5cbd
 
-create_cfgfiles ()
+create_grub_cfgfiles ()
 {
 	local fatpart_name="$1"
 
@@ -124,48 +127,51 @@ create_cfgfiles ()
 
 create_fatpart ()
 {
-	local fatpart="$1"
+	local fatpart_name="$1"  #Name of the FAT partition disk image
+	local fatpart_size="$2"  #FAT partition size (in 512-byte blocks)
 
-	dd if=/dev/zero of=$fatpart bs=$BLOCK_SIZE count=$FAT_SIZE
-	mkfs.vfat $fatpart
-	mmd -i $fatpart ::/EFI
-	mmd -i $fatpart ::/EFI/BOOT
-	mmd -i $fatpart ::/grub
-	mcopy -i $fatpart bootaa64.efi ::/EFI/BOOT
-}
-
-create_imagepart ()
-{
-	local image_name="$1"
-	local image_size="$2"
-	local ext3part_name="$3"
-
-	cat fat_part >> $image_name
-	cat $ext3part_name >> $image_name
-	(echo n; echo p; echo 1; echo $PART_START; echo +$((FAT_SIZE-1)); echo t; echo 6; echo n; echo p; echo 2; echo $((PART_START+FAT_SIZE)); echo +$(($image_size-1)); echo w) | fdisk $image_name
-	cp $image_name $PLATDIR
+	dd if=/dev/zero of=$fatpart_name bs=$BLOCK_SIZE count=$fatpart_size
+	mkfs.vfat $fatpart_name
+	mmd -i $fatpart_name ::/EFI
+	mmd -i $fatpart_name ::/EFI/BOOT
+	mmd -i $fatpart_name ::/grub
+	mcopy -i $fatpart_name bootaa64.efi ::/EFI/BOOT
+	echo "FAT partition image created"
 }
 
 create_ext3part ()
 {
-	local ext3part_name="$1"
-	local ext3size=$2
-	local rootfs_file=$3
+	local ext3part_name="$1"  #Name of the ext3 partition disk image
+	local ext3part_size=$2    #ext3 partition size (in 512-byte blocks)
 
-	echo "create_ext3part: ext3part_name = $ext3part_name ext3size = $ext3size rootfs_file = $rootfs_file"
-	dd if=/dev/zero of=$ext3part_name bs=$BLOCK_SIZE count=$ext3size
+	dd if=/dev/zero of=$ext3part_name bs=$BLOCK_SIZE count=$ext3part_size
 	mkdir -p mnt
 	#umount if it has been mounted
 	if [[ $(findmnt -M "mnt") ]]; then
 		fusermount -u mnt
 	fi
 	mkfs.ext3 -F $ext3part_name
+	tune2fs -U $EXT3PART_UUID $ext3part_name
+
 	fuse-ext2 $ext3part_name mnt -o rw+
 	cp $OUTDIR/linux/Image ./mnt
 	cp $PLATDIR/ramdisk-busybox.img ./mnt
 	sync
 	fusermount -u mnt
 	rm -rf mnt
+	echo "EXT3 partition image created"
+}
+
+create_diskimage ()
+{
+	local image_name="$1"
+	local part_start="$2"
+	local fatpart_size="$3"
+	local ext3part_size="$4"
+
+	(echo n; echo 1; echo $part_start; echo +$((fatpart_size-1)); echo 0700; echo w; echo y) | gdisk $image_name
+	(echo n; echo 2; echo $((part_start+fatpart_size)); echo +$((ext3part_size-1)); echo 8300; echo w; echo y) | gdisk $image_name
+	(echo x; echo c; echo 2; echo $EXT3PART_UUID; echo w; echo y) | gdisk $image_name
 }
 
 prepare_disk_image ()
@@ -178,30 +184,40 @@ prepare_disk_image ()
 
 	pushd $TOP_DIR/$GRUB_PATH/output
 	local IMG_BB=grub-busybox.img
-	local BLOCK_SIZE=512
-	local SEC_PER_MB=$((1024*2))
-	#FAT Partition size of 20MB and EXT3 Partition size 200MB
 	local FAT_SIZE_MB=20
 	local EXT3_SIZE_MB=200
 	local PART_START=$((1*SEC_PER_MB))
-	local FAT_SIZE=$((FAT_SIZE_MB*SEC_PER_MB-(PART_START)))
-	local EXT3_SIZE=$((EXT3_SIZE_MB*SEC_PER_MB-(PART_START)))
+	local FAT_SIZE=$((FAT_SIZE_MB*SEC_PER_MB))
+	local EXT3_SIZE=$((EXT3_SIZE_MB*SEC_PER_MB))
 
 	cp grubaa64.efi bootaa64.efi
 	grep -q -F 'mtools_skip_check=1' ~/.mtoolsrc || echo "mtools_skip_check=1" >> ~/.mtoolsrc
-	#Create fat partition
-	create_fatpart "fat_part"
 
 	#Package images for Busybox
 	rm -f $IMG_BB
-	dd if=/dev/zero of=$IMG_BB bs=$BLOCK_SIZE count=$PART_START
-	create_cfgfiles "fat_part" "busybox"
+	dd if=/dev/zero of=part_table bs=$BLOCK_SIZE count=$PART_START
+
+	#Space for partition table at the top
+	cat part_table > $IMG_BB
+
+	#Create fat partition
+	create_fatpart "fat_part" $FAT_SIZE
+	create_grub_cfgfiles "fat_part"
+	cat fat_part >> $IMG_BB
+
 	#Create ext3 partition
-	create_ext3part "ext3_part" $EXT3_SIZE ""
-	# create image and copy into output folder
-	create_imagepart $IMG_BB $EXT3_SIZE "ext3_part"
+	create_ext3part "ext3_part" $EXT3_SIZE
+	cat ext3_part >> $IMG_BB
+
+	#Space for backup partition table at the bottom (1M)
+	cat part_table >> $IMG_BB
+
+	# create disk image and copy into output folder
+	create_diskimage $IMG_BB $PART_START $FAT_SIZE $EXT3_SIZE
+	cp $IMG_BB $PLATDIR
 
 	#remove intermediate files
+	rm -f part_table
 	rm -f fat_part
 	rm -f ext3_part
 
