@@ -44,19 +44,20 @@ __print_supported_sgi_platforms()
 
 __print_usage()
 {
-	echo "Usage: ./build-scripts/build-sgiboot.sh -p <platform> <command>"
+	echo "Usage: ./build-scripts/sgi/build-test-busybox.sh -p <platform> <command>"
 	echo
-	echo "build-sgiboot.sh: Builds the disk image for busybox boot. The disk image consists of"
-	echo "a EFI paritition with grub in it and a ext3 paritition with linux kernel image it it."
+	echo "build-test-busybox.sh: Builds the disk image for busybox boot. The disk image"
+	echo "consists of a EFI paritition with grub in it and a ext3 paritition with linux"
+	echo "kernel image it it."
 	echo
 	__print_supported_sgi_platforms
 	echo "Supported build commands are - clean/build/package/all"
 	echo
-	echo "Example 1: ./build-scripts/build-sgiboot.sh -p sgi575 all"
-	echo "   This command builds the software stack for sgi575 platform and prepares a disk"
-	echo "   image to boot upto busybox filesystem"
+	echo "Example 1: ./build-scripts/sgi/build-test-busybox.sh -p sgi575 all"
+	echo "   This command builds the software stack for sgi575 platform and prepares a"
+	echo "   disk image to boot upto busybox filesystem"
 	echo
-	echo "Example 2: ./build-scripts/build-sgiboot.sh -p sgi575 clean"
+	echo "Example 2: ./build-scripts/sgi/build-test-busybox.sh -p sgi575 clean"
 	echo "   This command cleans the previous build of the sgi575 platform software stack"
 	echo
 	exit
