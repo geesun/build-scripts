@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2018, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2019, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,13 +28,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-declare -A sgi_platforms
-sgi_platforms[sgi575]=1
+declare -A arm_platforms
+arm_platforms[sgi575]=1
 
-__print_supported_sgi_platforms()
+__print_supported_arm_platforms()
 {
 	echo "Supported platforms are -"
-	for plat in "${!sgi_platforms[@]}" ;
+	for plat in "${!arm_platforms[@]}" ;
 		do
 			printf "\t $plat \n"
 		done
@@ -43,30 +43,29 @@ __print_supported_sgi_platforms()
 
 __print_usage()
 {
-	echo "Usage: ./build-scripts/build-distro-boot.sh -p <platform> <command>"
+	echo "Usage: ./build-scripts/build-test-uefi.sh -p <platform> <command>"
 	echo
-	echo "build-distro-boot.sh: Builds the SGI platform software stack with all the"
-	echo "required software components that allows a enterprise linux distribution"
-	echo "to be installed on a disk"
+	echo "build-test-uefi.sh: Builds the platform software stack with all the"
+	echo "required software components that allows booting upto the EFI shell."
 	echo
-	__print_supported_sgi_platforms
+	__print_supported_arm_platforms
 	echo "Supported build commands are - clean/build/package/all"
 	echo
-	echo "Example 1: ./build-scripts/build-distro-boot.sh -p sgi575 all"
+	echo "Example 1: ./build-scripts/build-test-uefi.sh -p sgi575 all"
 	echo "    This command builds the required software components of the SGI575"
-	echo "    platform that allow a enterprise linux distribution to be installed"
-	echo "    to a disk"
+	echo "    platform to boot upto the EFI shell."
 	echo
-	echo "Example 2: ./build-scripts/build-distro-boot.sh -p sgi575 clean"
-	echo "    This command cleans the previous build of the sgi575 platform software stack"
+	echo "Example 2: ./build-scripts/build-test-uefi.sh -p sgi575 clean"
+	echo "    This command cleans the previous build of the sgi575 platform"
+	echo "    software stack."
 	echo
-	exit
+	exit 0
 }
 
 #callback from build-all.sh to override any build config
 __do_override_build_configs()
 {
-	echo "build-distro-boot.sh: overriding BUILD_SCRIPTS"
+	echo "build-test-uefi.sh: overriding BUILD_SCRIPTS"
 	BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-scp.sh build-target-bins.sh "
 	echo "BUILD_SCRIPTS="$BUILD_SCRIPTS
 }
@@ -76,7 +75,7 @@ parse_params() {
 	while getopts "p:" opt; do
 		case $opt in
 			p)
-				SGI_PLATFORM="$OPTARG"
+				ARM_PLATFORM="$OPTARG"
 				;;
 		esac
 	done
@@ -86,12 +85,12 @@ parse_params() {
 	BUILD_CMD=${@:$OPTIND:1}
 
 	#Ensure that the platform is supported
-	if [ -z "$SGI_PLATFORM" ] ; then
+	if [ -z "$ARM_PLATFORM" ] ; then
 		__print_usage
 	fi
-	if [ -z "${sgi_platforms[$SGI_PLATFORM]}" ] ; then
+	if [ -z "${arm_platforms[$ARM_PLATFORM]}" ] ; then
 		echo "[ERROR] Could not deduce which platform to build."
-		__print_supported_sgi_platforms
+		__print_supported_arm_platforms
 		exit
 	fi
 
@@ -105,10 +104,10 @@ parse_params() {
 parse_params $@
 
 #override the command line parameters for build-all.sh
-set -- "-p $SGI_PLATFORM -f none $BUILD_CMD"
+set -- "-p $ARM_PLATFORM -f none $BUILD_CMD"
 source ./build-scripts/build-all.sh
 
 echo
-echo "./build-distro-boot.sh: build completed successfully!"
-echo "-----------------------------------------------------"
+echo "build-test-uefi.sh: build completed successfully!"
+echo "-------------------------------------------------"
 echo
