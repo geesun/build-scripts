@@ -65,6 +65,7 @@ do_build ()
 			if [ "$ARM_TF_AARCH32_EL3_RUNTIME" == "1" ]; then
 				CROSS_COMPILE=$CROSS_COMPILE_32 \
 				make -j $PARALLELISM PLAT=$plat ARCH=aarch32 DEBUG=$ARM_TF_DEBUG_ENABLED $ARM_TF_BL32_FLAGS bl32
+				rm -rf build/juno/release/lib*
 				targets="bl1 bl2 bl31"
 			else
 				targets="all"
