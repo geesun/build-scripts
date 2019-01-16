@@ -75,7 +75,7 @@ fi
 OUTDIR=${PLATDIR}/components
 LINUX_OUT_DIR=out/$PLATFORM/$COMPONENT_FLAVOUR
 
-platform_folder="$DIR/platforms/$PLATFORM"
+platform_folder="$DIR/configs/$PLATFORM"
 if [ -z "$platform_folder" ] ; then
 	echo -e "${BOLD}${RED}Could not find platform $PLATFORM.${NORMAL}"
 	exit 2

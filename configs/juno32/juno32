@@ -31,23 +31,23 @@ LINUX_IMAGE_TYPE=zImage
 UEFI_BUILD_ENABLED=0
 
 # fvp32 is mostly fvp with some tweaks, so include it
-source ${DIR}/platforms/common/common.fvp
+source ${DIR}/configs/common/common.juno
 
 # over-ride some things from fvp that are specific to fvp32
 export CROSS_COMPILE=${CROSS_COMPILE_32}
 
 LINUX_ARCH=arm
 #Override the configs, no vexpress64
-LINUX_mobile_bb[config]="linaro-base $BL_SUPPORT vexpress"
-LINUX_mobile_oe[config]="linaro-base $BL_SUPPORT distribution vexpress"
-LINUX_android[config]="linaro-base $BL_SUPPORT android vexpress"
+LINUX_mobile_bb[config]="linaro-base linaro-base-arm $BL_SUPPORT vexpress vexpress64"
+LINUX_mobile_oe[config]="linaro-base linaro-base-arm $BL_SUPPORT distribution vexpress vexpress64"
+LINUX_android[config]="linaro-base linaro-base-arm $BL_SUPPORT android vexpress vexpress64"
 LINUX_CONFIG_LIST=""
 
-UBOOT_BOARDS="vexpress_aemv8a_aarch32"
-UBOOT_OUTPUT_DESTS[vexpress_aemv8a_aarch32]=fvp
+UBOOT_BOARDS="vexpress_juno_aarch32"
+UBOOT_OUTPUT_DESTS[vexpress_juno_aarch32]=juno
 
 OPTEE_BUILD_ENABLED=0
-ARM_TF_BUILD_FLAGS="AARCH32_SP=sp_min AARCH32=1"
-ARM_TF_ARCH=aarch32
+ARM_TF_BL32_FLAGS="CSS_USE_SCMI_SDS_DRIVER=1 AARCH32_SP=sp_min RESET_TO_SP_MIN=1 JUNO_AARCH32_EL3_RUNTIME=1"
+ARM_TF_BUILD_FLAGS="CSS_USE_SCMI_SDS_DRIVER=1 JUNO_AARCH32_EL3_RUNTIME=1 AARCH32=1 AARCH32_SP=sp_min RESET_TO_SP_MIN=1"
 ARM_TF_DEBUG_ENABLED=0
-TARGET_fvp[fdts]="fvp-base-aemv8a-aemv8a fvp-base-aemv8a-aemv8a-t1"
+ARM_TF_AARCH32_EL3_RUNTIME=1

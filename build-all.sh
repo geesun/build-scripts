@@ -77,7 +77,7 @@ __do_build_all_loop() {
 	fi
 	initial=1
 	for flavour in $FLAVOURS ; do
-		source $DIR/platforms/$PLATFORM/$flavour
+		source $DIR/configs/$PLATFORM/$flavour
 		#Source all applicable
 		for fs in $DIR/filesystems/$FILESYSTEM_CONFIGURATION ; do
 			if [ ! -f $fs ] ; then

@@ -58,7 +58,7 @@ set_formatting() {
 }
 
 get_platform_dirs() {
-	find $DIR/platforms/ -mindepth 1 -maxdepth 1 -type d \
+	find $DIR/configs/ -mindepth 1 -maxdepth 1 -type d \
 		| grep -v -e "common\$" -e "\/\."
 }
 
@@ -71,8 +71,8 @@ get_flavour_files() {
 	if [ "$1" == "all" ] ; then
 		return
 	fi
-	find $DIR/platforms/$1 -mindepth 1 -maxdepth 1 -type f \
-		| grep -v -e "$DIR/platforms/$1/\." -e "\.base"
+	find $DIR/configs/$1 -mindepth 1 -maxdepth 1 -type f \
+		| grep -v -e "$DIR/configs/$1/\." -e "\.base"
 }
 
 #Requires PLATFORM as a parameter

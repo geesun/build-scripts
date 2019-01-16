@@ -164,13 +164,13 @@ following example for a more reliable way of building and packaging in one go.
 
 --------------------------------------------------------------------------------
 
-## Platforms
+## Configs
 
-Platform files provide configuration for platforms and flavours of that
+Config files provide configuration for platforms and flavours of that
 platform. The structure on the filesystem is shown below.
 
 ```
-platforms/
+configs/
 ├── common
 │   └── common.base
 └── platform_name
@@ -189,7 +189,7 @@ If this behaviour is not desired, and only one flavour of the platform is
 required then the following structure might be desired instead:
 
 ```
-platforms/
+configs/
 ├── common
 │   └── common.base
 └── my_platform

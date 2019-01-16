@@ -32,7 +32,7 @@ ANDROID_SOURCE_VARIANT=$ANDROID_BINS_VARIANTS_PLAT
 ANDROID_LUNCH_TARGET_PREBUILT="vexpress-userdebug"
 ANDROID_LUNCH_TARGET_SRC="vexpress-userdebug"
 VARIANT_DESC="TC2 kernel for BusyBox Software Stack"
-source $DIR/platforms/common/common.base
+source $DIR/configs/common/common.base
 
 ENABLE_BL_CONFIG=1
 

@@ -26,7 +26,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-source $DIR/platforms/common/common.base
+source $DIR/configs/common/common.base
 
 #Default linux configs per OS
 LINUX_CONFIG_LIST=""
@@ -36,7 +36,7 @@ BUSYBOX_LINUX_CONFIG_LIST="defconfig"
 GRUB_BUILD_ENABLED=1
 GRUB_PATH=grub
 GRUB_BUILD_SCRIPT="build-grub.sh "
-GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/platforms/sgi575/grub_config/sgi575.cfg
+GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/sgi575/grub_config/sgi575.cfg
 
 # ARM_TF Flags
 ARM_TF_PLATS="sgi575"

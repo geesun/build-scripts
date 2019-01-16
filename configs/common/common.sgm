@@ -32,7 +32,7 @@ FLAVOUR_NAME="sgm"
 ANDROID_BINS_VARIANTS="mobile"
 ANDROID_LUNCH_TARGET_PREBUILT="css_gpu-userdebug"
 VARIANT_DESC="System Guidance for Mobile $FLAVOUR_NAME"
-source $DIR/platforms/common/common.base
+source $DIR/configs/common/common.base
 
 BUILD_SCRIPTS=""
 BUILD_SCRIPTS=$BUILD_SCRIPTS"build-uboot.sh build-arm-tf.sh build-optee-os.sh build-target-bins.sh build-linux.sh build-scp.sh "
