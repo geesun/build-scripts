@@ -32,7 +32,7 @@
 WS_DIR=`pwd`
 ACS_SOURCE_PATH=validation/sys-test/arm-enterprise-acs/
 ACS_OUT_PATH=validation/sys-test/arm-enterprise-acs/luv/build
-LUVFILE=$WS_DIR/$ACS_SOURCE_PATH/luv/build_luvos.sh
+LUVFILE=$WS_DIR/$ACS_SOURCE_PATH/luvos/scripts/build.sh
 ACS_OUTPUT_FILE=$WS_DIR/$ACS_OUT_PATH/tmp/deploy/images/qemuarm64/luv-live-image-gpt.img
 
 do_clean () {
@@ -59,14 +59,13 @@ do_build () {
 		else
 			./acs_sync.sh
 		fi
-		pushd luv
 		#luvos build expect to run with umask 022
 		umask 022
 		#Build SBSA/SBBR binaries, SBBR (excluding UEFI-SCT)
 		echo "You must be a member of https://github.com/UEFI/UEFI-SCT for SCT tests"
 		echo "as your username and password will be required"
 		echo "skipping the UEFI-SCT tests.."
-		./build_luvos.sh
+		./luvos/scripts/build.sh
 		#back to build_dir- popd
 		popd
 	else
