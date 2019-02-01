@@ -244,6 +244,7 @@ do_package()
 				local cert_tool_param=
 				local atf_tbbr_enabled=TARGET_$target[tbbr]
 				local optee_enabled=TARGET_$target[optee]
+				local optee_enabled=OPTEE_BUILD_ENABLED
 				local target_name=TARGET_$target[output]
 
 				if [ "${!scp_out}" != "" ]; then

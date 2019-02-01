@@ -61,6 +61,7 @@ do_build ()
 			if [ "${!atf_optee_enabled}" == "1" ]; then
 				#if optee enabled, set corresponding compiliation flags
 				atf_build_flags="${atf_build_flags} ARM_TSP_RAM_LOCATION=$OPTEE_RAM_LOCATION"
+				atf_build_flags="${atf_build_flags} SPD=opteed"
 			fi
 			if [ "$ARM_TF_AARCH32_EL3_RUNTIME" == "1" ]; then
 				CROSS_COMPILE=$CROSS_COMPILE_32 \
