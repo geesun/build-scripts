@@ -76,7 +76,7 @@ do_package ()
 		# OpenEmbedded ramdisks
 		mkdir -p oe
 		touch oe/initrd
-		echo oe/initrd | cpio -ov > ramdisk-oe.img
+		echo oe/initrd | cpio -ov -H newc > ramdisk-oe.img
 		if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
 			for target in $TARGET_BINS_PLATS; do
 				local addr=TARGET_$target[ramdisk]
