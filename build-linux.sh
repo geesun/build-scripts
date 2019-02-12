@@ -61,6 +61,7 @@ do_build ()
 		for name in $LINUX_CONFIG_LIST; do
 			local lpath=LINUX_$name[path];
 			local lconfig=LINUX_$name[config];
+			local lmodules=LINUX_$name[modules];
 
 			echo "config: $name"
 			pushd $TOP_DIR/${!lpath};
@@ -75,11 +76,20 @@ do_build ()
 				done
 				scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR/$name $CONFIG
 				make O=$LINUX_OUT_DIR/$name -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
+				if [ ${!lmodules} == "true" ]; then
+					mkdir -p $LINUX_OUT_DIR/$name/modules
+					scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR/$name/modules $CONFIG
+					make O=$LINUX_OUT_DIR/$name/modules -j$PARALLELISM modules
+				fi
 			else
 				echo "Building using defconfig..."
 				lconfig=LINUX_$name[defconfig];
 				make O=$LINUX_OUT_DIR/$name ${!lconfig}
 				make O=$LINUX_OUT_DIR/$name -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
+				if [ ${!lmodules} == "true" ]; then
+					make O=$LINUX_OUT_DIR/$name/modules ${!lconfig}
+					make O=$LINUX_OUT_DIR/$name/modules -j$PARALLELISM modules
+				fi
 			fi
 			popd
 		done
@@ -112,9 +122,13 @@ do_package ()
 		for name in $LINUX_CONFIG_LIST; do
 			local lpath=LINUX_$name[path];
 			local outpath=LINUX_$name[outpath];
+			local lmodules=LINUX_$name[modules];
 			mkdir -p ${OUTDIR}/${!outpath}
 
 			cp $TOP_DIR/${!lpath}/$LINUX_OUT_DIR/$name/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/${!outpath}/$LINUX_IMAGE_TYPE.$name
+			if [ ${!lmodules} == "true" ]; then
+				cp -R $TOP_DIR/${!lpath}/$LINUX_OUT_DIR/$name/modules ${OUTDIR}/${!outpath}/modules
+			fi
 
 			if [ "$LINUX_CONFIG_DEFAULT" = "$name" ]; then
 				for plat in $TARGET_BINS_PLATS; do
