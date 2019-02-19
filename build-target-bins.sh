@@ -277,6 +277,11 @@ do_package()
 					echo ${OUTDIR}/${!tf_out}/
 					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!tf_out}/${OPTEE_OS_BIN_NAME}"
 				fi
+				#only if a MM implementation is available and built
+				if [ "$UEFI_MM_BUILD_ENABLED" == "1" ]; then
+					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!uefi_out}/${UEFI_MM_PAYLOAD_BIN}"
+				fi
+
 				local fip_param="${bl2_fip_param} ${bl30_fip_param} ${bl32_fip_param} ${EXTRA_FIP_PARAM} ${hw_config_fip_param} ${tb_fw_config_fip_param} ${nt_fw_config_fip_param} ${soc_fw_config_fip_param}"
 				if [ "$ARM_TF_ARCH" == "aarch64" ] && [ "$ARM_TF_AARCH32_EL3_RUNTIME" != "1" ]; then
 					fip_param="$fip_param ${bl31_fip_param}"
@@ -295,8 +300,8 @@ do_package()
 					local bl33_tbbr_param="${bl33_param_id}-key-cert ${OUTDIR}/${!tf_out}/bl33_key.crt ${bl33_param_id}-cert ${OUTDIR}/${!tf_out}/bl33.crt"
 					local bl2_tbbr_param="${bl2_param_id}-cert ${OUTDIR}/${!tf_out}/bl2.crt"
 
-					#only if a TEE implementation is available and built
-					if [ "${!optee_enabled}" == "1" ]; then
+					#only if a TEE or MM implementation is available and built
+					if [ "${!optee_enabled}" == "1" ] || [ "$UEFI_MM_BUILD_ENABLED" == "1" ]; then
 						bl32_tbbr_param="${bl32_param_id}-key-cert ${OUTDIR}/${!tf_out}/bl32_key.crt ${bl32_param_id}-cert ${OUTDIR}/${!tf_out}/bl32.crt"
 					fi
 
