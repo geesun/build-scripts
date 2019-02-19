@@ -42,6 +42,12 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/sgi575/grub_config/sgi575
 ARM_TF_PLATS="sgi575"
 ARM_TF_DEBUG_ENABLED=1
 
+# Enable support for secure partition, partition manager and RAS by default.
+# If SPM is enabled, ensure that UEFI_MM_BUILD_ENABLED is set to 1.
+# If SPM is disabled, ensure that secure storage and RAS features are disabled
+# as well in uefi (ref: uefi-tools/edk2-platforms.config file).
+ARM_TF_BUILD_FLAGS="ENABLE_SPM=1 RAS_EXTENSION=1 SDEI_SUPPORT=1 EL3_EXCEPTION_HANDLING=1 HANDLE_EA_EL3_FIRST=1"
+
 #TFTF Flags
 TFTF_DEBUG_ENABLED=1
 TFTF_PATH=validation/comp-test/trusted-firmware-tf
