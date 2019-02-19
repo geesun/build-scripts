@@ -112,9 +112,17 @@ do_package ()
 			bins=UEFI_PLAT_$item[binary]
 			outp=UEFI_PLAT_$item[output]
 			name=UEFI_PLAT_$item[platname]
+			obin=UEFI_PLAT_$item[outbin]
+
+			# Use "uefi.bin" as the default build file name if the platform config
+			# file has not provided a name for the uefi build.
+			if [ -z "$obin" ]; then
+				obin="uefi.bin"
+			fi
+
 			mkdir -p ${OUTDIR}/${!outp}
 			cp ./$UEFI_PATH/Build/${!name}/${UEFI_BUILD_MODE}_${UEFI_TOOLCHAIN}/FV/${!bins} \
-				${OUTDIR}/${!outp}/uefi.bin
+				${OUTDIR}/${!outp}/${!obin}
 		done
 		popd
 
