@@ -53,16 +53,22 @@ VALID_FILESYSTEMS="busybox"
 
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
-UEFI_PLATFORMS="sgi575"
+UEFI_PLATFORMS="sgi575 sgi575_mm_standalone"
 declare -A UEFI_PLAT_sgi575
 UEFI_PLAT_sgi575[platname]="ArmSgi"
 UEFI_PLAT_sgi575[output]=css-common
 UEFI_PLAT_sgi575[defines]="-D EDK2_PLAT=sgi575 -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
 UEFI_PLAT_sgi575[binary]="BL33_AP_UEFI.fd"
+UEFI_PLAT_sgi575[outbin]=uefi.bin
+
 #Standalone MM Build Options
-UEFI_SMM_BUILD_ENABLED=0
-ARM_TF_RAS_BUILD_FLAGS=""
-UEFI_PLAT_sgi575[smm_output]="StandaloneSmmPkg"
+UEFI_MM_BUILD_ENABLED=1
+declare -A UEFI_PLAT_sgi575_mm_standalone
+UEFI_PLAT_sgi575_mm_standalone[platname]="SgiMmStandalone"
+UEFI_PLAT_sgi575_mm_standalone[output]=css-common
+UEFI_PLAT_sgi575_mm_standalone[binary]="BL32_AP_MM.fd"
+UEFI_PLAT_sgi575_mm_standalone[outbin]=mm_standalone.bin
+UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
 
 #SCP options
 SCP_BUILD_ENABLED=1
