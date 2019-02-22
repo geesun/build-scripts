@@ -31,6 +31,7 @@
 #List of supported
 declare -A sgi_platforms
 sgi_platforms[sgi575]=1
+sgi_platforms[sgiclarka]=1
 
 __print_supported_sgi_platforms()
 {
