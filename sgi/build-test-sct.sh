@@ -31,6 +31,7 @@
 #List of supported
 declare -A sgi_platforms
 sgi_platforms[sgi575]=1
+sgi_platforms[sgiclarka]=1
 
 TOP_DIR=`pwd`
 SCT_SEQ_FILE_PATH="$TOP_DIR/build-scripts/sgi/sct.seq"
