@@ -30,6 +30,7 @@
 
 declare -A arm_platforms
 arm_platforms[sgi575]=1
+arm_platforms[sgiclarka]=1
 
 # Environment variables
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
