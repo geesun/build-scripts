@@ -31,6 +31,7 @@
 declare -A arm_platforms
 arm_platforms[sgi575]=1
 arm_platforms[sgiclarka]=1
+arm_platforms[sgiclarkh]=1
 
 __print_supported_arm_platforms()
 {
