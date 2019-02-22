@@ -1,0 +1,92 @@
+# Copyright (c) 2019, ARM Limited and Contributors. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# Neither the name of ARM nor the names of its contributors may be used
+# to endorse or promote products derived from this software without specific
+# prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+source $DIR/configs/common/common.base
+
+#Default linux configs per OS
+LINUX_CONFIG_LIST=""
+BUSYBOX_LINUX_CONFIG_LIST="defconfig"
+
+#Grub Build options
+GRUB_BUILD_ENABLED=1
+GRUB_PATH=grub
+GRUB_BUILD_SCRIPT="build-grub.sh "
+GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/sgiclarkh/grub_config/sgiclarkh.cfg
+
+# ARM_TF Flags
+ARM_TF_PLATS="sgiclarkh"
+ARM_TF_DEBUG_ENABLED=1
+
+# Enable support for secure partition, partition manager and RAS by default.
+# If SPM is enabled, ensure that UEFI_MM_BUILD_ENABLED is set to 1.
+# If SPM is disabled, ensure that secure storage and RAS features are disabled
+# as well in uefi (ref: uefi-tools/edk2-platforms.config file).
+ARM_TF_BUILD_FLAGS="ENABLE_SPM=1 RAS_EXTENSION=1 SDEI_SUPPORT=1 EL3_EXCEPTION_HANDLING=1 HANDLE_EA_EL3_FIRST=1"
+
+# Filesystem options
+VALID_FILESYSTEMS="busybox"
+
+#UEFI Options.
+UEFI_BUILD_ENABLED=1
+UEFI_PLATFORMS="sgiclarkh sgiclarkh_mm_standalone"
+declare -A UEFI_PLAT_sgiclarkh
+UEFI_PLAT_sgiclarkh[platname]="ArmSgi"
+UEFI_PLAT_sgiclarkh[output]=css-common
+UEFI_PLAT_sgiclarkh[defines]="-D EDK2_PLAT=sgiclarkh -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
+UEFI_PLAT_sgiclarkh[binary]="BL33_AP_UEFI.fd"
+UEFI_PLAT_sgiclarkh[outbin]=uefi.bin
+
+#Standalone MM Build Options
+UEFI_MM_BUILD_ENABLED=1
+declare -A UEFI_PLAT_sgiclarkh_mm_standalone
+UEFI_PLAT_sgiclarkh_mm_standalone[platname]="SgiMmStandalone"
+UEFI_PLAT_sgiclarkh_mm_standalone[output]=css-common
+UEFI_PLAT_sgiclarkh_mm_standalone[binary]="BL32_AP_MM.fd"
+UEFI_PLAT_sgiclarkh_mm_standalone[outbin]=mm_standalone.bin
+UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
+
+#SCP options
+SCP_BUILD_ENABLED=1
+SCP_PLATFORMS="infrasys4"
+SCP_BUILD_MODE=release
+SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-none-eabi-5_4-2016q3/bin
+
+# Misc options
+COMPONENT_FLAVOUR=sgiclarkh
+
+TARGET_BINS_PLATS="sgiclarkh"
+declare -A TARGET_sgiclarkh
+TARGET_sgiclarkh[arm-tf]="sgiclarkh"
+TARGET_sgiclarkh[output]="sgiclarkh"
+TARGET_sgiclarkh[uefi]="css-common"
+TARGET_sgiclarkh[linux]="Image"
+TARGET_sgiclarkh[ramdisk]=0x88000000
+TARGET_sgiclarkh[tbbr]=1
+TARGET_sgiclarkh[scp]="infrasys4"
+SCP_BYPASS_ROM_SUPPORT[sgiclarkh]=false
+BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-grub.sh build-scp.sh build-target-bins.sh "
