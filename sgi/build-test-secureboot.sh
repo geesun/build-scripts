@@ -32,6 +32,7 @@
 declare -A sgi_platforms
 sgi_platforms[sgi575]=1
 sgi_platforms[sgiclarka]=1
+sgi_platforms[sgiclarkh]=1
 
 __print_supported_sgi_platforms()
 {
@@ -68,7 +69,7 @@ __print_usage()
 __do_override_build_configs()
 {
 	echo "build-secureboot.sh: adding UEFI_EXTRA_BUILD_PARAMS build configuration"
-	export UEFI_EXTRA_BUILD_PARAMS="-D SECURE_STORAGE_ENABLE=TRUE -D SECURE_BOOT_ENABLE=TRUE"
+	export UEFI_EXTRA_BUILD_PARAMS="-D SECURE_STORAGE_ENABLE -D MM_SECURE_STORAGE_ENABLE=TRUE -D SECURE_BOOT_ENABLE=TRUE"
 	echo $UEFI_EXTRA_BUILD_PARAMS
 }
 
