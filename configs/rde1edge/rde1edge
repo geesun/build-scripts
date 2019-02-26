@@ -36,10 +36,10 @@ BUSYBOX_LINUX_CONFIG_LIST="defconfig"
 GRUB_BUILD_ENABLED=1
 GRUB_PATH=grub
 GRUB_BUILD_SCRIPT="build-grub.sh "
-GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/sgiclarkh/grub_config/sgiclarkh.cfg
+GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rde1edge/grub_config/rde1edge.cfg
 
 # ARM_TF Flags
-ARM_TF_PLATS="sgiclarkh"
+ARM_TF_PLATS="rde1edge"
 ARM_TF_DEBUG_ENABLED=1
 
 # Enable support for secure partition, partition manager and RAS by default.
@@ -53,40 +53,40 @@ VALID_FILESYSTEMS="busybox"
 
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
-UEFI_PLATFORMS="sgiclarkh sgiclarkh_mm_standalone"
-declare -A UEFI_PLAT_sgiclarkh
-UEFI_PLAT_sgiclarkh[platname]="ArmSgi"
-UEFI_PLAT_sgiclarkh[output]=css-common
-UEFI_PLAT_sgiclarkh[defines]="-D EDK2_PLAT=sgiclarkh -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
-UEFI_PLAT_sgiclarkh[binary]="BL33_AP_UEFI.fd"
-UEFI_PLAT_sgiclarkh[outbin]=uefi.bin
+UEFI_PLATFORMS="rde1edge rde1edge_mm_standalone"
+declare -A UEFI_PLAT_rde1edge
+UEFI_PLAT_rde1edge[platname]="ArmSgi"
+UEFI_PLAT_rde1edge[output]=css-common
+UEFI_PLAT_rde1edge[defines]="-D EDK2_PLAT=rde1edge -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
+UEFI_PLAT_rde1edge[binary]="BL33_AP_UEFI.fd"
+UEFI_PLAT_rde1edge[outbin]=uefi.bin
 
 #Standalone MM Build Options
 UEFI_MM_BUILD_ENABLED=1
-declare -A UEFI_PLAT_sgiclarkh_mm_standalone
-UEFI_PLAT_sgiclarkh_mm_standalone[platname]="SgiMmStandalone"
-UEFI_PLAT_sgiclarkh_mm_standalone[output]=css-common
-UEFI_PLAT_sgiclarkh_mm_standalone[binary]="BL32_AP_MM.fd"
-UEFI_PLAT_sgiclarkh_mm_standalone[outbin]=mm_standalone.bin
+declare -A UEFI_PLAT_rde1edge_mm_standalone
+UEFI_PLAT_rde1edge_mm_standalone[platname]="SgiMmStandalone"
+UEFI_PLAT_rde1edge_mm_standalone[output]=css-common
+UEFI_PLAT_rde1edge_mm_standalone[binary]="BL32_AP_MM.fd"
+UEFI_PLAT_rde1edge_mm_standalone[outbin]=mm_standalone.bin
 UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
 
 #SCP options
 SCP_BUILD_ENABLED=1
-SCP_PLATFORMS="infrasys4"
+SCP_PLATFORMS="rdn1e1"
 SCP_BUILD_MODE=release
 SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-none-eabi-5_4-2016q3/bin
 
 # Misc options
-COMPONENT_FLAVOUR=sgiclarkh
+COMPONENT_FLAVOUR=rde1edge
 
-TARGET_BINS_PLATS="sgiclarkh"
-declare -A TARGET_sgiclarkh
-TARGET_sgiclarkh[arm-tf]="sgiclarkh"
-TARGET_sgiclarkh[output]="sgiclarkh"
-TARGET_sgiclarkh[uefi]="css-common"
-TARGET_sgiclarkh[linux]="Image"
-TARGET_sgiclarkh[ramdisk]=0x88000000
-TARGET_sgiclarkh[tbbr]=1
-TARGET_sgiclarkh[scp]="infrasys4"
-SCP_BYPASS_ROM_SUPPORT[sgiclarkh]=false
+TARGET_BINS_PLATS="rde1edge"
+declare -A TARGET_rde1edge
+TARGET_rde1edge[arm-tf]="rde1edge"
+TARGET_rde1edge[output]="rde1edge"
+TARGET_rde1edge[uefi]="css-common"
+TARGET_rde1edge[linux]="Image"
+TARGET_rde1edge[ramdisk]=0x88000000
+TARGET_rde1edge[tbbr]=1
+TARGET_rde1edge[scp]="rdn1e1"
+SCP_BYPASS_ROM_SUPPORT[rde1edge]=false
 BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-grub.sh build-scp.sh build-target-bins.sh "

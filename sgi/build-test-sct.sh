@@ -32,7 +32,7 @@
 declare -A sgi_platforms
 sgi_platforms[sgi575]=1
 sgi_platforms[rdn1edge]=1
-sgi_platforms[sgiclarkh]=1
+sgi_platforms[rde1edge]=1
 
 TOP_DIR=`pwd`
 SCT_SEQ_FILE_PATH="$TOP_DIR/build-scripts/sgi/sct.seq"
