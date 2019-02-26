@@ -36,10 +36,10 @@ BUSYBOX_LINUX_CONFIG_LIST="defconfig"
 GRUB_BUILD_ENABLED=1
 GRUB_PATH=grub
 GRUB_BUILD_SCRIPT="build-grub.sh "
-GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/sgiclarka/grub_config/sgiclarka.cfg
+GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rdn1edge/grub_config/rdn1edge.cfg
 
 # ARM_TF Flags
-ARM_TF_PLATS="sgiclarka"
+ARM_TF_PLATS="rdn1edge"
 ARM_TF_DEBUG_ENABLED=1
 
 # Enable support for secure partition, partition manager and RAS by default.
@@ -51,7 +51,7 @@ ARM_TF_BUILD_FLAGS="ENABLE_SPM=1 RAS_EXTENSION=1 SDEI_SUPPORT=1 EL3_EXCEPTION_HA
 #TFTF Flags
 TFTF_DEBUG_ENABLED=1
 TFTF_PATH=validation/comp-test/trusted-firmware-tf
-TFTF_PLATS="sgiclarka"
+TFTF_PLATS="rdn1edge"
 TFTF_REPORTS="uart:raw"
 
 # Filesystem options
@@ -59,41 +59,41 @@ VALID_FILESYSTEMS="busybox"
 
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
-UEFI_PLATFORMS="sgiclarka sgiclarka_mm_standalone"
-declare -A UEFI_PLAT_sgiclarka
-UEFI_PLAT_sgiclarka[platname]="ArmSgi"
-UEFI_PLAT_sgiclarka[output]=css-common
-UEFI_PLAT_sgiclarka[defines]="-D EDK2_PLAT=sgiclarka -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
-UEFI_PLAT_sgiclarka[binary]="BL33_AP_UEFI.fd"
-UEFI_PLAT_sgiclarka[outbin]=uefi.bin
+UEFI_PLATFORMS="rdn1edge rdn1edge_mm_standalone"
+declare -A UEFI_PLAT_rdn1edge
+UEFI_PLAT_rdn1edge[platname]="ArmSgi"
+UEFI_PLAT_rdn1edge[output]=css-common
+UEFI_PLAT_rdn1edge[defines]="-D EDK2_PLAT=rdn1edge -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
+UEFI_PLAT_rdn1edge[binary]="BL33_AP_UEFI.fd"
+UEFI_PLAT_rdn1edge[outbin]=uefi.bin
 
 #Standalone MM Build Options
 UEFI_MM_BUILD_ENABLED=1
-declare -A UEFI_PLAT_sgiclarka_mm_standalone
-UEFI_PLAT_sgiclarka_mm_standalone[platname]="SgiMmStandalone"
-UEFI_PLAT_sgiclarka_mm_standalone[output]=css-common
-UEFI_PLAT_sgiclarka_mm_standalone[binary]="BL32_AP_MM.fd"
-UEFI_PLAT_sgiclarka_mm_standalone[outbin]=mm_standalone.bin
+declare -A UEFI_PLAT_rdn1edge_mm_standalone
+UEFI_PLAT_rdn1edge_mm_standalone[platname]="SgiMmStandalone"
+UEFI_PLAT_rdn1edge_mm_standalone[output]=css-common
+UEFI_PLAT_rdn1edge_mm_standalone[binary]="BL32_AP_MM.fd"
+UEFI_PLAT_rdn1edge_mm_standalone[outbin]=mm_standalone.bin
 UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
 
 #SCP options
 SCP_BUILD_ENABLED=1
-SCP_PLATFORMS="infrasys4"
+SCP_PLATFORMS="rdn1e1"
 SCP_BUILD_MODE=release
 SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-none-eabi-5_4-2016q3/bin
 
 # Misc options
-COMPONENT_FLAVOUR=sgiclarka
+COMPONENT_FLAVOUR=rdn1edge
 
-TARGET_BINS_PLATS="sgiclarka"
-declare -A TARGET_sgiclarka
-TARGET_sgiclarka[arm-tf]="sgiclarka"
-TARGET_sgiclarka[output]="sgiclarka"
-TARGET_sgiclarka[uefi]="css-common"
-TARGET_sgiclarka[linux]="Image"
-TARGET_sgiclarka[ramdisk]=0x88000000
-TARGET_sgiclarka[tbbr]=1
-TARGET_sgiclarka[scp]="infrasys4"
-TARGET_sgiclarka[tftf]="sgiclarka"
-SCP_BYPASS_ROM_SUPPORT[sgiclarka]=false
+TARGET_BINS_PLATS="rdn1edge"
+declare -A TARGET_rdn1edge
+TARGET_rdn1edge[arm-tf]="rdn1edge"
+TARGET_rdn1edge[output]="rdn1edge"
+TARGET_rdn1edge[uefi]="css-common"
+TARGET_rdn1edge[linux]="Image"
+TARGET_rdn1edge[ramdisk]=0x88000000
+TARGET_rdn1edge[tbbr]=1
+TARGET_rdn1edge[scp]="rdn1e1"
+TARGET_rdn1edge[tftf]="rdn1edge"
+SCP_BYPASS_ROM_SUPPORT[rdn1edge]=false
 BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-grub.sh build-scp.sh build-target-bins.sh "

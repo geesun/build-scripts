@@ -30,7 +30,7 @@
 
 declare -A arm_platforms
 arm_platforms[sgi575]=1
-arm_platforms[sgiclarka]=1
+arm_platforms[rdn1edge]=1
 arm_platforms[sgiclarkh]=1
 
 # Environment variables
