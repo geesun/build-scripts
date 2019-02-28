@@ -28,41 +28,40 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-#List of supported
-declare -A sgi_platforms
-sgi_platforms[sgi575]=1
-sgi_platforms[rdn1edge]=1
-sgi_platforms[rde1edge]=1
+source ./build-scripts/sgi/sgi_common_util.sh
 
-__print_supported_sgi_platforms()
+# List of all the supported platforms.
+declare -A platforms_sgi
+platforms_sgi[sgi575]=1
+declare -A platforms_rdinfra
+platforms_rdinfra[rdn1edge]=1
+platforms_rdinfra[rde1edge]=1
+
+__print_examples()
 {
-	echo "Supported platforms are -"
-	for plat in "${!sgi_platforms[@]}" ;
-		do
-			printf "\t $plat\n"
-		done
+	echo "Example 1: ./build-scripts/$refinfra/build-test-busybox.sh -p $1 all"
+	echo "   This command builds the software stack for $1 platform and prepares a"
+	echo "   disk image to boot upto busybox filesystem"
 	echo
+	echo "Example 2: ./build-scripts/$refinfra/build-test-busybox.sh -p $1 clean"
+	echo "   This command cleans the previous build of the $1 platform software stack"
 }
 
 __print_usage()
 {
-	echo "Usage: ./build-scripts/sgi/build-test-busybox.sh -p <platform> <command>"
+	echo
+	echo "Usage: ./build-scripts/$refinfra/build-test-busybox.sh -p <platform> <command>"
 	echo
 	echo "build-test-busybox.sh: Builds the disk image for busybox boot. The disk image"
 	echo "consists of a EFI paritition with grub in it and a ext3 paritition with linux"
 	echo "kernel image it it."
 	echo
-	__print_supported_sgi_platforms
+	__print_supported_platforms_$refinfra
 	echo "Supported build commands are - clean/build/package/all"
 	echo
-	echo "Example 1: ./build-scripts/sgi/build-test-busybox.sh -p sgi575 all"
-	echo "   This command builds the software stack for sgi575 platform and prepares a"
-	echo "   disk image to boot upto busybox filesystem"
+	__print_examples_$refinfra
 	echo
-	echo "Example 2: ./build-scripts/sgi/build-test-busybox.sh -p sgi575 clean"
-	echo "   This command cleans the previous build of the sgi575 platform software stack"
-	echo
-	exit
+	exit 1
 }
 
 parse_params() {
@@ -79,20 +78,7 @@ parse_params() {
 	#So grab the parameters after the named param option index
 	BUILD_CMD=${@:$OPTIND:1}
 
-	#Ensure that the platform is supported
-	if [ -z "$SGI_PLATFORM" ] ; then
-		__print_usage
-	fi
-	if [ -z "${sgi_platforms[$SGI_PLATFORM]}" ] ; then
-		echo "[ERROR] Could not deduce which platform to build."
-		__print_supported_sgi_platforms
-		exit
-	fi
-
-	#Ensure a build command is specified
-	if [ -z "$BUILD_CMD" ] ; then
-		__print_usage
-	fi
+	__parse_params_validate
 }
 
 #parse the command line parameters
