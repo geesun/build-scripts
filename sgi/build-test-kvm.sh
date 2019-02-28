@@ -111,8 +111,8 @@ OUTDIR=${PLATDIR}/components
 
 update_kernel_image ()
 {
-	local disk_image="${PREBUILTS}/sgi/fedora.sgi.satadisk"
-	local boot_part="${PREBUILTS}/sgi/fedora.sgi.satadisk2"
+	local disk_image="${PREBUILTS}/refinfra/fedora.satadisk"
+	local boot_part="${PREBUILTS}/refinfra/fedora.satadisk2"
 	local bootpart_image="boot.img"
 
 	if [ ! -f $disk_image ] ; then
@@ -126,7 +126,7 @@ update_kernel_image ()
 	mkdir -p mnt
 	dd if=$disk_image of=$bootpart_image skip=$boot_part_offset count=$boot_part_size
 	fuse-ext2 $bootpart_image mnt -o rw+
-	cp $OUTDIR/linux/Image ./mnt/vmlinux-sgi
+	cp $OUTDIR/linux/Image ./mnt/vmlinux-refinfra
 	sync
 	fusermount -u mnt
 	rm -rf mnt
