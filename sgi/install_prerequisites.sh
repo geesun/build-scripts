@@ -94,7 +94,7 @@ APT_PACKAGES_ENTERPRISE=(
 		"sbsigntool"
 )
 
-LOGFILE="./sgipkg_install.log"
+LOGFILE="./refinfra_pkg_install.log"
 
 APT_PACKAGES_TO_INSTALL=( )
 APT_PACKAGES_FAILED=( )
