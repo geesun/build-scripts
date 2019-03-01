@@ -204,24 +204,24 @@ prepare_disk_image ()
 	   [ ! -f $TOP_DIR/tools/efitools/KEK.der ] ||
 	   [ ! -f $TOP_DIR/tools/efitools/DB.der ] ||
 	   [ ! -f $TOP_DIR/tools/efitools/DBX.der ]; then
-		if [ ! -f $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/PK.der ] ||
-		   [ ! -f $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/KEK.der ] ||
-		   [ ! -f $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/DB.der ] ||
-		   [ ! -f $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/DB.crt ] ||
-		   [ ! -f $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/DB.key ] ||
-		   [ ! -f $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/DBX.der ] ||
-		   [ ! -f $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/nor2_flash.img ]; then
+		if [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/PK.der ] ||
+		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/KEK.der ] ||
+		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/DB.der ] ||
+		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/DB.crt ] ||
+		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/DB.key ] ||
+		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/DBX.der ] ||
+		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/nor2_flash.img ]; then
 			echo "[ERROR] pre-built sercure keys and/or NOR flash image not found!"
 			exit 1;
 		fi
 		echo "[INFO] Using PK, KEK, DB and DBX from prebuilts..."
-		cp $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/PK.der $TOP_DIR/tools/efitools/PK.der
-		cp $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/KEK.der $TOP_DIR/tools/efitools/KEK.der
-		cp $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/DB.der $TOP_DIR/tools/efitools/DB.der
-		cp $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/DB.crt $TOP_DIR/tools/efitools/DB.crt
-		cp $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/DB.key $TOP_DIR/tools/efitools/DB.key
-		cp $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/DBX.der $TOP_DIR/tools/efitools/DBX.der
-		cp $TOP_DIR/prebuilts/sgi/secure_boot/sgi_secure_keys/nor2_flash.img ${TOP_DIR}/model-scripts/sgi/configs/$SGI_PLATFORM/nor2_flash.img
+		cp $TOP_DIR/prebuilts/refinfra/secure_boot/PK.der $TOP_DIR/tools/efitools/PK.der
+		cp $TOP_DIR/prebuilts/refinfra/secure_boot/KEK.der $TOP_DIR/tools/efitools/KEK.der
+		cp $TOP_DIR/prebuilts/refinfra/secure_boot/DB.der $TOP_DIR/tools/efitools/DB.der
+		cp $TOP_DIR/prebuilts/refinfra/secure_boot/DB.crt $TOP_DIR/tools/efitools/DB.crt
+		cp $TOP_DIR/prebuilts/refinfra/secure_boot/DB.key $TOP_DIR/tools/efitools/DB.key
+		cp $TOP_DIR/prebuilts/refinfra/secure_boot/DBX.der $TOP_DIR/tools/efitools/DBX.der
+		cp $TOP_DIR/prebuilts/refinfra/secure_boot/nor2_flash.img ${TOP_DIR}/model-scripts/$refinfra/platforms/$SGI_PLATFORM/nor2_flash.img
 	fi
 
 	#Sign the grub image and copy back the Signed image
