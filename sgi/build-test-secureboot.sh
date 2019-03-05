@@ -209,9 +209,8 @@ prepare_disk_image ()
 		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/DB.der ] ||
 		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/DB.crt ] ||
 		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/DB.key ] ||
-		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/DBX.der ] ||
-		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/nor2_flash.img ]; then
-			echo "[ERROR] pre-built sercure keys and/or NOR flash image not found!"
+		   [ ! -f $TOP_DIR/prebuilts/refinfra/secure_boot/DBX.der ]; then
+			echo "[ERROR] pre-built sercure keys not found!"
 			exit 1;
 		fi
 		echo "[INFO] Using PK, KEK, DB and DBX from prebuilts..."
@@ -221,7 +220,6 @@ prepare_disk_image ()
 		cp $TOP_DIR/prebuilts/refinfra/secure_boot/DB.crt $TOP_DIR/tools/efitools/DB.crt
 		cp $TOP_DIR/prebuilts/refinfra/secure_boot/DB.key $TOP_DIR/tools/efitools/DB.key
 		cp $TOP_DIR/prebuilts/refinfra/secure_boot/DBX.der $TOP_DIR/tools/efitools/DBX.der
-		cp $TOP_DIR/prebuilts/refinfra/secure_boot/nor2_flash.img ${TOP_DIR}/model-scripts/$refinfra/platforms/$SGI_PLATFORM/nor2_flash.img
 	fi
 
 	#Sign the grub image and copy back the Signed image
