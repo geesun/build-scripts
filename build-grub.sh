@@ -50,6 +50,13 @@ do_build ()
 			CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
 	                PATH="$PATH:$CROSS_COMPILE_DIR"
 			mkdir -p $TOP_DIR/$GRUB_PATH/output
+			# On the master branch of grub, commit '35b90906' ("gnulib: Upgrade Gnulib and switch to bootstrap tool")
+			# required the bootstrap tool to be executed before the configure step.
+			if [ -e bootstrap ]; then
+				if [ ! -e grub-core/lib/gnulib/stdlib.in.h ]; then
+					./bootstrap
+				fi
+			fi
 			if [ ! -e config.status ]; then
 				./autogen.sh
 				./configure STRIP=$CROSS_COMPILE_DIR/aarch64-linux-gnu-strip --target=aarch64-linux-gnu --with-platform=efi --prefix=$TOP_DIR/$GRUB_PATH/output/ --disable-werror
