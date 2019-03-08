@@ -74,6 +74,7 @@ APT_PACKAGES_COMMON=(
 		"python"
 		"python-pip"
 		"device-tree-compiler"
+		"autopoint"
 )
 
 ###########################################################################
