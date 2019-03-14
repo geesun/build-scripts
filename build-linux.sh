@@ -86,7 +86,7 @@ do_build ()
 				lconfig=LINUX_$name[defconfig];
 				make O=$LINUX_OUT_DIR/$name ${!lconfig}
 				make O=$LINUX_OUT_DIR/$name -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
-				if [ ${!lmodules} == "true" ]; then
+				if [ "${!lmodules}" == "true" ]; then
 					make O=$LINUX_OUT_DIR/$name/modules ${!lconfig}
 					make O=$LINUX_OUT_DIR/$name/modules -j$PARALLELISM modules
 				fi
