@@ -91,15 +91,15 @@ do_package ()
 		if [ "$SCP_BUILD_ENABLED" == "1" ]; then
 			pushd $TOP_DIR
 				mkdir -p ${OUTDIR}/${plat}
-				cp ./${SCP_PATH}/output/scp_ramfw/${SCP_BUILD_MODE}/bin/firmware.bin ${OUTDIR}/${plat}/scp-ram.bin
-				cp ./${SCP_PATH}/output/scp_romfw/${SCP_BUILD_MODE}/bin/firmware.bin ${OUTDIR}/${plat}/scp-rom.bin
+				cp ./${SCP_PATH}/output/scp_ramfw/${SCP_BUILD_MODE}/bin/scp_ramfw.bin ${OUTDIR}/${plat}/
+				cp ./${SCP_PATH}/output/scp_romfw/${SCP_BUILD_MODE}/bin/scp_romfw.bin ${OUTDIR}/${plat}/
 
 				if [ -d ${SCP_PATH}/output/mcp_romfw ]; then
-					cp ./${SCP_PATH}/output/mcp_romfw/${SCP_BUILD_MODE}/bin/firmware.bin ${OUTDIR}/${plat}/mcp-rom.bin
+					cp ./${SCP_PATH}/output/mcp_romfw/${SCP_BUILD_MODE}/bin/mcp_romfw.bin ${OUTDIR}/${plat}/
 				fi
 
 				if [ -d ${SCP_PATH}/output/mcp_ramfw ]; then
-					cp ./${SCP_PATH}/output/mcp_ramfw/${SCP_BUILD_MODE}/bin/firmware.bin ${OUTDIR}/${plat}/mcp-ram.bin
+					cp ./${SCP_PATH}/output/mcp_ramfw/${SCP_BUILD_MODE}/bin/mcp_ramfw.bin ${OUTDIR}/${plat}/
 				fi
 
 				if [[ "${SCP_BYPASS_ROM_SUPPORT[$plat]}" = true ]]; then
@@ -112,12 +112,12 @@ do_package ()
 			local var=SCP_PREBUILT_RAMFW_${plat}
 			local fw=${!var}
 			if [ -e "$fw" ]; then
-				cp $fw ${OUTDIR}/${plat}/scp-ram.bin
+				cp $fw ${OUTDIR}/${plat}/scp_ramfw.bin
 			fi
 			var=SCP_PREBUILT_ROMFW_${plat}
 			fw=${!var}
 			if [ -e "$fw" ]; then
-				cp ${fw} ${OUTDIR}/${plat}/scp-rom.bin
+				cp ${fw} ${OUTDIR}/${plat}/scp_romfw.bin
 			fi
 			var=SCP_PREBUILT_ROMFW_BYPASS_${plat}
 			fw=${!var}
@@ -129,12 +129,12 @@ do_package ()
 			local mcp_var=MCP_PREBUILT_RAMFW_${plat}
 			mcp_fw=${!mcp_var}
 			if [ -e "$mcp_fw" ]; then
-				cp ${mcp_fw} ${OUTDIR}/${plat}/mcp-ram.bin
+				cp ${mcp_fw} ${OUTDIR}/${plat}/mcp_ramfw.bin
 			fi
 			mcp_var=MCP_PREBUILT_ROMFW_${plat}
 			mcp_fw=${!mcp_var}
 			if [ -e "$mcp_fw" ]; then
-				cp ${mcp_fw} ${OUTDIR}/${plat}/mcp-rom.bin
+				cp ${mcp_fw} ${OUTDIR}/${plat}/mcp_romfw.bin
 			fi
 			mcp_var=MCP_PREBUILT_ROMFW_BYPASS_${plat}
 			mcp_fw=${!mcp_var}

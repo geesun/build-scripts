@@ -71,7 +71,7 @@ do_package()
 			local bl30_fip_param=
 
 			if [ "${!scp_out}" != "" ]; then
-				bl30_fip_param="--bl30 ${OUTDIR}/scp/${!scp_out}/scp-ram.bin"
+				bl30_fip_param="--bl30 ${OUTDIR}/scp/${!scp_out}/scp_ramfw.bin"
 			fi
 
 			if [ "${!tftf_out}" != "" ]; then

@@ -248,7 +248,7 @@ do_package()
 				local target_name=TARGET_$target[output]
 
 				if [ "${!scp_out}" != "" ]; then
-					bl30_fip_param="${bl30_param_id} ${OUTDIR}/${!scp_out}/scp-ram.bin"
+					bl30_fip_param="${bl30_param_id} ${OUTDIR}/${!scp_out}/scp_ramfw.bin"
 				fi
 
 				#Skip hw-configuration for fvp.
@@ -384,7 +384,7 @@ do_package()
 					create_tgt_symlinks ${!tf_out} ${!target_name} "tf-*"
 				fi
 				if [ "${!scp_out}" != "" ]; then
-					create_tgt_symlinks ${!scp_out} ${!target_name} "*cp-*"
+					create_tgt_symlinks ${!scp_out} ${!target_name} "*cp_*"
 				fi
 				if [ "${!uboot_out}" != "" ]; then
 					create_tgt_symlinks ${!uboot_out} ${!target_name} "uboot*"
