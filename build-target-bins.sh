@@ -82,7 +82,7 @@ append_chosen_node()
 	local ramdisk_end=$(($4 + $(wc -c < $2)))
 	local DTC=$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/$LINUX_CONFIG_DEFAULT/scripts/dtc/dtc
 	# Decode the DTB
-	${DTC} -Idtb -Odts -o$1.dts $LINUX_PATH/$3.dtb
+	${DTC} -Idtb -Odts -q -o$1.dts $LINUX_PATH/$3.dtb
 
 	echo "" >> $1.dts
 	echo "/ {" >> $1.dts
@@ -93,7 +93,7 @@ append_chosen_node()
 	echo "};" >> $1.dts
 
 	# Recode the DTB
-	${DTC} -Idts -Odtb -o$LINUX_PATH/$1.dtb $1.dts
+	${DTC} -Idts -Odtb -q -o$LINUX_PATH/$1.dtb $1.dts
 
 	# And clean up
 	rm $1.dts
