@@ -47,6 +47,7 @@ UEFI_PLAT_fvp[platname]="ArmVExpress-FVP-AArch64"
 UEFI_PLAT_fvp[output]=fvp
 UEFI_PLAT_fvp[defines]=
 UEFI_PLAT_fvp[binary]="FVP_AARCH64_EFI.fd"
+UEFI_PLAT_fvp[outbin]=uefi.bin
 
 OPTEE_BUILD_ENABLED=1
 OPTEE_FLAVOUR="fvp"

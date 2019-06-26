@@ -47,6 +47,7 @@ UEFI_PLAT_juno[platname]="ArmJuno"
 UEFI_PLAT_juno[output]=juno
 UEFI_PLAT_juno[defines]=
 UEFI_PLAT_juno[binary]="BL33_AP_UEFI.fd"
+UEFI_PLAT_juno[outbin]=uefi.bin
 
 ARM_TF_PLATS="juno"
 
