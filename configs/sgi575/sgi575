@@ -41,12 +41,22 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/sgi575/grub_config/sgi575
 # ARM_TF Flags
 ARM_TF_PLATS="sgi575"
 ARM_TF_DEBUG_ENABLED=1
+ARM_TF_ENABLE_SPM=1
+ARM_TF_RAS_EXTENSION=1
 
-# Enable support for secure partition, partition manager and RAS by default.
+# Enable support for secure partition, partition manager and RAS.
 # If SPM is enabled, ensure that UEFI_MM_BUILD_ENABLED is set to 1.
 # If SPM is disabled, ensure that secure storage and RAS features are disabled
 # as well in uefi (ref: uefi-tools/edk2-platforms.config file).
-ARM_TF_BUILD_FLAGS="ENABLE_SPM=1 RAS_EXTENSION=1 SDEI_SUPPORT=1 EL3_EXCEPTION_HANDLING=1 HANDLE_EA_EL3_FIRST=1"
+if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
+	ARM_TF_BUILD_FLAGS="ENABLE_SPM=$ARM_TF_ENABLE_SPM"
+	if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
+		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS RAS_EXTENSION=1"
+		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS SDEI_SUPPORT=1"
+		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS EL3_EXCEPTION_HANDLING=1"
+		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS HANDLE_EA_EL3_FIRST=1"
+	fi
+fi
 
 #TFTF Flags
 TFTF_DEBUG_ENABLED=1
@@ -59,16 +69,21 @@ VALID_FILESYSTEMS="busybox"
 
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
-UEFI_PLATFORMS="sgi575 sgi575_mm_standalone"
+if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
+	UEFI_PLATFORMS="sgi575 sgi575_mm_standalone"
+else
+	UEFI_PLATFORMS="sgi575"
+fi
 declare -A UEFI_PLAT_sgi575
 UEFI_PLAT_sgi575[platname]="ArmSgi"
 UEFI_PLAT_sgi575[output]=css-common
 UEFI_PLAT_sgi575[defines]="-D EDK2_PLAT=sgi575 -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
+UEFI_PLAT_sgi575[defines]="${UEFI_PLAT_sgi575[defines]} -D EDK2_ENABLE_RAS=$ARM_TF_RAS_EXTENSION"
 UEFI_PLAT_sgi575[binary]="BL33_AP_UEFI.fd"
 UEFI_PLAT_sgi575[outbin]=uefi.bin
 
 #Standalone MM Build Options
-UEFI_MM_BUILD_ENABLED=1
+UEFI_MM_BUILD_ENABLED=$ARM_TF_ENABLE_SPM
 declare -A UEFI_PLAT_sgi575_mm_standalone
 UEFI_PLAT_sgi575_mm_standalone[platname]="SgiMmStandalone"
 UEFI_PLAT_sgi575_mm_standalone[output]=css-common
