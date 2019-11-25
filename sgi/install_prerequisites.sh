@@ -93,6 +93,8 @@ APT_PACKAGES_ENTERPRISE=(
 		"autoconf"
 		"locales"
 		"sbsigntool"
+		"pkg-config"
+		"gdisk"
 )
 
 LOGFILE="./refinfra_pkg_install.log"
