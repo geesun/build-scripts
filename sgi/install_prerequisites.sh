@@ -56,6 +56,8 @@ APT_PACKAGES_COMMON=(
 		"flex"
 		"g++-multilib"
 		"gcc-multilib"
+		"gcc-6"
+		"g++-6"
 		"genext2fs"
 		"gperf"
 		"libc6:i386"
@@ -123,6 +125,7 @@ function prepare_resources()
 	sudo add-apt-repository universe >> $LOGFILE 2>&1
 	sudo add-apt-repository restricted >> $LOGFILE 2>&1
 	sudo add-apt-repository multiverse >> $LOGFILE 2>&1
+	sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y 2>&1
 	echo >> $LOGFILE 2>&1
 	echo -e "${BOLD}${GREEN}done${NORMAL}"
 
