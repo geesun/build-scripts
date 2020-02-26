@@ -255,8 +255,8 @@ do_package()
 				#ToDo: This should be ideally be handled using additional flags for hardware
 				# config fdts from the platform config files.
 				if [ "$PLATFORM" != "fvp" ] && [ "$PLATFORM" != "fvp32" ]; then
-					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb" ]; then
-						tb_fw_config_fip_param="${tb_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb"
+					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_fw_config.dtb" ]; then
+						tb_fw_config_fip_param="${tb_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_fw_config.dtb"
 					fi
 					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_nt_fw_config.dtb" ]; then
 						nt_fw_config_fip_param="${nt_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_nt_fw_config.dtb"
