@@ -58,6 +58,9 @@ if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
 	fi
 fi
 
+# Enable multi-chip support by setting the chip count to 2
+ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS CSS_SGI_CHIP_COUNT=2"
+
 #TFTF Flags
 TFTF_DEBUG_ENABLED=1
 TFTF_PATH=validation/comp-test/trusted-firmware-tf
