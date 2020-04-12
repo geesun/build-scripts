@@ -64,17 +64,17 @@ VALID_FILESYSTEMS="busybox"
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
-	UEFI_PLATFORMS="rddaniel rddaniel_mm_standalone"
+	UEFI_PLATFORMS="rddanielcfgm rddaniel_mm_standalone"
 else
-	UEFI_PLATFORMS="rddaniel"
+	UEFI_PLATFORMS="rddanielcfgm"
 fi
-declare -A UEFI_PLAT_rddaniel
-UEFI_PLAT_rddaniel[platname]="ArmSgi"
-UEFI_PLAT_rddaniel[output]=css-common
-UEFI_PLAT_rddaniel[defines]="-D EDK2_PLAT=rddaniel -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
-UEFI_PLAT_rddaniel[defines]="${UEFI_PLAT_rddaniel[defines]} -D EDK2_ENABLE_RAS=$ARM_TF_RAS_EXTENSION"
-UEFI_PLAT_rddaniel[binary]="BL33_AP_UEFI.fd"
-UEFI_PLAT_rddaniel[outbin]=uefi.bin
+declare -A UEFI_PLAT_rddanielcfgm
+UEFI_PLAT_rddanielcfgm[platname]="RdDanielCfgM"
+UEFI_PLAT_rddanielcfgm[output]=css-common
+UEFI_PLAT_rddanielcfgm[defines]="-D EDK2_PLAT=rddaniel -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
+UEFI_PLAT_rddanielcfgm[defines]="${UEFI_PLAT_rddanielcfgm[defines]} -D EDK2_ENABLE_RAS=$ARM_TF_RAS_EXTENSION"
+UEFI_PLAT_rddanielcfgm[binary]="BL33_AP_UEFI.fd"
+UEFI_PLAT_rddanielcfgm[outbin]=uefi.bin
 
 #Standalone MM Build Options
 UEFI_MM_BUILD_ENABLED=$ARM_TF_ENABLE_SPM
