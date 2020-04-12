@@ -33,6 +33,7 @@ arm_platforms[sgi575]=1
 arm_platforms[rdn1edge]=1
 arm_platforms[rde1edge]=1
 arm_platforms[rddaniel]=1
+arm_platforms[rddanielxlr]=1
 
 __print_supported_arm_platforms()
 {
