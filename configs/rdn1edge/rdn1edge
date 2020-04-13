@@ -75,7 +75,7 @@ else
 	UEFI_PLATFORMS="rdn1edge"
 fi
 declare -A UEFI_PLAT_rdn1edge
-UEFI_PLAT_rdn1edge[platname]="ArmSgi"
+UEFI_PLAT_rdn1edge[platname]="RdN1Edge"
 UEFI_PLAT_rdn1edge[output]=css-common
 UEFI_PLAT_rdn1edge[defines]="-D EDK2_PLAT=rdn1edge -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
 UEFI_PLAT_rdn1edge[defines]="${UEFI_PLAT_rdn1edge[defines]} -D EDK2_ENABLE_RAS=$ARM_TF_RAS_EXTENSION"
