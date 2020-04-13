@@ -75,7 +75,7 @@ else
 	UEFI_PLATFORMS="sgi575"
 fi
 declare -A UEFI_PLAT_sgi575
-UEFI_PLAT_sgi575[platname]="ArmSgi"
+UEFI_PLAT_sgi575[platname]="Sgi575"
 UEFI_PLAT_sgi575[output]=css-common
 UEFI_PLAT_sgi575[defines]="-D EDK2_PLAT=sgi575 -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
 UEFI_PLAT_sgi575[defines]="${UEFI_PLAT_sgi575[defines]} -D EDK2_ENABLE_RAS=$ARM_TF_RAS_EXTENSION"
