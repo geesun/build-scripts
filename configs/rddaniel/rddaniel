@@ -88,7 +88,7 @@ UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
 #SCP options
 SCP_BUILD_ENABLED=1
 SCP_PLATFORMS="rddaniel"
-SCP_BUILD_MODE=release
+SCP_BUILD_MODE=debug
 SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-none-eabi-5_4-2016q3/bin
 
 # Misc options
