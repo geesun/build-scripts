@@ -105,14 +105,14 @@ update_grub ()
 
 package_kvm_tool ()
 {
-	KVM_TOOL_URL=http://http.us.debian.org/debian/pool/main/k/kvmtool/kvmtool_0.20170904-1_arm64.deb
+	KVM_TOOL_URL=http://http.us.debian.org/debian/pool/main/k/kvmtool/kvmtool_0.20170904-1.1_arm64.deb
 	echo "Info: Downloading kvmtool binary"
 	KVMDIR=$PREBUILTS/refinfra/kvmtool
 	mkdir -p $KVMDIR
 	pushd $KVMDIR
 	wget $KVM_TOOL_URL
 	echo "Info: Unpacking KVM tool binary"
-	dpkg-deb -x kvmtool_0.20170904-1_arm64.deb .
+	dpkg-deb -x kvmtool_0.20170904-1.1_arm64.deb .
 	mv usr/bin/lkvm .
 	rm -rf usr
 	cp lkvm /mnt/root/
