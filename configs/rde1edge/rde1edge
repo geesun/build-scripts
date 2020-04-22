@@ -41,15 +41,15 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rde1edge/grub_config/rde1
 # ARM_TF Flags
 ARM_TF_PLATS="rde1edge"
 ARM_TF_DEBUG_ENABLED=1
-ARM_TF_ENABLE_SPM=0
-ARM_TF_RAS_EXTENSION=0
+ARM_TF_ENABLE_SPM=1
+ARM_TF_RAS_EXTENSION=1
 
 # Enable support for secure partition, partition manager and RAS.
 # If SPM is enabled, ensure that UEFI_MM_BUILD_ENABLED is set to 1.
 # If SPM is disabled, ensure that secure storage and RAS features are disabled
 # as well in uefi (ref: uefi-tools/edk2-platforms.config file).
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
-	ARM_TF_BUILD_FLAGS="ENABLE_SPM=$ARM_TF_ENABLE_SPM"
+	ARM_TF_BUILD_FLAGS="ENABLE_SPM=$ARM_TF_ENABLE_SPM SPM_MM=$ARM_TF_RAS_EXTENSION"
 	if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
 		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS RAS_EXTENSION=1"
 		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS SDEI_SUPPORT=1"
