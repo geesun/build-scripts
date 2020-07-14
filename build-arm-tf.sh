@@ -52,7 +52,7 @@ do_build ()
 		pushd $TOP_DIR/$ARM_TF_PATH
 		for plat in $ARM_TF_PLATS; do
 			local atf_build_flags=$ARM_TF_BUILD_FLAGS
-			local atf_tbbr_enabled=TBBR_$plat[tbbr]
+			local atf_tbbr_enabled=TARGET_$plat[tbbr]
 			local atf_optee_enabled=OPTEE_BUILD_ENABLED
 			if [ "${!atf_tbbr_enabled}" == "1" ]; then
 				#if trusted board boot(TBBR) enabled, set corresponding compiliation flags
