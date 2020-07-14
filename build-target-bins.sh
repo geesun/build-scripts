@@ -213,10 +213,12 @@ do_package()
 			local bl31_param_id="--soc-fw"
 			local bl32_param_id="--tos-fw"
 			local bl33_param_id="--nt-fw"
+			local fw_config_param_id="--fw-config"
 			local tb_fw_config_param_id="--tb-fw-config"
 			local nt_fw_config_param_id="--nt-fw-config"
 			local soc_fw_config_param_id="--soc-fw-config"
 			local hw_config_param_id="--hw-config"
+			local fw_config_fip_param=""
 			local tb_fw_config_fip_param=""
 			local nt_fw_config_fip_param=""
 			local soc_fw_config_fip_param=""
@@ -256,7 +258,10 @@ do_package()
 				# config fdts from the platform config files.
 				if [ "$PLATFORM" != "fvp" ] && [ "$PLATFORM" != "fvp32" ]; then
 					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_fw_config.dtb" ]; then
-						tb_fw_config_fip_param="${tb_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_fw_config.dtb"
+						fw_config_fip_param="${fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_fw_config.dtb"
+					fi
+					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb" ]; then
+						tb_fw_config_fip_param="${tb_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb"
 					fi
 					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_nt_fw_config.dtb" ]; then
 						nt_fw_config_fip_param="${nt_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_nt_fw_config.dtb"
@@ -282,7 +287,7 @@ do_package()
 					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!uefi_out}/${UEFI_MM_PAYLOAD_BIN}"
 				fi
 
-				local fip_param="${bl2_fip_param} ${bl30_fip_param} ${bl32_fip_param} ${EXTRA_FIP_PARAM} ${hw_config_fip_param} ${tb_fw_config_fip_param} ${nt_fw_config_fip_param} ${soc_fw_config_fip_param}"
+				local fip_param="${bl2_fip_param} ${bl30_fip_param} ${bl32_fip_param} ${EXTRA_FIP_PARAM} ${hw_config_fip_param} ${fw_config_fip_param} ${tb_fw_config_fip_param} ${nt_fw_config_fip_param} ${soc_fw_config_fip_param}"
 				if [ "$ARM_TF_ARCH" == "aarch64" ] && [ "$ARM_TF_AARCH32_EL3_RUNTIME" != "1" ]; then
 					fip_param="$fip_param ${bl31_fip_param}"
 				else
