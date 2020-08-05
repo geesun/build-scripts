@@ -77,6 +77,7 @@ APT_PACKAGES_COMMON=(
 		"python-pip"
 		"device-tree-compiler"
 		"autopoint"
+		"doxygen"
 )
 
 ###########################################################################
