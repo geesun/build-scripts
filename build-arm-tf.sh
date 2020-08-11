@@ -83,8 +83,8 @@ do_build ()
 		done
 
 		# make tools
-		make certtool
-		make fiptool
+		make -j $PARALLELISM certtool
+		make -j $PARALLELISM fiptool
 		popd
 	fi
 }

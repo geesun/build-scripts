@@ -49,8 +49,8 @@ do_build ()
 
 		for app in $MBEDV2_APPS; do
 			for plat in $MBEDV2_PLATS; do
-				python build.py -m $plat -t GCC_ARM -j 16
-				python make.py -m $plat -t GCC_ARM -n $app -j 16
+				python build.py -m $plat -t GCC_ARM -j $PARALLELISM
+				python make.py -m $plat -t GCC_ARM -n $app -j $PARALLELISM
 				python project.py -m $plat -i gcc_arm -n $app
 			done
 		done

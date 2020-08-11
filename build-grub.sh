@@ -61,7 +61,7 @@ do_build ()
 				./autogen.sh
 				./configure STRIP=$CROSS_COMPILE_DIR/aarch64-linux-gnu-strip --target=aarch64-linux-gnu --with-platform=efi --prefix=$TOP_DIR/$GRUB_PATH/output/ --disable-werror
 			fi
-			make -j8 install
+			make -j $PARALLELISM install
 			output/bin/grub-mkimage -v -c ${GRUB_PLAT_CONFIG_FILE} -o output/grubaa64.efi -O arm64-efi -p "" part_gpt part_msdos ntfs ntfscomp hfsplus fat ext2 normal chain boot configfile linux help part_msdos terminal terminfo configfile lsefi search normal gettext loadenv read search_fs_file search_fs_uuid search_label
 		fi
 	fi

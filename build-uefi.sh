@@ -53,13 +53,13 @@ do_build ()
 	if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$UEFI_ACPICA_PATH
 		unset HOST
-		make iasl
+		make -j $PARALLELISM iasl
 		popd
 		pushd $TOP_DIR/$UEFI_PATH
 		CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
 		PATH="$PATH:$CROSS_COMPILE_DIR"
 		source ./edksetup.sh
-		make -C BaseTools
+		make -j $PARALLELISM -C BaseTools
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
 		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$CROSS_COMPILE
 		local vars=

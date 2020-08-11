@@ -47,7 +47,7 @@ do_build ()
 
 		pushd $TOP_DIR/$TFTF_PATH
 		for plat in $TFTF_PLATS; do
-			make PLAT=${plat} DEBUG=${TFTF_DEBUG_ENABLED} TEST_REPORTS="${TFTF_REPORTS}"
+			make -j $PARALLELISM PLAT=${plat} DEBUG=${TFTF_DEBUG_ENABLED} TEST_REPORTS="${TFTF_REPORTS}"
 		done
 		popd
 	fi
