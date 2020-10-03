@@ -28,6 +28,10 @@
 
 source $DIR/configs/common/common.base
 
+export CROSS_COMPILE_64=${TOP_DIR}/tools/gcc/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu/bin/aarch64-linux-gnu-
+export CROSS_COMPILE=$CROSS_COMPILE_64
+export LINUX_COMPILER=$CROSS_COMPILE_64
+
 #Default linux configs per OS
 LINUX_CONFIG_LIST=""
 BUSYBOX_LINUX_CONFIG_LIST="defconfig"
@@ -89,7 +93,7 @@ UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
 SCP_BUILD_ENABLED=1
 SCP_PLATFORMS="rddaniel"
 SCP_BUILD_MODE=debug
-SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-none-eabi-5_4-2016q3/bin
+SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-8.3-2019.03-x86_64-arm-eabi/bin
 
 # Misc options
 COMPONENT_FLAVOUR=rddaniel
