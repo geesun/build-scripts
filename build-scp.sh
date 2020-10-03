@@ -63,7 +63,7 @@ do_build ()
 			local outdir=$TOP_DIR/$SCP_PATH/output
 			mkdir -p ${outdir}
 
-			make PRODUCT=$item MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-none-eabi-gcc
+			make PRODUCT=$item MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-eabi-gcc
 			cp -r build/product/$item/* ${outdir}/
 		done
 		popd
