@@ -76,7 +76,9 @@ declare -A UEFI_PLAT_rddanielcfgm
 UEFI_PLAT_rddanielcfgm[platname]="RdDanielCfgM"
 UEFI_PLAT_rddanielcfgm[output]=css-common
 UEFI_PLAT_rddanielcfgm[defines]="-D EDK2_PLAT=rddaniel -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
-UEFI_PLAT_rddanielcfgm[defines]="${UEFI_PLAT_rddanielcfgm[defines]} -D EDK2_ENABLE_RAS=$ARM_TF_RAS_EXTENSION"
+if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
+	UEFI_PLAT_rddanielcfgm[defines]="${UEFI_PLAT_rddanielcfgm[defines]} -D EDK2_ENABLE_RAS"
+fi
 UEFI_PLAT_rddanielcfgm[binary]="BL33_AP_UEFI.fd"
 UEFI_PLAT_rddanielcfgm[outbin]=uefi.bin
 

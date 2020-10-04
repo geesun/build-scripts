@@ -85,7 +85,9 @@ declare -A UEFI_PLAT_rdn1edgex2
 UEFI_PLAT_rdn1edgex2[platname]="RdN1EdgeX2"
 UEFI_PLAT_rdn1edgex2[output]=css-common
 UEFI_PLAT_rdn1edgex2[defines]="-D EDK2_PLAT=rdn1edgex2 -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
-UEFI_PLAT_rdn1edgex2[defines]="${UEFI_PLAT_rdn1edgex2[defines]} -D EDK2_ENABLE_RAS=$ARM_TF_RAS_EXTENSION"
+if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
+	UEFI_PLAT_rdn1edgex2[defines]="${UEFI_PLAT_rdn1edgex2[defines]} -D EDK2_ENABLE_RAS"
+fi
 UEFI_PLAT_rdn1edgex2[binary]="BL33_AP_UEFI.fd"
 UEFI_PLAT_rdn1edgex2[outbin]=uefi.bin
 
