@@ -321,7 +321,7 @@ do_package()
 
 				fi
 
-				if [ "${!uboot_out}" != "" ]; then
+				if [ "${uboot_out}" ] && [ "${!uboot_out}" != "" ]; then
 					# remove existing fip
 					rm -f ${PLATDIR}/${!target_name}/fip-uboot.bin
 					mkdir -p ${PLATDIR}/${!target_name}
@@ -391,7 +391,7 @@ do_package()
 				if [ "${!scp_out}" != "" ]; then
 					create_tgt_symlinks ${!scp_out} ${!target_name} "*cp_*"
 				fi
-				if [ "${!uboot_out}" != "" ]; then
+				if [ "${uboot_out}" ] && [ "${!uboot_out}" != "" ]; then
 					create_tgt_symlinks ${!uboot_out} ${!target_name} "uboot*"
 				fi
 				if [ "${!uefi_out}" != "" ]; then
