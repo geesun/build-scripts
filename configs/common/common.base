@@ -1,4 +1,4 @@
-# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2021, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -203,6 +203,9 @@ declare -a TARGET_BINS_COPY_LIST
 #TARGET_BINS_COPY_LIST_BUSYBOX - An array just like TARGET_BINS_COPY_LIST
 #       except it only applies if the busybox filesystem is being built
 declare -a TARGET_BINS_COPY_LIST_BUSYBOX
+#TARGET_BINS_COPY_LIST_BUILDROOT - An array just like TARGET_BINS_COPY_LIST
+#       except it only applies if the buildroot filesystem is being built
+declare -a TARGET_BINS_COPY_LIST_BUILDROOT
 #TARGET_BINS_COPY_LIST_OE - An array just like TARGET_BINS_COPY_LIST
 #       except it only applies if the oe filesystem is being built
 declare -a TARGET_BINS_COPY_LIST_OE
@@ -233,6 +236,6 @@ fi
 #   platform. If your platform only supports particular platforms, then reduce
 #   this list. This means the build scripts will only source files under the
 #   filesystems directory that apply to your platform.
-VALID_FILESYSTEMS="android oe busybox uefi"
+VALID_FILESYSTEMS="android oe busybox buildroot uefi"
 
 COMPONENT_FLAVOUR=$FLAVOUR
