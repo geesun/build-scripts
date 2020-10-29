@@ -1,4 +1,4 @@
-# Copyright (c) 2018, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2018-2021, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -35,6 +35,7 @@ export LINUX_COMPILER=$CROSS_COMPILE_64
 #Default linux configs per OS
 LINUX_CONFIG_LIST=""
 BUSYBOX_LINUX_CONFIG_LIST="defconfig"
+BUILDROOT_LINUX_CONFIG_LIST="defconfig"
 
 #Grub Build options
 GRUB_BUILD_ENABLED=1
@@ -69,7 +70,7 @@ TFTF_PLATS="sgi575"
 TFTF_REPORTS="uart:raw"
 
 # Filesystem options
-VALID_FILESYSTEMS="busybox"
+VALID_FILESYSTEMS="busybox buildroot"
 
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
@@ -119,7 +120,7 @@ TARGET_sgi575[tbbr]=1
 TARGET_sgi575[scp]="sgi575"
 TARGET_sgi575[tftf]="sgi575"
 SCP_BYPASS_ROM_SUPPORT[sgi575]=false
-BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-grub.sh build-scp.sh build-target-bins.sh "
+BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-scp.sh build-target-bins.sh "
 
 # UEFI SCT Options
 SCT_OUT_DIR=$TOP_DIR/output/sgi575/uefisct
