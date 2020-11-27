@@ -78,7 +78,7 @@ fi
 declare -A UEFI_PLAT_rddanielcfgxlr
 UEFI_PLAT_rddanielcfgxlr[platname]="RdDanielCfgXlr"
 UEFI_PLAT_rddanielcfgxlr[output]=css-common
-UEFI_PLAT_rddanielcfgxlr[defines]="-D EDK2_PLAT=rddanielcfgxlr -D EDK2_ENABLE_SMSC_91X -D VALIDATION_LVL=$VALIDATION_LVL"
+UEFI_PLAT_rddanielcfgxlr[defines]="-D EDK2_PLAT=rddanielcfgxlr -D VALIDATION_LVL=$VALIDATION_LVL"
 if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
 	UEFI_PLAT_rddanielcfgxlr[defines]="${UEFI_PLAT_rddanielcfgxlr[defines]} -D EDK2_ENABLE_RAS"
 fi
