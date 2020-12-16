@@ -40,10 +40,10 @@ BUSYBOX_LINUX_CONFIG_LIST="defconfig"
 GRUB_BUILD_ENABLED=1
 GRUB_PATH=grub
 GRUB_BUILD_SCRIPT="build-grub.sh "
-GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rddanielxlr/grub_config/rddanielxlr.cfg
+GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rdv1mc/grub_config/rdv1mc.cfg
 
 # ARM_TF Flags
-ARM_TF_PLATS="rddanielxlr"
+ARM_TF_PLATS="rdv1mc"
 ARM_TF_DEBUG_ENABLED=1
 ARM_TF_ENABLE_SPM=0
 ARM_TF_RAS_EXTENSION=0
@@ -71,46 +71,46 @@ VALID_FILESYSTEMS="busybox"
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
-	UEFI_PLATFORMS="rddanielcfgxlr rddaniel_mm_standalone"
+	UEFI_PLATFORMS="rdv1mc rdv1mc_mm_standalone"
 else
-	UEFI_PLATFORMS="rddanielcfgxlr"
+	UEFI_PLATFORMS="rdv1mc"
 fi
-declare -A UEFI_PLAT_rddanielcfgxlr
-UEFI_PLAT_rddanielcfgxlr[platname]="RdDanielCfgXlr"
-UEFI_PLAT_rddanielcfgxlr[output]=css-common
-UEFI_PLAT_rddanielcfgxlr[defines]="-D EDK2_PLAT=rddanielcfgxlr -D VALIDATION_LVL=$VALIDATION_LVL"
+declare -A UEFI_PLAT_rdv1mc
+UEFI_PLAT_rdv1mc[platname]="RdV1Mc"
+UEFI_PLAT_rdv1mc[output]=css-common
+UEFI_PLAT_rdv1mc[defines]="-D EDK2_PLAT=rdv1mc -D VALIDATION_LVL=$VALIDATION_LVL"
 if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
-	UEFI_PLAT_rddanielcfgxlr[defines]="${UEFI_PLAT_rddanielcfgxlr[defines]} -D EDK2_ENABLE_RAS"
+	UEFI_PLAT_rdv1mc[defines]="${UEFI_PLAT_rdv1mc[defines]} -D EDK2_ENABLE_RAS"
 fi
-UEFI_PLAT_rddanielcfgxlr[binary]="BL33_AP_UEFI.fd"
-UEFI_PLAT_rddanielcfgxlr[outbin]=uefi.bin
+UEFI_PLAT_rdv1mc[binary]="BL33_AP_UEFI.fd"
+UEFI_PLAT_rdv1mc[outbin]=uefi.bin
 
 #Standalone MM Build Options
 UEFI_MM_BUILD_ENABLED=$ARM_TF_ENABLE_SPM
-declare -A UEFI_PLAT_rddanielxlr_mm_standalone
-UEFI_PLAT_rddanielxlr_mm_standalone[platname]="SgiMmStandalone"
-UEFI_PLAT_rddanielxlr_mm_standalone[output]=css-common
-UEFI_PLAT_rddanielxlr_mm_standalone[binary]="BL32_AP_MM.fd"
-UEFI_PLAT_rddanielxlr_mm_standalone[outbin]=mm_standalone.bin
+declare -A UEFI_PLAT_rdv1mc_mm_standalone
+UEFI_PLAT_rdv1mc_mm_standalone[platname]="SgiMmStandalone"
+UEFI_PLAT_rdv1mc_mm_standalone[output]=css-common
+UEFI_PLAT_rdv1mc_mm_standalone[binary]="BL32_AP_MM.fd"
+UEFI_PLAT_rdv1mc_mm_standalone[outbin]=mm_standalone.bin
 UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
 
 #SCP options
 SCP_BUILD_ENABLED=1
-SCP_PLATFORMS="rddanielxlr"
+SCP_PLATFORMS="rdv1mc"
 SCP_BUILD_MODE=debug
 SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-8.3-2019.03-x86_64-arm-eabi/bin
 
 # Misc options
-COMPONENT_FLAVOUR=rddanielxlr
+COMPONENT_FLAVOUR=rdv1mc
 
-TARGET_BINS_PLATS="rddanielxlr"
-declare -A TARGET_rddanielxlr
-TARGET_rddanielxlr[arm-tf]="rddanielxlr"
-TARGET_rddanielxlr[output]="rddanielxlr"
-TARGET_rddanielxlr[uefi]="css-common"
-TARGET_rddanielxlr[linux]="Image"
-TARGET_rddanielxlr[ramdisk]=0x88000000
-TARGET_rddanielxlr[tbbr]=1
-TARGET_rddanielxlr[scp]="rddanielxlr"
-SCP_BYPASS_ROM_SUPPORT[rddanielxlr]=false
+TARGET_BINS_PLATS="rdv1mc"
+declare -A TARGET_rdv1mc
+TARGET_rdv1mc[arm-tf]="rdv1mc"
+TARGET_rdv1mc[output]="rdv1mc"
+TARGET_rdv1mc[uefi]="css-common"
+TARGET_rdv1mc[linux]="Image"
+TARGET_rdv1mc[ramdisk]=0x88000000
+TARGET_rdv1mc[tbbr]=1
+TARGET_rdv1mc[scp]="rdv1mc"
+SCP_BYPASS_ROM_SUPPORT[rdv1mc]=false
 BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-grub.sh build-target-bins.sh "
