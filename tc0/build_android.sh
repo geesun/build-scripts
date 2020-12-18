@@ -42,6 +42,15 @@ incorrect_script_use () {
 	exit 1
 }
 
+# check if file exists and exit if it doesnt
+check_file_exists_and_exit () {
+	if [ ! -f $1 ]
+	then
+		echo "$1 does not exist"
+		exit 1
+	fi
+}
+
 make_ramdisk_android_image () {
 	./build-scripts/tc0/add_uboot_header.sh
 	./build-scripts/tc0/create_android_image.sh -a $AVB
@@ -72,11 +81,16 @@ done
 [ -z "$DISTRO" ] && incorrect_script_use || echo "DISTRO=$DISTRO"
 echo "AVB=$AVB"
 
+
+KERNEL_IMAGE=../bsp/build-poky/tmp-poky/deploy/images/tc0/Image
 . build/envsetup.sh
 case $DISTRO in
     android-nano)
 		if [ "$AVB" == true ]
 		then
+			check_file_exists_and_exit $KERNEL_IMAGE
+			echo "Using $KERNEL_IMAGE for kernel"
+			cp $KERNEL_IMAGE device/arm/tc0
 			lunch tc0_nano-userdebug;
 		else
 			lunch tc0_nano-eng;
@@ -85,6 +99,9 @@ case $DISTRO in
     android-swr)
 		if [ "$AVB" == true ]
 		then
+			check_file_exists_and_exit $KERNEL_IMAGE
+			echo "Using $KERNEL_IMAGE for kernel"
+			cp $KERNEL_IMAGE device/arm/tc0
 			lunch tc0_swr-userdebug;
 		else
 			lunch tc0_swr-eng;
