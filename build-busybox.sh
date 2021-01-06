@@ -94,6 +94,10 @@ do_package ()
 		cp $BUSYBOX_RAMDISK_PATH/ramdisk.img \
 			${PLATDIR}/ramdisk-busybox.img
 		popd
+		# delete temp files
+		rm -f $TOP_DIR/$BUSYBOX_RAMDISK_PATH/ramdisk.img
+		rm -f $TOP_DIR/$BUSYBOX_RAMDISK_PATH/busybox
+
 		if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
 			pushd ${PLATDIR}
 			for target in $TARGET_BINS_PLATS; do
