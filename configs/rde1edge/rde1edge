@@ -74,6 +74,7 @@ else
 fi
 declare -A UEFI_PLAT_rde1edge
 UEFI_PLAT_rde1edge[platname]="RdE1Edge"
+UEFI_PLAT_rde1edge[dsc]="Platform/ARM/SgiPkg/RdE1Edge/RdE1Edge.dsc"
 UEFI_PLAT_rde1edge[output]=css-common
 UEFI_PLAT_rde1edge[defines]="-D EDK2_PLAT=rde1edge -D VALIDATION_LVL=$VALIDATION_LVL"
 if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
@@ -86,6 +87,7 @@ UEFI_PLAT_rde1edge[outbin]=uefi.bin
 UEFI_MM_BUILD_ENABLED=$ARM_TF_ENABLE_SPM
 declare -A UEFI_PLAT_rde1edge_mm_standalone
 UEFI_PLAT_rde1edge_mm_standalone[platname]="SgiMmStandalone"
+UEFI_PLAT_rde1edge_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm.dsc"
 UEFI_PLAT_rde1edge_mm_standalone[output]=css-common
 UEFI_PLAT_rde1edge_mm_standalone[binary]="BL32_AP_MM.fd"
 UEFI_PLAT_rde1edge_mm_standalone[outbin]=mm_standalone.bin

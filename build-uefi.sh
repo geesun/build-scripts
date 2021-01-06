@@ -51,17 +51,26 @@
 do_build ()
 {
 	if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
+		# build acpica
 		pushd $TOP_DIR/$UEFI_ACPICA_PATH
 		unset HOST
 		make -j $PARALLELISM iasl
 		popd
+
+		# prepare to build edk2 targets
 		pushd $TOP_DIR/$UEFI_PATH
 		CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
 		PATH="$PATH:$CROSS_COMPILE_DIR"
-		source ./edksetup.sh
-		make -j $PARALLELISM -C BaseTools
+
+		export WORKSPACE=$TOP_DIR/$UEFI_PATH
+		export PACKAGES_PATH=$PWD/:$PWD/edk2-platforms
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
 		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$CROSS_COMPILE
+		source ./edksetup.sh
+
+		# build basetools
+		make -j $PARALLELISM -C BaseTools
+
 		local vars=
 		for item in $UEFI_PLATFORMS; do
 			makefile=UEFI_PLAT_$item[makefile]
@@ -72,12 +81,13 @@ do_build ()
 				export EDK2_PLATFORM=${!vars}
 				IASL_PREFIX=${TOP_DIR}/${UEFI_ACPICA_PATH}/bin/ make -f ${!makefile} EDK2_BUILD=$UEFI_BUILD_MODE
 			else
-				outdir=UEFI_PLAT_$item[platname]
 				vars=UEFI_PLAT_$item[defines]
+				dsc=UEFI_PLAT_$item[dsc]
 				echo
 				echo "EDK2 build parameters: " $UEFI_EXTRA_BUILD_PARAMS ${!vars}
+				echo "Build command: build -n $PARALLELISM -a "AARCH64" -t GCC5 $UEFI_EXTRA_BUILD_PARAMS -b $UEFI_BUILD_MODE -s -p ${!dsc} ${!vars}"
 				echo
-				EXTRA_OPTIONS="-s" IASL_PREFIX=${TOP_DIR}/${UEFI_ACPICA_PATH}/bin/ ${TOP_DIR}/${UEFI_TOOLS_PATH}/edk2-build.sh -e ${TOP_DIR}/uefi/edk2 -p ${TOP_DIR}/uefi/edk2/edk2-platforms -D EDK2_OUT_DIR=Build/${!outdir} $UEFI_EXTRA_BUILD_PARAMS ${!vars} -b $UEFI_BUILD_MODE $item
+				build -n $PARALLELISM -a "AARCH64" -t GCC5 $UEFI_EXTRA_BUILD_PARAMS -b $UEFI_BUILD_MODE -s -p ${!dsc} ${!vars}
 			fi
 		done
 		popd

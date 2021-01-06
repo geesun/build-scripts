@@ -83,6 +83,7 @@ else
 fi
 declare -A UEFI_PLAT_rdn1edgex2
 UEFI_PLAT_rdn1edgex2[platname]="RdN1EdgeX2"
+UEFI_PLAT_rdn1edgex2[dsc]="Platform/ARM/SgiPkg/RdN1EdgeX2/RdN1EdgeX2.dsc"
 UEFI_PLAT_rdn1edgex2[output]=css-common
 UEFI_PLAT_rdn1edgex2[defines]="-D EDK2_PLAT=rdn1edgex2 -D VALIDATION_LVL=$VALIDATION_LVL"
 if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
@@ -93,11 +94,12 @@ UEFI_PLAT_rdn1edgex2[outbin]=uefi.bin
 
 #Standalone MM Build Options
 UEFI_MM_BUILD_ENABLED=$ARM_TF_ENABLE_SPM
-declare -A UEFI_PLAT_rdn1edge_mm_standalone
-UEFI_PLAT_rdn1edge_mm_standalone[platname]="SgiMmStandalone"
-UEFI_PLAT_rdn1edge_mm_standalone[output]=css-common
-UEFI_PLAT_rdn1edge_mm_standalone[binary]="BL32_AP_MM.fd"
-UEFI_PLAT_rdn1edge_mm_standalone[outbin]=mm_standalone.bin
+declare -A UEFI_PLAT_rdn1edgex2_mm_standalone
+UEFI_PLAT_rdn1edgex2_mm_standalone[platname]="SgiMmStandalone"
+UEFI_PLAT_rdn1edgex2_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm.dsc"
+UEFI_PLAT_rdn1edgex2_mm_standalone[output]=css-common
+UEFI_PLAT_rdn1edgex2_mm_standalone[binary]="BL32_AP_MM.fd"
+UEFI_PLAT_rdn1edgex2_mm_standalone[outbin]=mm_standalone.bin
 UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
 
 #SCP options
