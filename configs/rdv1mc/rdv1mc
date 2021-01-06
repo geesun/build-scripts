@@ -77,6 +77,7 @@ else
 fi
 declare -A UEFI_PLAT_rdv1mc
 UEFI_PLAT_rdv1mc[platname]="RdV1Mc"
+UEFI_PLAT_rdv1mc[dsc]="Platform/ARM/SgiPkg/RdV1Mc/RdV1Mc.dsc"
 UEFI_PLAT_rdv1mc[output]=css-common
 UEFI_PLAT_rdv1mc[defines]="-D EDK2_PLAT=rdv1mc -D VALIDATION_LVL=$VALIDATION_LVL"
 if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
@@ -89,6 +90,7 @@ UEFI_PLAT_rdv1mc[outbin]=uefi.bin
 UEFI_MM_BUILD_ENABLED=$ARM_TF_ENABLE_SPM
 declare -A UEFI_PLAT_rdv1mc_mm_standalone
 UEFI_PLAT_rdv1mc_mm_standalone[platname]="SgiMmStandalone"
+UEFI_PLAT_rdv1mc_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm.dsc"
 UEFI_PLAT_rdv1mc_mm_standalone[output]=css-common
 UEFI_PLAT_rdv1mc_mm_standalone[binary]="BL32_AP_MM.fd"
 UEFI_PLAT_rdv1mc_mm_standalone[outbin]=mm_standalone.bin
