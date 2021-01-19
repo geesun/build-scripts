@@ -106,6 +106,9 @@ SCP_PLATFORMS="rdn1e1"
 SCP_BUILD_MODE=debug
 SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-8.3-2019.03-x86_64-arm-eabi/bin
 
+# Buildroot options
+BUILDROOT_DEFCONFIG=aarch64_rdinfra_defconfig
+
 # Misc options
 COMPONENT_FLAVOUR=rdn1edge
 
