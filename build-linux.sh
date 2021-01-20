@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2021, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -44,6 +44,7 @@
 # 	path - the path to the linux source
 #	defconfig - a defconfig to build
 #	config - the list of config fragments
+# LINUX_TOOLS_IOMMU_BUILD - Build tools/iommu in Linux
 # TARGET_BINS_PLATS - the platforms to create binaries for
 # TARGET_{plat} - array of platform parameters, indexed by
 #	fdts - the fdt pattern used by the platform
@@ -86,6 +87,10 @@ do_build ()
 				lconfig=LINUX_$name[defconfig];
 				make O=$LINUX_OUT_DIR/$name ${!lconfig}
 				make O=$LINUX_OUT_DIR/$name -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
+				if [ "$LINUX_TOOLS_IOMMU_BUILD" == "1" ]; then
+					make O=$LINUX_OUT_DIR/$name headers_install
+					make O=$LINUX_OUT_DIR/$name tools/iommu
+				fi
 				if [ "${!lmodules}" == "true" ]; then
 					make O=$LINUX_OUT_DIR/$name/modules ${!lconfig}
 					make O=$LINUX_OUT_DIR/$name/modules -j$PARALLELISM modules
