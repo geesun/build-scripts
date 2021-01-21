@@ -63,7 +63,7 @@ do_build ()
 		PATH="$PATH:$CROSS_COMPILE_DIR"
 
 		export WORKSPACE=$TOP_DIR/$UEFI_PATH
-		export PACKAGES_PATH=$PWD/:$PWD/edk2-platforms
+		export PACKAGES_PATH=$PWD/:$PWD/edk2-platforms:$PWD/edk2-libc
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
 		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$CROSS_COMPILE
 		source ./edksetup.sh
