@@ -45,7 +45,7 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rdn2/grub_config/rdn2.cfg
 # ARM_TF Flags
 ARM_TF_PLATS="rdn2"
 ARM_TF_DEBUG_ENABLED=1
-ARM_TF_ENABLE_SPM=0
+ARM_TF_ENABLE_SPM=1
 ARM_TF_RAS_EXTENSION=0
 
 # Enable support for secure partition, partition manager and RAS.
@@ -53,7 +53,7 @@ ARM_TF_RAS_EXTENSION=0
 # If SPM is disabled, ensure that secure storage and RAS features are disabled
 # as well in uefi (ref: uefi-tools/edk2-platforms.config file).
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
-	ARM_TF_BUILD_FLAGS="ENABLE_SPM=$ARM_TF_ENABLE_SPM"
+	ARM_TF_BUILD_FLAGS="ENABLE_SPM=$ARM_TF_ENABLE_SPM SPM_MM=$ARM_TF_ENABLE_SPM"
 	ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS EL3_EXCEPTION_HANDLING=$ARM_TF_ENABLE_SPM"
 	if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
 		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS RAS_EXTENSION=1"
@@ -85,7 +85,7 @@ UEFI_PLAT_rdn2[outbin]=uefi.bin
 UEFI_MM_BUILD_ENABLED=$ARM_TF_ENABLE_SPM
 declare -A UEFI_PLAT_rdn2_mm_standalone
 UEFI_PLAT_rdn2_mm_standalone[platname]="SgiMmStandalone"
-UEFI_PLAT_rdn2_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm.dsc"
+UEFI_PLAT_rdn2_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm2.dsc"
 UEFI_PLAT_rdn2_mm_standalone[output]=css-common
 UEFI_PLAT_rdn2_mm_standalone[binary]="BL32_AP_MM.fd"
 UEFI_PLAT_rdn2_mm_standalone[outbin]=mm_standalone.bin
