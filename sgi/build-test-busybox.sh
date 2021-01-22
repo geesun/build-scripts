@@ -102,7 +102,6 @@ TOP_DIR=`pwd`
 PLATDIR=${TOP_DIR}/output/$SGI_PLATFORM
 OUTDIR=${PLATDIR}/components
 GRUB_FS_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/$SGI_PLATFORM/grub_config/busybox.cfg
-GRUB_FS_VALIDATION_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/$SGI_PLATFORM/grub_config/busybox-dhcp.cfg
 BLOCK_SIZE=512
 SEC_PER_MB=$((1024*2))
 EXT3PART_UUID=535add81-5875-4b4a-b44a-464aee5f5cbd
@@ -111,11 +110,7 @@ create_grub_cfgfiles ()
 {
 	local fatpart_name="$1"
 
-	if [ "$VALIDATION_LVL" == 1 ]; then
-		mcopy -i  $fatpart_name -o ${GRUB_FS_CONFIG_FILE} ::/grub/grub.cfg
-	else
-		mcopy -i $fatpart_name -o ${GRUB_FS_VALIDATION_CONFIG_FILE} ::/grub/grub.cfg
-	fi
+	mcopy -i  $fatpart_name -o ${GRUB_FS_CONFIG_FILE} ::/grub/grub.cfg
 }
 
 create_fatpart ()
