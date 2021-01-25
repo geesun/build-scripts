@@ -47,7 +47,7 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rde1edge/grub_config/rde1
 ARM_TF_PLATS="rde1edge"
 ARM_TF_DEBUG_ENABLED=1
 ARM_TF_ENABLE_SPM=1
-ARM_TF_RAS_EXTENSION=1
+ARM_TF_RAS_EXTENSION=0
 ARM_TF_BUILD_FLAGS=""
 
 # Enable support for secure partition, partition manager and RAS.
