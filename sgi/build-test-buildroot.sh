@@ -101,6 +101,8 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 TOP_DIR=`pwd`
 PLATDIR=${TOP_DIR}/output/$SGI_PLATFORM
 OUTDIR=${PLATDIR}/components
+LINUXDIR=${TOP_DIR}/linux
+LINUX_OUTDIR=${LINUXDIR}/out/$SGI_PLATFORM/defconfig
 GRUB_FS_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/$SGI_PLATFORM/grub_config/buildroot.cfg
 BLOCK_SIZE=512
 SEC_PER_MB=$((1024*2))
@@ -144,6 +146,11 @@ create_ext3part ()
 	fuse-ext2 $ext3part_name mnt -o rw+
 	cp $OUTDIR/linux/Image ./mnt
 	cp $PLATDIR/ramdisk-buildroot.img ./mnt
+	if [ -d "$LINUX_OUTDIR/tools/iommu/smmute" ]; then
+		cp $LINUX_OUTDIR/tools/iommu/smmute/smmute ./mnt/
+		cp $LINUXDIR/tools/iommu/smmute/test_smmute.sh ./mnt
+		chmod +x ./mnt/test_smmute.sh
+	fi
 	sync
 	fusermount -u mnt
 	rm -rf mnt
