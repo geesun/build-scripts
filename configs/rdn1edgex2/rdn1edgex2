@@ -79,7 +79,7 @@ VALID_FILESYSTEMS="busybox buildroot"
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
-	UEFI_PLATFORMS="rdn1edgex2 rdn1edge_mm_standalone"
+	UEFI_PLATFORMS="rdn1edgex2 rdn1edgex2_mm_standalone"
 else
 	UEFI_PLATFORMS="rdn1edgex2"
 fi
