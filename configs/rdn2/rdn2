@@ -46,7 +46,7 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rdn2/grub_config/rdn2.cfg
 # ARM_TF Flags
 ARM_TF_PLATS="rdn2"
 ARM_TF_DEBUG_ENABLED=1
-ARM_TF_ENABLE_SPM=0
+ARM_TF_ENABLE_SPM=1
 ARM_TF_RAS_EXTENSION=0
 ARM_TF_BUILD_FLAGS=""
 
@@ -87,7 +87,7 @@ UEFI_PLAT_rdn2[outbin]=uefi.bin
 UEFI_MM_BUILD_ENABLED=$ARM_TF_ENABLE_SPM
 declare -A UEFI_PLAT_rdn2_mm_standalone
 UEFI_PLAT_rdn2_mm_standalone[platname]="SgiMmStandalone"
-UEFI_PLAT_rdn2_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm.dsc"
+UEFI_PLAT_rdn2_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm2.dsc"
 UEFI_PLAT_rdn2_mm_standalone[output]=css-common
 UEFI_PLAT_rdn2_mm_standalone[binary]="BL32_AP_MM.fd"
 UEFI_PLAT_rdn2_mm_standalone[outbin]=mm_standalone.bin
