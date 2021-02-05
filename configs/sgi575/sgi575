@@ -86,7 +86,7 @@ UEFI_PLAT_sgi575[dsc]="Platform/ARM/SgiPkg/Sgi575/Sgi575.dsc"
 UEFI_PLAT_sgi575[output]=css-common
 UEFI_PLAT_sgi575[defines]="-D EDK2_PLAT=sgi575 -D VALIDATION_LVL=$VALIDATION_LVL"
 if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
-	UEFI_PLAT_sgi575[defines]="${UEFI_PLAT_sgi575[defines]} -D EDK2_ENABLE_RAS"
+	UEFI_PLAT_sgi575[defines]="${UEFI_PLAT_sgi575[defines]} -D EDK2_ENABLE_HEST -D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_SDEI"
 fi
 UEFI_PLAT_sgi575[binary]="BL33_AP_UEFI.fd"
 UEFI_PLAT_sgi575[outbin]=uefi.bin
@@ -97,6 +97,9 @@ declare -A UEFI_PLAT_sgi575_mm_standalone
 UEFI_PLAT_sgi575_mm_standalone[platname]="SgiMmStandalone"
 UEFI_PLAT_sgi575_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm.dsc"
 UEFI_PLAT_sgi575_mm_standalone[output]=css-common
+if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
+	UEFI_PLAT_sgi575_mm_standalone[defines]="-D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_DMC620_MM"
+fi
 UEFI_PLAT_sgi575_mm_standalone[binary]="BL32_AP_MM.fd"
 UEFI_PLAT_sgi575_mm_standalone[outbin]=mm_standalone.bin
 UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"

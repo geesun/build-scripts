@@ -86,7 +86,7 @@ UEFI_PLAT_rdn1edge[dsc]="Platform/ARM/SgiPkg/RdN1Edge/RdN1Edge.dsc"
 UEFI_PLAT_rdn1edge[output]=css-common
 UEFI_PLAT_rdn1edge[defines]="-D EDK2_PLAT=rdn1edge -D VALIDATION_LVL=$VALIDATION_LVL"
 if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
-	UEFI_PLAT_rdn1edge[defines]="${UEFI_PLAT_rdn1edge[defines]} -D EDK2_ENABLE_RAS"
+	UEFI_PLAT_rdn1edge[defines]="${UEFI_PLAT_rdn1edge[defines]} -D EDK2_ENABLE_HEST -D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_SDEI"
 fi
 UEFI_PLAT_rdn1edge[binary]="BL33_AP_UEFI.fd"
 UEFI_PLAT_rdn1edge[outbin]=uefi.bin
@@ -97,6 +97,9 @@ declare -A UEFI_PLAT_rdn1edge_mm_standalone
 UEFI_PLAT_rdn1edge_mm_standalone[platname]="SgiMmStandalone"
 UEFI_PLAT_rdn1edge_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm.dsc"
 UEFI_PLAT_rdn1edge_mm_standalone[output]=css-common
+if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
+       UEFI_PLAT_rdn1edge_mm_standalone[defines]="-D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_DMC620_MM"
+fi
 UEFI_PLAT_rdn1edge_mm_standalone[binary]="BL32_AP_MM.fd"
 UEFI_PLAT_rdn1edge_mm_standalone[outbin]=mm_standalone.bin
 UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
