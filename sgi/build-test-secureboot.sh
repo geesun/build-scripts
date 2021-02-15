@@ -71,7 +71,7 @@ __print_usage()
 __do_override_build_configs()
 {
 	echo "build-secureboot.sh: adding UEFI_EXTRA_BUILD_PARAMS build configuration"
-	export UEFI_EXTRA_BUILD_PARAMS="-D SECURE_STORAGE_ENABLE -D MM_SECURE_STORAGE_ENABLE=TRUE -D SECURE_BOOT_ENABLE=TRUE"
+	export UEFI_EXTRA_BUILD_PARAMS="-D SECURE_STORAGE_ENABLE -D SECURE_BOOT_ENABLE=TRUE"
 	echo $UEFI_EXTRA_BUILD_PARAMS
 }
 
