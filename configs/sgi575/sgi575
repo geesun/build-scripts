@@ -47,20 +47,15 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/sgi575/grub_config/sgi575
 ARM_TF_PLATS="sgi575"
 ARM_TF_DEBUG_ENABLED=1
 ARM_TF_ENABLE_SPM=1
-ARM_TF_RAS_EXTENSION=0
+ARM_TF_RAS_FW_FIRST=1
 ARM_TF_BUILD_FLAGS=""
 
 # Enable support for secure partition, partition manager and RAS.
-# If SPM is enabled, ensure that UEFI_MM_BUILD_ENABLED is set to 1.
-# If SPM is disabled, ensure that secure storage and RAS features are disabled
-# as well in uefi (ref: uefi-tools/edk2-platforms.config file).
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
 	ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS SPM_MM=$ARM_TF_ENABLE_SPM"
 	ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS EL3_EXCEPTION_HANDLING=$ARM_TF_ENABLE_SPM"
-	if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
-		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS RAS_EXTENSION=1"
-		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS SDEI_SUPPORT=1"
-		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS HANDLE_EA_EL3_FIRST=1"
+	if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
+		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS RAS_EXTENSION=1 SDEI_SUPPORT=1 HANDLE_EA_EL3_FIRST=1"
 	fi
 fi
 
@@ -85,7 +80,7 @@ UEFI_PLAT_sgi575[platname]="Sgi575"
 UEFI_PLAT_sgi575[dsc]="Platform/ARM/SgiPkg/Sgi575/Sgi575.dsc"
 UEFI_PLAT_sgi575[output]=css-common
 UEFI_PLAT_sgi575[defines]="-D EDK2_PLAT=sgi575 -D VALIDATION_LVL=$VALIDATION_LVL"
-if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
+if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
 	UEFI_PLAT_sgi575[defines]="${UEFI_PLAT_sgi575[defines]} -D EDK2_ENABLE_HEST -D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_SDEI"
 fi
 UEFI_PLAT_sgi575[binary]="BL33_AP_UEFI.fd"
@@ -97,7 +92,7 @@ declare -A UEFI_PLAT_sgi575_mm_standalone
 UEFI_PLAT_sgi575_mm_standalone[platname]="SgiMmStandalone"
 UEFI_PLAT_sgi575_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm.dsc"
 UEFI_PLAT_sgi575_mm_standalone[output]=css-common
-if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
+if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
 	UEFI_PLAT_sgi575_mm_standalone[defines]="-D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_DMC620_MM"
 fi
 UEFI_PLAT_sgi575_mm_standalone[binary]="BL32_AP_MM.fd"
