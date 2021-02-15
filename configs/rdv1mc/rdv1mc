@@ -47,20 +47,15 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rdv1mc/grub_config/rdv1mc
 ARM_TF_PLATS="rdv1mc"
 ARM_TF_DEBUG_ENABLED=1
 ARM_TF_ENABLE_SPM=1
-ARM_TF_RAS_EXTENSION=0
+ARM_TF_RAS_FW_FIRST=0
 ARM_TF_BUILD_FLAGS=""
 
 # Enable support for secure partition, partition manager and RAS.
-# If SPM is enabled, ensure that UEFI_MM_BUILD_ENABLED is set to 1.
-# If SPM is disabled, ensure that secure storage and RAS features are disabled
-# as well in uefi (ref: uefi-tools/edk2-platforms.config file).
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
 	ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS SPM_MM=$ARM_TF_ENABLE_SPM"
 	ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS EL3_EXCEPTION_HANDLING=$ARM_TF_ENABLE_SPM"
-	if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
-		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS RAS_EXTENSION=1"
-		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS SDEI_SUPPORT=1"
-		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS HANDLE_EA_EL3_FIRST=1"
+	if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
+		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS RAS_EXTENSION=1 SDEI_SUPPORT=1 HANDLE_EA_EL3_FIRST=1"
 	fi
 fi
 
@@ -82,8 +77,8 @@ UEFI_PLAT_rdv1mc[platname]="RdV1Mc"
 UEFI_PLAT_rdv1mc[dsc]="Platform/ARM/SgiPkg/RdV1Mc/RdV1Mc.dsc"
 UEFI_PLAT_rdv1mc[output]=css-common
 UEFI_PLAT_rdv1mc[defines]="-D EDK2_PLAT=rdv1mc -D VALIDATION_LVL=$VALIDATION_LVL"
-if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
-	UEFI_PLAT_rdv1mc[defines]="${UEFI_PLAT_rdv1mc[defines]} -D EDK2_ENABLE_RAS"
+if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
+	UEFI_PLAT_rdv1mc[defines]="${UEFI_PLAT_rdv1mc[defines]} -D EDK2_ENABLE_HEST -D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_SDEI"
 fi
 UEFI_PLAT_rdv1mc[binary]="BL33_AP_UEFI.fd"
 UEFI_PLAT_rdv1mc[outbin]=uefi.bin
@@ -96,6 +91,9 @@ UEFI_PLAT_rdv1mc_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm.ds
 UEFI_PLAT_rdv1mc_mm_standalone[output]=css-common
 UEFI_PLAT_rdv1mc_mm_standalone[binary]="BL32_AP_MM.fd"
 UEFI_PLAT_rdv1mc_mm_standalone[outbin]=mm_standalone.bin
+if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
+       UEFI_PLAT_rdv1mc_mm_standalone[defines]="-D EDK2_ENABLE_GHES_MM"
+fi
 UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
 
 #SCP options

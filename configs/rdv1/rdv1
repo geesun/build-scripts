@@ -47,20 +47,15 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rdv1/grub_config/rdv1.cfg
 ARM_TF_PLATS="rdv1"
 ARM_TF_DEBUG_ENABLED=1
 ARM_TF_ENABLE_SPM=1
-ARM_TF_RAS_EXTENSION=0
+ARM_TF_RAS_FW_FIRST=0
 ARM_TF_BUILD_FLAGS=""
 
 # Enable support for secure partition, partition manager and RAS.
-# If SPM is enabled, ensure that UEFI_MM_BUILD_ENABLED is set to 1.
-# If SPM is disabled, ensure that secure storage and RAS features are disabled
-# as well in uefi (ref: uefi-tools/edk2-platforms.config file).
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
 	ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS SPM_MM=$ARM_TF_ENABLE_SPM"
 	ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS EL3_EXCEPTION_HANDLING=$ARM_TF_ENABLE_SPM"
-	if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
-		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS RAS_EXTENSION=1"
-		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS SDEI_SUPPORT=1"
-		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS HANDLE_EA_EL3_FIRST=1"
+	if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
+		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS RAS_EXTENSION=1 SDEI_SUPPORT=1 HANDLE_EA_EL3_FIRST=1"
 	fi
 fi
 
@@ -79,8 +74,8 @@ UEFI_PLAT_rdv1[platname]="RdV1"
 UEFI_PLAT_rdv1[dsc]="Platform/ARM/SgiPkg/RdV1/RdV1.dsc"
 UEFI_PLAT_rdv1[output]=css-common
 UEFI_PLAT_rdv1[defines]="-D EDK2_PLAT=rdv1 -D VALIDATION_LVL=$VALIDATION_LVL"
-if [ "$ARM_TF_RAS_EXTENSION" == "1" ]; then
-	UEFI_PLAT_rdv1[defines]="${UEFI_PLAT_rdv1[defines]} -D EDK2_ENABLE_RAS"
+if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
+	UEFI_PLAT_rdv1[defines]="${UEFI_PLAT_rdv1[defines]} -D EDK2_ENABLE_HEST -D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_SDEI"
 fi
 UEFI_PLAT_rdv1[binary]="BL33_AP_UEFI.fd"
 UEFI_PLAT_rdv1[outbin]=uefi.bin
@@ -93,6 +88,9 @@ UEFI_PLAT_rdv1_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm.dsc"
 UEFI_PLAT_rdv1_mm_standalone[output]=css-common
 UEFI_PLAT_rdv1_mm_standalone[binary]="BL32_AP_MM.fd"
 UEFI_PLAT_rdv1_mm_standalone[outbin]=mm_standalone.bin
+if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
+       UEFI_PLAT_rdv1_mm_standalone[defines]="DK2_ENABLE_GHES_MM"
+fi
 UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
 
 #SCP options
