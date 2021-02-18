@@ -81,7 +81,7 @@ UEFI_PLAT_sgi575[dsc]="Platform/ARM/SgiPkg/Sgi575/Sgi575.dsc"
 UEFI_PLAT_sgi575[output]=css-common
 UEFI_PLAT_sgi575[defines]="-D EDK2_PLAT=sgi575 -D VALIDATION_LVL=$VALIDATION_LVL"
 if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
-	UEFI_PLAT_sgi575[defines]="${UEFI_PLAT_sgi575[defines]} -D EDK2_ENABLE_HEST -D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_SDEI"
+	UEFI_PLAT_sgi575[defines]="${UEFI_PLAT_sgi575[defines]} -D EDK2_ENABLE_HEST -D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_SDEI -D EDK2_ENABLE_EINJ"
 fi
 UEFI_PLAT_sgi575[binary]="BL33_AP_UEFI.fd"
 UEFI_PLAT_sgi575[outbin]=uefi.bin
