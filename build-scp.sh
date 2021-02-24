@@ -61,10 +61,10 @@ do_build ()
 		PATH=$SCP_ARM_COMPILER_PATH:$PATH
 		for item in $SCP_PLATFORMS; do
 			local outdir=$TOP_DIR/$SCP_PATH/output
-			mkdir -p ${outdir}
+			mkdir -p ${outdir}/${item}
 
 			make -j $PARALLELISM PRODUCT=$item MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-eabi-gcc
-			cp -r build/product/$item/* ${outdir}/
+			cp -r build/product/$item/* ${outdir}/${item}
 		done
 		popd
 	fi
@@ -91,15 +91,15 @@ do_package ()
 		if [ "$SCP_BUILD_ENABLED" == "1" ]; then
 			pushd $TOP_DIR
 				mkdir -p ${OUTDIR}/${plat}
-				cp ./${SCP_PATH}/output/scp_ramfw/${SCP_BUILD_MODE}/bin/scp_ramfw.bin ${OUTDIR}/${plat}/
-				cp ./${SCP_PATH}/output/scp_romfw/${SCP_BUILD_MODE}/bin/scp_romfw.bin ${OUTDIR}/${plat}/
+				cp ./${SCP_PATH}/output/${plat}/scp_ramfw/${SCP_BUILD_MODE}/bin/scp_ramfw.bin ${OUTDIR}/${plat}/
+				cp ./${SCP_PATH}/output/${plat}/scp_romfw/${SCP_BUILD_MODE}/bin/scp_romfw.bin ${OUTDIR}/${plat}/
 
-				if [ -d ${SCP_PATH}/output/mcp_romfw ]; then
-					cp ./${SCP_PATH}/output/mcp_romfw/${SCP_BUILD_MODE}/bin/mcp_romfw.bin ${OUTDIR}/${plat}/
+				if [ -d ${SCP_PATH}/output/${plat}/mcp_romfw ]; then
+					cp ./${SCP_PATH}/output/${plat}/mcp_romfw/${SCP_BUILD_MODE}/bin/mcp_romfw.bin ${OUTDIR}/${plat}/
 				fi
 
-				if [ -d ${SCP_PATH}/output/mcp_ramfw ]; then
-					cp ./${SCP_PATH}/output/mcp_ramfw/${SCP_BUILD_MODE}/bin/mcp_ramfw.bin ${OUTDIR}/${plat}/
+				if [ -d ${SCP_PATH}/output/${plat}/mcp_ramfw ]; then
+					cp ./${SCP_PATH}/output/${plat}/mcp_ramfw/${SCP_BUILD_MODE}/bin/mcp_ramfw.bin ${OUTDIR}/${plat}/
 				fi
 
 				if [[ "${SCP_BYPASS_ROM_SUPPORT[$plat]}" = true ]]; then
