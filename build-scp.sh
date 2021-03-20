@@ -56,6 +56,7 @@ do_build ()
 	if [ "$SCP_BUILD_ENABLED" == "1" ]; then
 
 		check_cmsis_source
+		local prd_build_params="";
 
 		pushd $TOP_DIR/$SCP_PATH
 		PATH=$SCP_ARM_COMPILER_PATH:$PATH
@@ -63,7 +64,10 @@ do_build ()
 			local outdir=$TOP_DIR/$SCP_PATH/output
 			mkdir -p ${outdir}/${item}
 
-			make -j $PARALLELISM PRODUCT=$item MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-eabi-gcc
+			if [ ! -z "$SCP_PRODUCT_BUILD_PARAMS" ]; then
+				prd_build_params="PRODUCT_BUILD_PARAMS=$SCP_PRODUCT_BUILD_PARAMS"
+			fi
+			make -j $PARALLELISM PRODUCT=$item $prd_build_params MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-eabi-gcc
 			cp -r build/product/$item/* ${outdir}/${item}
 		done
 		popd
