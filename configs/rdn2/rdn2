@@ -100,6 +100,7 @@ UEFI_MM_PAYLOAD_BIN="mm_standalone.bin"
 SCP_BUILD_ENABLED=1
 SCP_PLATFORMS="rdn2"
 SCP_BUILD_MODE=debug
+SCP_PRODUCT_BUILD_PARAMS="PLATFORM_VARIANT=0"
 SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-8.3-2019.03-x86_64-arm-eabi/bin
 
 # Buildroot options
