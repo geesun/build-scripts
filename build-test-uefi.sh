@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2019, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2019-2021, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -35,6 +35,7 @@ arm_platforms[rde1edge]=1
 arm_platforms[rdv1]=1
 arm_platforms[rdv1mc]=1
 arm_platforms[rdn2]=1
+arm_platforms[rdn2cfg1]=1
 
 __print_supported_arm_platforms()
 {
