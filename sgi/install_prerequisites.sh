@@ -78,6 +78,7 @@ APT_PACKAGES_COMMON=(
 		"device-tree-compiler"
 		"autopoint"
 		"doxygen"
+		"xterm"
 )
 
 ###########################################################################
