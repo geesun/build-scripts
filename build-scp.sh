@@ -67,7 +67,7 @@ do_build ()
 			if [ ! -z "$SCP_PRODUCT_BUILD_PARAMS" ]; then
 				prd_build_params="PRODUCT_BUILD_PARAMS=$SCP_PRODUCT_BUILD_PARAMS"
 			fi
-			make -j $PARALLELISM PRODUCT=$item $prd_build_params MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-eabi-gcc
+			make -j $PARALLELISM PRODUCT=$item $prd_build_params MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-none-eabi-gcc
 			cp -r build/product/$item/* ${outdir}/${item}
 		done
 		popd
