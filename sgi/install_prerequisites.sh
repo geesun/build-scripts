@@ -79,6 +79,8 @@ APT_PACKAGES_COMMON=(
 		"autopoint"
 		"doxygen"
 		"xterm"
+		"cmake"
+		"ninja-build"
 )
 
 ###########################################################################
