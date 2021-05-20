@@ -110,5 +110,9 @@ case $DISTRO in
     *) echo "bad option for distro $3"; incorrect_script_use
         ;;
 esac
-make
-make_ramdisk_android_image
+if make;
+then
+	make_ramdisk_android_image
+else
+	echo "Errors when building - will not create file system images"
+fi
