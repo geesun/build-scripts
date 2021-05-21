@@ -62,6 +62,10 @@ do_build ()
 		CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
 		PATH="$PATH:$CROSS_COMPILE_DIR"
 
+		#Temporary fix to resolve repo tool issue with fetching git submodules
+		#https://gerrit.googlesource.com/git-repo/+/d177609cb0283e41e23d4c19b94e17f42bdbdacb
+		git submodule update --init
+
 		export WORKSPACE=$TOP_DIR/$UEFI_PATH
 		export PACKAGES_PATH=$PWD/:$PWD/edk2-platforms
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
