@@ -39,6 +39,9 @@
 # SCP_BUILD_MODE - release or debug
 # SCP_BYPASS_ROM_SUPPORT - Mapping of platforms that require bypass ROM support
 
+# cmake build support is experimental. Set this variable to '1' to enable cmake build.
+CMAKE_BUILD=0
+
 check_cmsis_source ()
 {
 	# Check whether the cmsis submodule has been fetched, if not
@@ -60,15 +63,82 @@ do_build ()
 
 		pushd $TOP_DIR/$SCP_PATH
 		PATH=$SCP_ARM_COMPILER_PATH:$PATH
-		for item in $SCP_PLATFORMS; do
-			local outdir=$TOP_DIR/$SCP_PATH/output
-			mkdir -p ${outdir}/${item}
 
-			if [ ! -z "$SCP_PRODUCT_BUILD_PARAMS" ]; then
-				prd_build_params="PRODUCT_BUILD_PARAMS=$SCP_PRODUCT_BUILD_PARAMS"
+		if [ $CMAKE_BUILD -eq 1 ]; then
+			if [ -d "cmake-build" ]; then
+				rm -r cmake-build
+				mkdir -p cmake-build
 			fi
-			make -j $PARALLELISM PRODUCT=$item $prd_build_params MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-none-eabi-gcc
-			cp -r build/product/$item/* ${outdir}/${item}
+		fi
+
+		for item in $SCP_PLATFORMS; do
+			if [ $CMAKE_BUILD -eq 1 ]; then
+				# Build using cmake
+				if [ ! -z "$SCP_PLATFORM_VARIANT" ]; then
+					prd_build_params="-DSCP_PLATFORM_VARIANT=$SCP_PLATFORM_VARIANT"
+				fi
+
+				for scp_fw in mcp_romfw scp_romfw scp_ramfw; do
+					echo
+					echo "====================================================="
+					echo "Building $scp_fw [`date`] ....."
+					echo "====================================================="
+					echo
+
+					if [ -z "$SCP_PLATFORM_VARIANT" ]; then
+						vpath="$item/$scp_fw"
+					else
+						vpath="$item/$SCP_PLATFORM_VARIANT/$scp_fw"
+					fi
+
+					mkdir -p cmake-build/"$vpath"
+					cmake -S "." -B "./cmake-build/$vpath" \
+						-DSCP_TOOLCHAIN:STRING="GNU" \
+						-DCMAKE_BUILD_TYPE=$SCP_BUILD_MODE \
+						-DSCP_FIRMWARE_SOURCE_DIR:PATH="${item}/$vpath" \
+						-DCMAKE_C_COMPILER=${SCP_COMPILER_PATH}/arm-none-eabi-gcc \
+						-DCMAKE_ASM_COMPILER=${SCP_COMPILER_PATH}/arm-none-eabi-gcc \
+						$prd_build_params
+
+					echo
+					echo echo cmake --build "./cmake-build/$vpath" --parallel $PARALLELISM
+					echo
+					cmake --build "./cmake-build/$vpath" --parallel $PARALLELISM
+
+					pushd cmake-build/$vpath
+					case $scp_fw in
+						mcp_romfw)
+							 mv "bin/"$item-mcp-bl1.bin""  "bin/"$scp_fw.bin""
+							 ;;
+						scp_romfw)
+							mv "bin/"$item-bl1.bin""  "bin/"$scp_fw.bin""
+							;;
+						scp_ramfw)
+							mv "bin/"$item-bl2.bin""  "bin/"$scp_fw.bin""
+							;;
+					esac
+					popd
+				done
+			else # !$CMAKE_BUILD
+				# Build using make
+				local outdir=$TOP_DIR/$SCP_PATH/output
+				if [ -z "$SCP_PLATFORM_VARIANT" ]; then
+					vpath="$item"
+				else
+					vpath="$item/$SCP_PLATFORM_VARIANT"
+				fi
+
+				mkdir -p ${outdir}/$vpath
+
+				if [ ! -z "$SCP_PRODUCT_BUILD_PARAMS" ]; then
+					prd_build_params="PRODUCT_BUILD_PARAMS=$SCP_PRODUCT_BUILD_PARAMS"
+				fi
+
+				# Convert build mode to lower case, make build requires it.
+				SCP_BUILD_MODE="${SCP_BUILD_MODE,,}"
+				make -j $PARALLELISM PRODUCT=$item $prd_build_params MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-none-eabi-gcc
+				cp -r build/product/$item/* ${outdir}/$vpath
+			fi
 		done
 		popd
 	fi
@@ -79,10 +149,20 @@ do_clean ()
 	if [ "$SCP_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$SCP_PATH
 		for item in $SCP_PLATFORMS; do
-			local outdir=$TOP_DIR/$SCP_PATH/output/$item
+			if [ -z "$SCP_PLATFORM_VARIANT" ]; then
+				vpath="$item"
+			else
+				vpath="$item/$SCP_PLATFORM_VARIANT"
+			fi
 
-			make PLATFORM=$item clean
-
+			if [ $CMAKE_BUILD -eq 1 ]; then
+				# Build using cmake
+				local outdir=$TOP_DIR/$SCP_PATH/cmake-build
+			else
+				# Build using make
+				local outdir=$TOP_DIR/$SCP_PATH/output/$vpath
+				make PLATFORM=$item clean
+			fi
 			rm -rf ${outdir}
 		done
 		popd
@@ -93,25 +173,44 @@ do_package ()
 {
 	for plat in $SCP_PLATFORMS; do
 		if [ "$SCP_BUILD_ENABLED" == "1" ]; then
+			if [ -z "$SCP_PLATFORM_VARIANT" ]; then
+				vpath="$plat"
+			else
+				vpath="$plat/$SCP_PLATFORM_VARIANT"
+			fi
+
 			pushd $TOP_DIR
-				mkdir -p ${OUTDIR}/${plat}
-				cp ./${SCP_PATH}/output/${plat}/scp_ramfw/${SCP_BUILD_MODE}/bin/scp_ramfw.bin ${OUTDIR}/${plat}/
-				cp ./${SCP_PATH}/output/${plat}/scp_romfw/${SCP_BUILD_MODE}/bin/scp_romfw.bin ${OUTDIR}/${plat}/
+				if [ $CMAKE_BUILD -eq 1 ]; then
+					# Build using cmake
+					for scp_fw in mcp_romfw scp_romfw scp_ramfw; do
+						if [ -d ${SCP_PATH}/cmake-build/$scp_fw/bin ]; then
+							cp ./${SCP_PATH}/cmake-build/$scp_fw/bin/"$scp_fw.bin" ${OUTDIR}/${plat}
+						fi
+					done
+				else
+					# Build using make
+					mkdir -p ${OUTDIR}/${plat}
 
-				if [ -d ${SCP_PATH}/output/${plat}/mcp_romfw ]; then
-					cp ./${SCP_PATH}/output/${plat}/mcp_romfw/${SCP_BUILD_MODE}/bin/mcp_romfw.bin ${OUTDIR}/${plat}/
-				fi
+					# Convert build mode to lower case, make build requires it.
+					SCP_BUILD_MODE="${SCP_BUILD_MODE,,}"
 
-				if [ -d ${SCP_PATH}/output/${plat}/mcp_ramfw ]; then
-					cp ./${SCP_PATH}/output/${plat}/mcp_ramfw/${SCP_BUILD_MODE}/bin/mcp_ramfw.bin ${OUTDIR}/${plat}/
+					cp ./${SCP_PATH}/output/$vpath/scp_ramfw/${SCP_BUILD_MODE}/bin/scp_ramfw.bin ${OUTDIR}/${plat}/
+					cp ./${SCP_PATH}/output/$vpath/scp_romfw/${SCP_BUILD_MODE}/bin/scp_romfw.bin ${OUTDIR}/${plat}/
+
+					if [ -d ${SCP_PATH}/output/$vpath/mcp_romfw ]; then
+						cp ./${SCP_PATH}/output/$vpath/mcp_romfw/${SCP_BUILD_MODE}/bin/mcp_romfw.bin ${OUTDIR}/${plat}/
+					fi
+
+					if [ -d ${SCP_PATH}/output/$vpath/mcp_ramfw ]; then
+						cp ./${SCP_PATH}/output/$vpath/mcp_ramfw/${SCP_BUILD_MODE}/bin/mcp_ramfw.bin ${OUTDIR}/${plat}/
+					fi
 				fi
 
 				if [[ "${SCP_BYPASS_ROM_SUPPORT[$plat]}" = true ]]; then
-					cp ./${SCP_PATH}/output/${plat}/scp/romfw_bypass.bin ${OUTDIR}/${plat}/scp-rom-bypass.bin
+					cp ./${SCP_PATH}/output/$vpath/scp/romfw_bypass.bin ${OUTDIR}/${plat}/scp-rom-bypass.bin
 				fi
 			popd
 		else
-
 			mkdir -p ${OUTDIR}/${plat}
 			local var=SCP_PREBUILT_RAMFW_${plat}
 			local fw=${!var}
