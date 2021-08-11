@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2020-2021, Arm Limited. All rights reserved.
+# Copyright (c) 2021, Arm Limited. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -79,10 +79,9 @@ do
 done
 
 [ -z "$DISTRO" ] && incorrect_script_use || echo "DISTRO=$DISTRO"
-echo "AVB=$AVB"
+[[ $AVB != true && $AVB != false ]] && incorrect_script_use || echo "AVB=$AVB"
 
-
-KERNEL_IMAGE=../bsp/build-poky/tmp-poky/deploy/images/tc0/Image
+KERNEL_IMAGE=../bsp/build-poky/tmp-poky/deploy/images/tc1/Image
 . build/envsetup.sh
 case $DISTRO in
     android-nano)
