@@ -37,6 +37,7 @@ arm_platforms[rdv1mc]=1
 arm_platforms[rdn2]=1
 arm_platforms[rdn2cfg1]=1
 arm_platforms[rdn2cfg2]=1
+arm_platforms[rdedmunds]=1
 
 __print_supported_arm_platforms()
 {
