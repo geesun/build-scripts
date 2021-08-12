@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -43,7 +43,7 @@
 do_build ()
 {
 	if [ "$TFTF_BUILD_ENABLED" == "1" ]; then
-		export CROSS_COMPILE=$TOP_DIR/$LINUX_COMPILER
+		export CROSS_COMPILE=$LINUX_COMPILER
 
 		pushd $TOP_DIR/$TFTF_PATH
 		for plat in $TFTF_PLATS; do
