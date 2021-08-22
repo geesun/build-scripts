@@ -78,7 +78,7 @@ do_build ()
 					prd_build_params="-DSCP_PLATFORM_VARIANT=$SCP_PLATFORM_VARIANT"
 				fi
 
-				for scp_fw in mcp_romfw scp_romfw scp_ramfw; do
+				for scp_fw in mcp_romfw mcp_ramfw scp_romfw scp_ramfw; do
 					echo
 					echo "====================================================="
 					echo "Building $scp_fw [`date`] ....."
@@ -112,7 +112,10 @@ do_build ()
 					case $scp_fw in
 						mcp_romfw)
 							mv "bin/"$item-mcp-bl1.bin""  "bin/"$scp_fw.bin""
-							 ;;
+							;;
+						mcp_ramfw)
+							mv "bin/"$item-mcp-bl2.bin""  "bin/"$scp_fw.bin""
+							;;
 						scp_romfw)
 							mv "bin/"$item-bl1.bin""  "bin/"$scp_fw.bin""
 							;;
@@ -187,7 +190,7 @@ do_package ()
 
 				if [ $CMAKE_BUILD -eq 1 ]; then
 					# Build using cmake
-					for scp_fw in mcp_romfw scp_romfw scp_ramfw; do
+					for scp_fw in mcp_romfw mcp_ramfw scp_romfw scp_ramfw; do
 						cp ./${SCP_PATH}/output/$vpath/$scp_fw/bin/"$scp_fw.bin" ${OUTDIR}/${plat}
 					done
 				else
