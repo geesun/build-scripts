@@ -235,11 +235,11 @@ do_package()
 				fi
 				local fdt_pattern=TARGET_$target[fdts]
 				local linux_bins=TARGET_$target[linux]
-				local bl2_fip_param="${bl2_param_id} ${OUTDIR}/${!tf_out}/tf-bl2.bin"
-				local bl31_fip_param="${bl31_param_id} ${OUTDIR}/${!tf_out}/tf-bl31.bin"
+				local bl2_fip_param="${bl2_param_id} ${OUTDIR}/${ARM_TF_PLATS}/tf-bl2.bin"
+				local bl31_fip_param="${bl31_param_id} ${OUTDIR}/${ARM_TF_PLATS}/tf-bl31.bin"
 				local bl32_fip_param=
 				if [ "$ARM_TF_ARCH" == "aarch32" ] || [ "$ARM_TF_AARCH32_EL3_RUNTIME" == "1" ]; then
-					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${!tf_out}/tf-bl32.bin"
+					bl32_fip_param="${bl32_param_id} ${OUTDIR}/${ARM_TF_PLATS}/tf-bl32.bin"
 				fi
 				local bl30_fip_param=
 				local bl30_tbbr_param=
@@ -253,28 +253,25 @@ do_package()
 					bl30_fip_param="${bl30_param_id} ${OUTDIR}/${!scp_out}/scp_ramfw.bin"
 				fi
 
-				#Skip hw-configuration for fvp.
 				#ToDo: This should be ideally be handled using additional flags for hardware
 				# config fdts from the platform config files.
-				if [ "$PLATFORM" != "fvp" ] && [ "$PLATFORM" != "fvp32" ]; then
-					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_fw_config.dtb" ]; then
-						fw_config_fip_param="${fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_fw_config.dtb"
-					fi
-					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb" ]; then
-						tb_fw_config_fip_param="${tb_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_tb_fw_config.dtb"
-					fi
-					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_nt_fw_config.dtb" ]; then
-						nt_fw_config_fip_param="${nt_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_nt_fw_config.dtb"
-					fi
-					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}_soc_fw_config.dtb" ]; then
-						soc_fw_config_fip_param="${soc_fw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}_soc_fw_config.dtb"
-					fi
-					if [ -f "${OUTDIR}/${!tf_out}/${!tf_out}.dtb" ]; then
-						hw_config_fip_param="${hw_config_param_id} ${OUTDIR}/${!tf_out}/${!tf_out}.dtb"
-					fi
-					if [ -f "${OUTDIR}/${!tf_out}/fvp-base-gicv3-psci.dtb" ]; then
-	                                       hw_config_fip_param="${hw_config_param_id} ${OUTDIR}/${!tf_out}/fvp-base-gicv3-psci.dtb"
-					fi
+				if [ -f "${OUTDIR}/${ARM_TF_PLATS}/${ARM_TF_PLATS}_fw_config.dtb" ]; then
+					fw_config_fip_param="${fw_config_param_id} ${OUTDIR}/${ARM_TF_PLATS}/${ARM_TF_PLATS}_fw_config.dtb"
+				fi
+				if [ -f "${OUTDIR}/${ARM_TF_PLATS}/${ARM_TF_PLATS}_tb_fw_config.dtb" ]; then
+					tb_fw_config_fip_param="${tb_fw_config_param_id} ${OUTDIR}/${ARM_TF_PLATS}/${ARM_TF_PLATS}_tb_fw_config.dtb"
+				fi
+				if [ -f "${OUTDIR}/${ARM_TF_PLATS}/${ARM_TF_PLATS}_nt_fw_config.dtb" ]; then
+					nt_fw_config_fip_param="${nt_fw_config_param_id} ${OUTDIR}/${ARM_TF_PLATS}/${ARM_TF_PLATS}_nt_fw_config.dtb"
+				fi
+				if [ -f "${OUTDIR}/${ARM_TF_PLATS}/${ARM_TF_PLATS}_soc_fw_config.dtb" ]; then
+					soc_fw_config_fip_param="${soc_fw_config_param_id} ${OUTDIR}/${ARM_TF_PLATS}/${ARM_TF_PLATS}_soc_fw_config.dtb"
+				fi
+				if [ -f "${OUTDIR}/${ARM_TF_PLATS}/${ARM_TF_PLATS}.dtb" ]; then
+					hw_config_fip_param="${hw_config_param_id} ${OUTDIR}/${ARM_TF_PLATS}/${ARM_TF_PLATS}.dtb"
+				fi
+				if [ -f "${OUTDIR}/${ARM_TF_PLATS}/fvp-base-gicv3-psci.dtb" ]; then
+					hw_config_fip_param="${hw_config_param_id} ${OUTDIR}/${ARM_TF_PLATS}/fvp-base-gicv3-psci.dtb"
 				fi
 
 				#only if a TEE implementation is available and built
@@ -385,8 +382,8 @@ do_package()
 				fi
 
 				# Create symlinks to common binaries
-				if [ "${!tf_out}" != "" ]; then
-					create_tgt_symlinks ${!tf_out} ${!target_name} "tf-*"
+				if [ "${ARM_TF_PLATS}" != "" ]; then
+					create_tgt_symlinks ${ARM_TF_PLATS} ${!target_name} "tf-*"
 				fi
 				if [ "${!scp_out}" != "" ]; then
 					create_tgt_symlinks ${!scp_out} ${!target_name} "*cp_*"

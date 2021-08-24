@@ -73,9 +73,11 @@ do_clean ()
 		mkdir -p $BUSYBOX_OUT_DIR
 		make O=$BUSYBOX_OUT_DIR clean
 		popd
-		pushd $TOP_DIR/$BUSYBOX_RAMDISK_PATH
-		rm -f ramdisk.img busybox
-		popd
+		if [ "$PLATFORM" != "aemfvp-a" ]; then
+			pushd $TOP_DIR/$BUSYBOX_RAMDISK_PATH
+			rm -f ramdisk.img busybox
+			popd
+		fi
 	fi
 }
 
@@ -83,29 +85,31 @@ do_package ()
 {
 	if [ "$BUSYBOX_BUILD_ENABLED" == "1" ]; then
 		echo "Packaging BUSYBOX... $VARIANT";
-		# create the ramdisk
-		pushd $TOP_DIR/$BUSYBOX_RAMDISK_PATH
-		cp $TOP_DIR/$BUSYBOX_RAMDISK_BUSYBOX_PATH .
-		$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/$LINUX_CONFIG_DEFAULT/usr/gen_init_cpio files.txt > ramdisk.img
-		popd
-		# Copy binary to output folder
-		pushd $TOP_DIR
-		mkdir -p ${OUTDIR}
-		cp $BUSYBOX_RAMDISK_PATH/ramdisk.img \
-			${PLATDIR}/ramdisk-busybox.img
-		popd
-		if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-			pushd ${PLATDIR}
-			for target in $TARGET_BINS_PLATS; do
-				local addr=TARGET_$target[ramdisk]
-				${UBOOT_MKIMG} -A $BUSYBOX_ARCH -O linux -C none \
-					-T ramdisk -n ramdisk \
-					-a ${!addr} -e ${!addr} \
-					-n "BusyBox ramdisk" \
-					-d ramdisk-busybox.img \
-					uInitrd-busybox.${!addr}
-			done
+		if [ "$PLATFORM" != "aemfvp-a" ]; then
+			# create the ramdisk
+			pushd $TOP_DIR/$BUSYBOX_RAMDISK_PATH
+			cp $TOP_DIR/$BUSYBOX_RAMDISK_BUSYBOX_PATH .
+			$TOP_DIR/$LINUX_PATH/$LINUX_OUT_DIR/$LINUX_CONFIG_DEFAULT/usr/gen_init_cpio files.txt > ramdisk.img
 			popd
+			# Copy binary to the output folder
+			pushd $TOP_DIR
+			mkdir -p ${OUTDIR}
+			cp $BUSYBOX_RAMDISK_PATH/ramdisk.img \
+				${PLATDIR}/ramdisk-busybox.img
+			popd
+			if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
+				pushd ${PLATDIR}
+				for target in $TARGET_BINS_PLATS; do
+					local addr=TARGET_$target[ramdisk]
+					${UBOOT_MKIMG} -A $BUSYBOX_ARCH -O linux -C none \
+						-T ramdisk -n ramdisk \
+						-a ${!addr} -e ${!addr} \
+						-n "BusyBox ramdisk" \
+						-d ramdisk-busybox.img \
+						uInitrd-busybox.${!addr}
+				done
+				popd
+			fi
 		fi
 	fi
 }

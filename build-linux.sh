@@ -126,7 +126,7 @@ do_package ()
 			mkdir -p ${OUTDIR}/${!outpath}
 
 			cp $TOP_DIR/${!lpath}/$LINUX_OUT_DIR/$name/arch/$LINUX_ARCH/boot/$LINUX_IMAGE_TYPE ${OUTDIR}/${!outpath}/$LINUX_IMAGE_TYPE.$name
-			if [ ${!lmodules} == "true" ]; then
+			if [ "${!lmodules}" == "true" ]; then
 				cp -R $TOP_DIR/${!lpath}/$LINUX_OUT_DIR/$name/modules ${OUTDIR}/${!outpath}/modules
 			fi
 

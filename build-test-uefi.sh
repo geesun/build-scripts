@@ -29,6 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 declare -A arm_platforms
+arm_platforms[aemfvp-a]=1
 arm_platforms[sgi575]=1
 arm_platforms[rdn1edge]=1
 arm_platforms[rde1edge]=1
@@ -55,12 +56,12 @@ __print_usage()
 	__print_supported_arm_platforms
 	echo "Supported build commands are - clean/build/package/all"
 	echo
-	echo "Example 1: ./build-scripts/build-test-uefi.sh -p sgi575 all"
-	echo "    This command builds the required software components of the SGI575"
+	echo "Example 1: ./build-scripts/build-test-uefi.sh -p aemfvp-a all"
+	echo "    This command builds the required software components of the aemfvp-a"
 	echo "    platform to boot upto the EFI shell."
 	echo
-	echo "Example 2: ./build-scripts/build-test-uefi.sh -p sgi575 clean"
-	echo "    This command cleans the previous build of the sgi575 platform"
+	echo "Example 2: ./build-scripts/build-test-uefi.sh -p aemfvp-a clean"
+	echo "    This command cleans the previous build of the aemfvp-a platform"
 	echo "    software stack."
 	echo
 	exit 0
@@ -70,7 +71,7 @@ __print_usage()
 __do_override_build_configs()
 {
 	echo "build-test-uefi.sh: overriding BUILD_SCRIPTS"
-	BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-scp.sh build-target-bins.sh "
+	BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-uboot.sh build-scp.sh build-target-bins.sh "
 	echo "BUILD_SCRIPTS="$BUILD_SCRIPTS
 }
 

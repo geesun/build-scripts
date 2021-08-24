@@ -51,6 +51,7 @@ do_build ()
 		for item in $UBOOT_BOARDS; do
 			local outdir=output/$item
 			make -j $PARALLELISM O=$outdir ${item}_config
+			scripts/kconfig/merge_config.sh -O $outdir  $outdir/.config $UBOOT_CONFIG
 			make -j $PARALLELISM O=$outdir
 			cp -R $outdir/tools output
 		done
