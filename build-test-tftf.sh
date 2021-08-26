@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2019, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2019-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -73,7 +73,14 @@ __do_override_build_configs()
 {
 	echo "build-test-tftf.sh: overriding default build configurations"
 	BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-tftf.sh build-target-bins.sh"
-	ARM_TF_BUILD_FLAGS="RAS_EXTENSION=0 ENABLE_SPM=0 SDEI_SUPPORT=0 EL3_EXCEPTION_HANDLING=0 HANDLE_EA_EL3_FIRST=0"
+
+	if [ ! -z "$ARM_TF_BUILD_VARIANT" ]; then
+		# If build variant is defined, extract the platform variant substring, so that
+		# it can be passed to build-arm-tf.sh script.
+		ARM_TF_PLATFORM_VARIANT=$(echo $ARM_TF_BUILD_FLAGS | grep -o "CSS_SGI_PLATFORM_VARIANT=[0-9]*")
+	fi
+
+	ARM_TF_BUILD_FLAGS="${ARM_TF_PLATFORM_VARIANT} RAS_EXTENSION=0 ENABLE_SPM=0 SDEI_SUPPORT=0 EL3_EXCEPTION_HANDLING=0 HANDLE_EA_EL3_FIRST=0"
 	UEFI_BUILD_ENABLED=0
 	UEFI_MM_BUILD_ENABLED=0
 	TFTF_BUILD_ENABLED=1
