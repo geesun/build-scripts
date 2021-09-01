@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+
+# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# Neither the name of ARM nor the names of its contributors may be used
+# to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+print_usage() {
+    cat <<EOF
+Usage:
+    $0 -o OUTPUT PART1 [PART2 [PART3 [PART4]]]
+    $0 -h
+Create disk image OUTPUT with MSDOS partition scheme.
+
+OUTPUT must be a regular file (not a block device) and will be replaced if it
+already exists.
+
+PARTn must be regular files.
+
+Partitions will be in created as "primary" types.
+PART1 will be the first partition and PART2 will be the second and so on.
+EOF
+}
+
+set -e
+set -u
+
+# don't want parted to mess with alignment or try to be smart
+readonly PARTED=( "parted" "--align=none" "--script" )
+readonly ALIGNMENT="1048576"
+
+OUTPUT=""
+while getopts "ho:" opt; do
+    case $opt in
+    ("o") OUTPUT="$OPTARG" ;;
+    ("h")
+        print_usage
+        exit 0
+        ;;
+    ("?")
+        print_usage >&2
+        exit 1
+    esac
+done
+shift $((OPTIND-1))
+readonly OUTPUT
+
+if [[ -z "$OUTPUT" ]] ; then
+    echo "ERROR: Mandatory -o not given!" >&2
+    echo "" >&2
+    print_usage >&2
+    exit 1
+fi
+readonly OUTPUT
+
+if [[ -e "$OUTPUT" && ! -f "$OUTPUT" ]] ; then
+    echo "ERROR: Not a regular file: $OUTPUT" >&2
+    echo "" >&2
+    print_usage >&2
+    exit 1
+fi
+
+if ! [[ $# -ge 1 && $# -le 4 ]] ; then
+    echo "ERROR: The number of partitions must be between 1 and 4, not $#." >&2
+    echo "" >&2
+    print_usage >&2
+    exit 1
+fi
+
+PART_START=()
+PART_END=()
+PART_IMG=()
+
+NEXT_PART_START="$ALIGNMENT"
+for (( NUM_OF_PARTS=0 ; $#>0 ; NUM_OF_PARTS++ )) ; do
+    START="$NEXT_PART_START"
+    FILE="$1" ; shift
+    SIZE="$(stat --dereference --format="%s" "$FILE")"
+    END=$(( NEXT_PART_START + SIZE - 1 ))
+    if [[ "$SIZE" -eq 0 ]] ; then
+        echo "ERROR: Zero byte partitions not allowed: $FILE" >&2
+        exit 1
+    fi
+
+    NEXT_PART_START=$(( ( ( NEXT_PART_START + SIZE ) + (ALIGNMENT-1) ) & ~(ALIGNMENT-1) ))
+    PART_START+=( "$START" )
+    PART_END+=( "$END" )
+    PART_FILE+=( "$FILE" )
+done
+
+readonly \
+    DISK_SIZE="$NEXT_PART_START" \
+    NUM_OF_PARTS \
+    PART_END \
+    PART_FILE \
+    PART_START \
+
+: > "$OUTPUT"
+truncate --size "$DISK_SIZE" "$OUTPUT"
+"${PARTED[@]}" "$OUTPUT" mktable "msdos"
+for (( i=0 ; i<NUM_OF_PARTS ; i++ )); do
+    "${PARTED[@]}" "$OUTPUT" mkpart primary "${PART_START[$i]}B" "${PART_END[$i]}B"
+
+    echo "writing partition $i:"
+    dd if="${PART_FILE[$i]}" of="$OUTPUT" seek="${PART_START[$i]}" bs=8M conv=notrunc,sparse oflag=seek_bytes status=progress
+    echo
+done

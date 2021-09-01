@@ -1,0 +1,4 @@
+# Network setup
+# interfaces(5) file used by ifup(8) and ifdown(8)
+auto eth0
+iface eth0 inet dhcp

@@ -1,0 +1,82 @@
+#!/bin/sh
+#
+
+on_exit() {
+        test $? -ne 0 || exit 0
+        echo "something unexpected happened, bailing to a recovery shell!" >&2
+        exec /bin/bash
+}
+
+trap "on_exit" EXIT TERM
+
+set -u
+set -e
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -o remount,rw /
+chown -Rf root:root / || true
+chmod 777 /tmp
+PATH=/usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin:/usr/bin:/bin
+export PATH
+apt-get update
+apt-get install -y \
+        apt-utils \
+        grub-efi-arm64 \
+        ifupdown \
+        initramfs-tools \
+        isc-dhcp-client \
+        kmod \
+        linux-firmware \
+        net-tools \
+        openssh-server \
+        parted \
+        resolvconf \
+        sudo \
+        systemd \
+        udev \
+        vim
+
+# Increase ext4 partition to full disk size
+umount proc # prevent partition in use message
+parted --script /dev/sda resizepart 2 100%
+mount -t proc proc /proc
+resize2fs /dev/sda2
+
+sync
+ln -s /dev/null /etc/systemd/network/99-default.link
+echo "nameserver 8.8.4.4" >> /etc/resolvconf/resolv.conf.d/head
+echo "nameserver 8.8.8.8" >> /etc/resolvconf/resolv.conf.d/head
+service resolvconf restart
+echo "LABEL=Ubuntu-18.04 /  ext4 defaults 0 0" >> etc/fstab
+echo "LABEL=ESP /boot/efi vfat defaults 0 0" >> etc/fstab
+mkdir /boot/efi
+mount /boot/efi
+mount -t efivarfs efivarfs /sys/firmware/efi/efivars/
+grub-install --no-uefi-secure-boot || true
+[ -e /linux-image-n1sdp.deb ] && dpkg -i /linux-image-n1sdp.deb
+[ -e /linux-headers-n1sdp.deb ] && dpkg -i /linux-headers-n1sdp.deb
+sed -ie 's/^GRUB_TIMEOUT_STYLE=.*$/GRUB_TIMEOUT_STYLE=menu/; s/^GRUB_TIMEOUT=.*$/GRUB_TIMEOUT=2/; s/GRUB_CMDLINE_LINUX_DEFAULT=.*$/GRUB_CMDLINE_LINUX_DEFAULT="earlycon vfio-pci.ids=10ee:9038"/' /etc/default/grub
+update-grub
+sync
+# change root password
+echo "root:root" | chpasswd
+# Create user ubuntu:ubuntu
+adduser ubuntu --gecos "ubuntu" --disabled-password
+echo "ubuntu:ubuntu" | chpasswd
+usermod -aG sudo ubuntu
+cat <<EOF >/etc/modprobe.d/vfio.conf
+# cat /etc/modprobe.d/vfio.conf
+options vfio-pci ids=10ee:9038
+softdep radeon pre: vfio-pci
+softdep amdgpu pre: vfio-pci
+softdep nouveau pre: vfio-pci
+softdep drm pre: vfio-pci
+options kvm_amd avic=1
+EOF
+update-initramfs -u
+cat <<EOF >/etc/modules-load.d/vfio-pci.conf
+# cat /etc/modules-load.d/vfio-pci.conf
+vfio-pci
+EOF
+sync

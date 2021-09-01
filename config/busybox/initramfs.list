@@ -1,0 +1,13 @@
+# input paths are local to $WORKSPACE_DIR
+dir  /bin                                                755 0 0
+dir  /dev                                                755 0 0
+dir  /proc                                               755 0 0
+dir  /sbin                                               755 0 0
+dir  /sys                                                755 0 0
+dir  /lib                                                755 0 0
+dir  /lib/firmware                                       755 0 0
+dir  /lib/firmware/rtl_nic                               755 0 0
+
+file /bin/busybox ./busybox/busybox                      755 0 0
+file /init        ./build-scripts/config/busybox/init.sh 755 0 0
+file /lib/firmware/rtl_nic/rtl8168g-2.fw ./tools/linuxfirmware/rtl8168g-2.fw 755 0 0

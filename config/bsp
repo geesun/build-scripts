@@ -1,0 +1,22 @@
+# xxx_BUILD_MODE
+#   Supported values:
+#     debug
+#     release
+#
+# xxx_TOOLCHAIN
+#     gnu  - use gcc and GNU binutils ld
+#
+
+SCP_BUILD_MODE=release
+SCP_LOG_LEVEL=INFO
+
+ARM_TF_BUILD_MODE=debug
+ARM_TF_TOOLCHAIN=GNU
+
+UEFI_BUILD_MODE=debug
+UEFI_TOOLCHAIN=GNU
+
+LINUX_TOOLCHAIN=GNU
+
+# File-system specific variables
+BUSYBOX_FS_EXT4_SIZE=8

@@ -1,0 +1,20 @@
+dir /bin 755 0 0
+dir /dev 755 0 0
+dir /etc 755 0 0
+dir /mnt 755 0 0
+dir /proc 755 0 0
+dir /sbin 755 0 0
+dir /sys 755 0 0
+dir /usr 755 0 0
+dir /usr 755 0 0
+dir /usr/bin 755 0 0
+dir /usr/sbin 755 0 0
+dir /usr/share 755 0 0
+dir /usr/share/udhcpc 755 0 0
+
+nod /dev/console 644 0 0 c 5 1
+
+# all other busybox symlinks are installed by init.sh
+slink /bin/sh /bin/busybox 777 0 0
+file /init ./init.sh 755 0 0
+file /usr/share/udhcpc/default.script ./udhcp_helper.sh 755 0 0
