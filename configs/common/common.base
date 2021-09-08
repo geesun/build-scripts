@@ -74,6 +74,11 @@ LINUX_defconfig[path]="linux"
 LINUX_defconfig[outpath]="linux"
 LINUX_defconfig[config]=""
 LINUX_defconfig[defconfig]=defconfig
+declare -A LINUX_linuxboot_defconfig
+LINUX_linuxboot_defconfig[path]="linux"
+LINUX_linuxboot_defconfig[outpath]="linux"
+LINUX_linuxboot_defconfig[config]=""
+LINUX_linuxboot_defconfig[defconfig]=linuxboot_defconfig
 declare -A LINUX_mobile_oe
 LINUX_mobile_oe[path]="linux"
 LINUX_mobile_oe[outpath]="linux"
@@ -236,6 +241,6 @@ fi
 #   platform. If your platform only supports particular platforms, then reduce
 #   this list. This means the build scripts will only source files under the
 #   filesystems directory that apply to your platform.
-VALID_FILESYSTEMS="android oe busybox buildroot uefi"
+VALID_FILESYSTEMS="android oe busybox buildroot uefi linuxboot"
 
 COMPONENT_FLAVOUR=$FLAVOUR
