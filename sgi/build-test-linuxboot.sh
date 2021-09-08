@@ -32,6 +32,10 @@ source ./build-scripts/sgi/sgi_common_util.sh
 
 TOP_DIR=`pwd`
 
+# List of all the supported platforms.
+declare -A platforms_rdinfra
+platforms_rdinfra[rdv1]=1
+
 __print_examples()
 {
 	echo "Example 1: ./build-scripts/$refinfra/build-test-linuxboot.sh -p $1 all"

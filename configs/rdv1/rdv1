@@ -36,6 +36,7 @@ export LINUX_COMPILER=$CROSS_COMPILE_64
 LINUX_CONFIG_LIST=""
 BUSYBOX_LINUX_CONFIG_LIST="defconfig"
 BUILDROOT_LINUX_CONFIG_LIST="defconfig"
+LINUXBOOT_LINUX_CONFIG_LIST="linuxboot_defconfig"
 
 LINUX_TOOLS_IOMMU_BUILD=1
 
@@ -62,7 +63,7 @@ if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
 fi
 
 # Filesystem options
-VALID_FILESYSTEMS="busybox buildroot"
+VALID_FILESYSTEMS="busybox buildroot linuxboot"
 
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
@@ -122,3 +123,9 @@ BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-b
 # UEFI SCT Options
 SCT_OUT_DIR=$TOP_DIR/output/rdv1/uefisct
 SCT_BUILD_MODE=DEBUG
+
+# Linuxboot Options
+LINUXBOOT_BUILD_ENABLED=0
+if [ "$LINUXBOOT_BUILD_ENABLED" == "1" ]; then
+	BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-target-bins.sh "
+fi
