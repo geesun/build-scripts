@@ -80,6 +80,8 @@ APT_PACKAGES_COMMON=(
 		"doxygen"
 		"xterm"
 		"ninja-build"
+		"python3-distutils"
+		"gcc-aarch64-linux-gnu"
 )
 
 ###########################################################################

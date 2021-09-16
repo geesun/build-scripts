@@ -118,3 +118,7 @@ TARGET_rdv1[tbbr]=1
 TARGET_rdv1[scp]="rdv1"
 SCP_BYPASS_ROM_SUPPORT[rdv1]=false
 BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-target-bins.sh "
+
+# UEFI SCT Options
+SCT_OUT_DIR=$TOP_DIR/output/rdv1/uefisct
+SCT_BUILD_MODE=DEBUG

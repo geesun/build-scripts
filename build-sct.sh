@@ -30,25 +30,28 @@
 
 do_build()
 {
-	pushd $TOP_DIR/$UEFI_PATH
+	pushd $TOP_DIR/uefi
+	if [[ ! -e ./edk2-test ]] ; then
+		git clone https://github.com/tianocore/edk2-test.git
+	fi
 	if [[ ! -e ./SctPkg ]] ; then
 		ln -s edk2-test/uefi-sct/SctPkg SctPkg
 	fi
 	echo Building UEFI SCT...
-	./SctPkg/build.sh AARCH64 GCC
+	./SctPkg/build.sh AARCH64 GCC $SCT_BUILD_MODE
 	popd
 }
 
 do_package()
 {
 	mkdir -p $SCT_OUT_DIR
-	cp -rf $TOP_DIR/$UEFI_PATH/Build/UefiSct/DEBUG_GCC49/SctPackageAARCH64 $SCT_OUT_DIR
+	cp -rf $TOP_DIR/uefi/Build/UefiSct/DEBUG_GCC5/SctPackageAARCH64 $SCT_OUT_DIR
 }
 
 do_clean()
 {
 	rm -rf $SCT_OUT_DIR
-	rm -rf $TOP_DIR/$UEFI_PATH/Build/*Sct
+	rm -rf $TOP_DIR/uefi/Build/*Sct
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )

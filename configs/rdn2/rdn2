@@ -121,3 +121,7 @@ TARGET_rdn2[tbbr]=1
 TARGET_rdn2[scp]="rdn2"
 SCP_BYPASS_ROM_SUPPORT[rdn2]=false
 BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-target-bins.sh "
+
+# UEFI SCT Options
+SCT_OUT_DIR=$TOP_DIR/output/rdn2/uefisct
+SCT_BUILD_MODE=DEBUG

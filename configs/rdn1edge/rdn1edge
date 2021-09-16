@@ -125,3 +125,7 @@ TARGET_rdn1edge[scp]="rdn1e1"
 TARGET_rdn1edge[tftf]="rdn1edge"
 SCP_BYPASS_ROM_SUPPORT[rdn1edge]=false
 BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-scp.sh build-target-bins.sh "
+
+# UEFI SCT Options
+SCT_OUT_DIR=$TOP_DIR/output/rdn1edge/uefisct
+SCT_BUILD_MODE=DEBUG

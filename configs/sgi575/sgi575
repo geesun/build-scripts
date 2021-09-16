@@ -128,3 +128,4 @@ BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh bui
 
 # UEFI SCT Options
 SCT_OUT_DIR=$TOP_DIR/output/sgi575/uefisct
+SCT_BUILD_MODE=DEBUG
