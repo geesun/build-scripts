@@ -51,6 +51,7 @@ ARM_TF_DEBUG_ENABLED=1
 ARM_TF_ENABLE_SPM=1
 ARM_TF_RAS_FW_FIRST=0
 ARM_TF_BUILD_FLAGS=""
+ARM_TF_BUILD_VARIANT="rdn2cfg2"
 
 # Enable support for secure partition, partition manager and RAS.
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
@@ -119,6 +120,7 @@ TARGET_rdn2cfg2[output]="rdn2cfg2"
 TARGET_rdn2cfg2[uefi]="css-common"
 TARGET_rdn2cfg2[linux]="Image"
 TARGET_rdn2cfg2[ramdisk]=0x88000000
+TARGET_rdn2[tbbr]=1 #rdn2cfg2 is a variant of rdn2 in arm-tf
 TARGET_rdn2cfg2[tbbr]=1
 TARGET_rdn2cfg2[scp]="rdn2"
 SCP_BYPASS_ROM_SUPPORT[rdn2]=false
