@@ -51,6 +51,7 @@ ARM_TF_DEBUG_ENABLED=1
 ARM_TF_ENABLE_SPM=1
 ARM_TF_RAS_FW_FIRST=0
 ARM_TF_BUILD_FLAGS=""
+ARM_TF_BUILD_VARIANT="rdn2cfg1"
 
 # Enable support for secure partition, partition manager and RAS.
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
