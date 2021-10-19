@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2021, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -40,6 +40,7 @@
 # ARM_TF_PLATS - List of platforms to be built (from available in arm-tf/plat)
 # ARM_TF_DEBUG_ENABLED - 1 = debug, 0 = release build
 # ARM_TF_BUILD_FLAGS - Additional build flags to pass on the build command line
+# ARM_TF_BUILD_VARIANT - Platform build variant name if a platform has multiple variants
 # ARM_TF_TBBR_BUILD_FLAGS - command line options to enable TBBR in ARM TF build
 # OPTEE_BUILD_ENABLED - Flag to indicate if optee is enabled
 # TBBR_{plat} - array of platform parameters, indexed by
@@ -52,8 +53,17 @@ do_build ()
 		pushd $TOP_DIR/$ARM_TF_PATH
 		for plat in $ARM_TF_PLATS; do
 			local atf_build_flags=$ARM_TF_BUILD_FLAGS
-			local atf_tbbr_enabled=TARGET_$plat[tbbr]
 			local atf_optee_enabled=OPTEE_BUILD_ENABLED
+
+			if [ ! -z "$ARM_TF_BUILD_VARIANT" ]; then
+				# if build variant is defined, set tbbr_enabled
+				# from platform build variant
+				local plat_variant=$ARM_TF_BUILD_VARIANT
+				local atf_tbbr_enabled=TARGET_$plat_variant[tbbr]
+			else
+				local atf_tbbr_enabled=TARGET_$plat[tbbr]
+			fi
+
 			if [ "${!atf_tbbr_enabled}" == "1" ]; then
 				#if trusted board boot(TBBR) enabled, set corresponding compiliation flags
 				atf_build_flags="${atf_build_flags} $ARM_TF_TBBR_BUILD_FLAGS"
