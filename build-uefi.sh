@@ -54,26 +54,47 @@ do_build ()
 		# build acpica
 		pushd $TOP_DIR/$UEFI_ACPICA_PATH
 		unset HOST
+		echo
+		echo -e "${GREEN}Building UEFI ACPICA tools on [`date`]${NORMAL}"
+		echo
+		set -x
 		make -j $PARALLELISM iasl
+		{ set +x;  } 2> /dev/null
 		popd
 
 		# prepare to build edk2 targets
 		pushd $TOP_DIR/$UEFI_PATH
+		echo
+		echo -e "${BLUE}Setting cross compiler path${NORMAL}"
+		echo
+		set -x
 		CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
 		PATH="$PATH:$CROSS_COMPILE_DIR"
+		{ set +x;  } 2> /dev/null
 
 		#Temporary fix to resolve repo tool issue with fetching git submodules
 		#https://gerrit.googlesource.com/git-repo/+/d177609cb0283e41e23d4c19b94e17f42bdbdacb
 		git submodule update --init
 
+		echo
+		echo -e "${BLUE}Exporting environment variables and sourcing edk2setup.sh script${NORMAL}"
+		echo
+		set -x
 		export WORKSPACE=$TOP_DIR/$UEFI_PATH
 		export PACKAGES_PATH=$PWD/:$PWD/edk2-platforms
 		export EDK2_TOOLCHAIN=$UEFI_TOOLCHAIN
 		export ${UEFI_TOOLCHAIN}_AARCH64_PREFIX=$CROSS_COMPILE
+		{ set +x;  } 2> /dev/null
+		echo "++ source ./edksetup.sh" # not setting -x for ./edksetup.sh to avoid prints within the script
 		source ./edksetup.sh
 
 		# build basetools
+		echo
+		echo -e "${GREEN}Building UEFI BaseTools on [`date`]${NORMAL}"
+		echo
+		set -x
 		make -j $PARALLELISM -C BaseTools
+		{ set +x;  } 2> /dev/null
 
 		local vars=
 		for item in $UEFI_PLATFORMS; do
@@ -89,9 +110,12 @@ do_build ()
 				dsc=UEFI_PLAT_$item[dsc]
 				echo
 				echo "EDK2 build parameters: " $UEFI_EXTRA_BUILD_PARAMS ${!vars}
-				echo "Build command: build -n $PARALLELISM -a "AARCH64" -t GCC5 $UEFI_EXTRA_BUILD_PARAMS -b $UEFI_BUILD_MODE -s -p ${!dsc} ${!vars}"
 				echo
+				echo -e "${GREEN}Building UEFI for $item on [`date`]${NORMAL}"
+				echo
+				set -x
 				build -n $PARALLELISM -a "AARCH64" -t GCC5 $UEFI_EXTRA_BUILD_PARAMS -b $UEFI_BUILD_MODE -s -p ${!dsc} ${!vars}
+				{ set +x;  } 2> /dev/null
 			fi
 		done
 		popd
@@ -102,16 +126,36 @@ do_clean ()
 {
 	if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$UEFI_PATH
+		echo
+		echo -e "${BLUE}Exporting environment variables and sourcing edk2setup.sh script${NORMAL}"
+		echo
+		set -x
 		CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
 		PATH="$PATH:$CROSS_COMPILE_DIR"
+		{ set +x;  } 2> /dev/null
+		echo "++ source ./edksetup.sh" # not setting -x for ./edksetup.sh to avoid prints within the script
 		source ./edksetup.sh
+
+		echo
+		echo -e "${RED}Cleaning UEFI BaseTools on [`date`]${NORMAL}"
+		echo
+		set -x
 		make -C BaseTools clean
+		{ set +x;  } 2> /dev/null
 		for item in $UEFI_PLATFORMS; do
 			name=UEFI_PLAT_$item[platname]
+			echo
+			echo -e "${RED}Removing UEFI build for $item on [`date`]${NORMAL}"
+			echo
+			set -x
 			rm -rf Build/${!name}
+			{ set +x;  } 2> /dev/null
 		done
 		popd
 		pushd $TOP_DIR/$UEFI_ACPICA_PATH
+		echo
+		echo -e "${RED}Cleaning ACPICA tools on [`date`]${NORMAL}"
+		echo
 		make veryclean
 		popd
 	fi
