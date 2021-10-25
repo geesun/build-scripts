@@ -72,19 +72,15 @@ do_build ()
 		fi
 
 		for item in $SCP_PLATFORMS; do
+			local plat_string="$item plat"
 			if [ $CMAKE_BUILD -eq 1 ]; then
 				# Build using cmake
 				if [ ! -z "$SCP_PLATFORM_VARIANT" ]; then
 					prd_build_params="-DSCP_PLATFORM_VARIANT=$SCP_PLATFORM_VARIANT"
+					plat_string="$plat_string and variant $SCP_PLATFORM_VARIANT"
 				fi
 
 				for scp_fw in mcp_romfw mcp_ramfw scp_romfw scp_ramfw; do
-					echo
-					echo "====================================================="
-					echo "Building $scp_fw [`date`] ....."
-					echo "====================================================="
-					echo
-
 					local outdir=$TOP_DIR/$SCP_PATH/output
 					if [ -z "$SCP_PLATFORM_VARIANT" ]; then
 						vpath="$item"
@@ -95,6 +91,11 @@ do_build ()
 					mkdir -p ${outdir}/$vpath
 
 					mkdir -p cmake-build/"$item/$scp_fw"
+
+					echo
+					echo  -e "${GREEN}Configuring CMake to build $scp_fw for $plat_string on [`date`]${NORMAL}"
+					echo
+					set -x
 					cmake -S "." -B "./cmake-build/$item/$scp_fw" \
 						-DSCP_TOOLCHAIN:STRING="GNU" \
 						-DCMAKE_BUILD_TYPE=$SCP_BUILD_MODE \
@@ -102,11 +103,14 @@ do_build ()
 						-DCMAKE_C_COMPILER=${SCP_COMPILER_PATH}/arm-none-eabi-gcc \
 						-DCMAKE_ASM_COMPILER=${SCP_COMPILER_PATH}/arm-none-eabi-gcc \
 						$prd_build_params
+					{ set +x;  } 2> /dev/null
 
 					echo
-					echo echo cmake --build "./cmake-build/$item/$scp_fw" --parallel $PARALLELISM
+					echo -e "${GREEN}Starting CMake build on [`date`]${NORMAL}"
 					echo
+					set -x
 					cmake --build "./cmake-build/$item/$scp_fw" --parallel $PARALLELISM
+					{ set +x;  } 2> /dev/null
 
 					pushd cmake-build/$item/$scp_fw
 					case $scp_fw in
@@ -133,6 +137,7 @@ do_build ()
 					vpath="$item"
 				else
 					vpath="$item/$SCP_PLATFORM_VARIANT"
+					plat_string="$plat_string and variant $SCP_PLATFORM_VARIANT"
 				fi
 
 				mkdir -p ${outdir}/$vpath
@@ -143,7 +148,13 @@ do_build ()
 
 				# Convert build mode to lower case, make build requires it.
 				SCP_BUILD_MODE="${SCP_BUILD_MODE,,}"
+
+				echo
+				echo  -e "${GREEN}Building SCP for $plat_string on [`date`]${NORMAL}"
+				echo
+				set -x
 				make -j $PARALLELISM PRODUCT=$item $prd_build_params MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-none-eabi-gcc
+				{ set +x;  } 2> /dev/null
 				cp -r build/product/$item/* ${outdir}/$vpath
 			fi
 		done
@@ -156,19 +167,28 @@ do_clean ()
 	if [ "$SCP_BUILD_ENABLED" == "1" ]; then
 		pushd $TOP_DIR/$SCP_PATH
 		for item in $SCP_PLATFORMS; do
+			local plat_string="$item plat"
 			if [ -z "$SCP_PLATFORM_VARIANT" ]; then
 				vpath="$item"
 			else
 				vpath="$item/$SCP_PLATFORM_VARIANT"
+				plat_string="$plat_string and variant $SCP_PLATFORM_VARIANT"
 			fi
 			local outdir=$TOP_DIR/$SCP_PATH/output/$vpath
 
+			echo
+			echo -e "${RED}Cleaning SCP for $plat_string on [`date`]${NORMAL}"
+			echo
 			if [ $CMAKE_BUILD -eq 1 ]; then
 				# Build using cmake
+				set -x
 				rm -rf $TOP_DIR/$SCP_PATH/cmake-build/$item
+				{ set +x;  } 2> /dev/null
 			else
 				# Build using make
+				set -x
 				make PLATFORM=$item clean
+				{ set +x;  } 2> /dev/null
 			fi
 			rm -rf ${outdir}
 		done
