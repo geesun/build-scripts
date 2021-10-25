@@ -83,17 +83,51 @@ do_build ()
 					make O=$LINUX_OUT_DIR/$name/modules -j$PARALLELISM modules
 				fi
 			else
-				echo "Building using defconfig..."
 				lconfig=LINUX_$name[defconfig];
+				echo
+				echo -e "${GREEN}Building linux using ${!lconfig} on [`date`]${NORMAL}"
+				echo
+				set -x
 				make O=$LINUX_OUT_DIR/$name ${!lconfig}
+				{ set +x;  } 2> /dev/null
+
+				echo
+				echo -e "${GREEN}Building linux $LINUX_IMAGE_TYPE and dtbs on [`date`]${NORMAL}"
+				echo
+				set -x
 				make O=$LINUX_OUT_DIR/$name -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
+				{ set +x;  } 2> /dev/null
+
 				if [ "$LINUX_TOOLS_IOMMU_BUILD" == "1" ]; then
+					echo
+					echo -e "${GREEN}Building linux headers_install on [`date`]${NORMAL}"
+					echo
+					set -x
 					make O=$LINUX_OUT_DIR/$name headers_install
+					{ set +x;  } 2> /dev/null
+
+					echo
+					echo -e "${GREEN}Building linux iommu tools on [`date`]${NORMAL}"
+					echo
+					set -x
 					make O=$LINUX_OUT_DIR/$name tools/iommu
+					{ set +x;  } 2> /dev/null
 				fi
+
 				if [ "${!lmodules}" == "true" ]; then
+					echo
+					echo -e "${GREEN}Building ${!lconfig} for linux on [`date`]${NORMAL}"
+					echo
+					set -x
 					make O=$LINUX_OUT_DIR/$name/modules ${!lconfig}
+					{ set +x;  } 2> /dev/null
+
+					echo
+					echo -e "${GREEN}Building linux modules on [`date`]${NORMAL}"
+					echo
+					set -x
 					make O=$LINUX_OUT_DIR/$name/modules -j$PARALLELISM modules
+					{ set +x;  } 2> /dev/null
 				fi
 			fi
 			popd
@@ -109,7 +143,12 @@ do_clean ()
 		for name in $LINUX_CONFIG_LIST; do
 			local lpath=LINUX_$name[path];
 			pushd $TOP_DIR/${!lpath};
+			echo
+			echo -e "${RED}Cleaning linux $name on [`date`]${NORMAL}"
+			echo
+			set -x
 			make O=$LINUX_OUT_DIR/$name distclean
+			{ set +x;  } 2> /dev/null
 			popd
 		done
 
