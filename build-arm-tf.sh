@@ -54,12 +54,14 @@ do_build ()
 		for plat in $ARM_TF_PLATS; do
 			local atf_build_flags=$ARM_TF_BUILD_FLAGS
 			local atf_optee_enabled=OPTEE_BUILD_ENABLED
+			local plat_string="$plat plat"
 
 			if [ ! -z "$ARM_TF_BUILD_VARIANT" ]; then
 				# if build variant is defined, set tbbr_enabled
 				# from platform build variant
 				local plat_variant=$ARM_TF_BUILD_VARIANT
 				local atf_tbbr_enabled=TARGET_$plat_variant[tbbr]
+				plat_string="$plat_string and $plat_variant variant"
 			else
 				local atf_tbbr_enabled=TARGET_$plat[tbbr]
 			fi
@@ -88,13 +90,23 @@ do_build ()
 			else
 				TMP_CROSS_COMPILE=$CROSS_COMPILE_64
 			fi
+			echo
+			echo -e "${GREEN}Building TF-A for $plat_string on [`date`]${NORMAL}"
+			echo
+			set -x
 			CROSS_COMPILE=$TMP_CROSS_COMPILE \
 			make -j $PARALLELISM PLAT=$plat ARCH=$ARM_TF_ARCH DEBUG=$ARM_TF_DEBUG_ENABLED ${atf_build_flags} ${targets}
+			{ set +x;  } 2> /dev/null
 		done
 
+		echo
+		echo -e "${GREEN}Building TF-A tools on [`date`]${NORMAL}"
+		echo
+		set -x
 		# make tools
 		make -j $PARALLELISM certtool
 		make -j $PARALLELISM fiptool
+		{ set +x;  } 2> /dev/null
 		popd
 	fi
 }
@@ -105,13 +117,28 @@ do_clean ()
 		pushd $TOP_DIR/$ARM_TF_PATH
 
 		for plat in $ARM_TF_PLATS; do
+			echo
+			echo -e "${RED}Cleaning TF-A for $plat on [`date`]${NORMAL}"
+			echo
+			set -x
 			make PLAT=$plat DEBUG=$ARM_TF_DEBUG_ENABLED clean
+			{ set +x;  } 2> /dev/null
 		done
 		if [ -e tools/fip_create/Makefile ]; then
+			echo
+			echo -e "${RED}Cleaning fip_create on [`date`]${NORMAL}"
+			echo
+			set -x
 			make -C tools/fip_create clean
+			{ set +x;  } 2> /dev/null
 		fi
 		if [ -e tools/fiptool/Makefile ]; then
+			echo
+			echo -e "${RED}Cleaning fiptool on [`date`]${NORMAL}"
+			echo
+			set -x
 			make -C tools/fiptool clean
+			{ set +x;  } 2> /dev/null
 		fi
 		popd
 	fi
