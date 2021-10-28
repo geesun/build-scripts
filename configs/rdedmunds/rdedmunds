@@ -36,6 +36,7 @@ export LINUX_COMPILER=$CROSS_COMPILE_64
 LINUX_CONFIG_LIST=""
 BUSYBOX_LINUX_CONFIG_LIST="defconfig"
 BUILDROOT_LINUX_CONFIG_LIST="defconfig"
+LINUXBOOT_LINUX_CONFIG_LIST="linuxboot_defconfig"
 
 LINUX_TOOLS_IOMMU_BUILD=1
 
@@ -65,7 +66,7 @@ fi
 ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS CSS_SGI_PLATFORM_VARIANT=0"
 
 # Filesystem options
-VALID_FILESYSTEMS="busybox buildroot"
+VALID_FILESYSTEMS="busybox buildroot linuxboot"
 
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
@@ -124,3 +125,9 @@ TARGET_rdedmunds[tbbr]=1
 TARGET_rdedmunds[scp]="rdn2"
 SCP_BYPASS_ROM_SUPPORT[rdn2]=false
 BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-target-bins.sh "
+
+# Linuxboot Options
+LINUXBOOT_BUILD_ENABLED=0
+if [ "$LINUXBOOT_BUILD_ENABLED" == "1" ]; then
+	BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-target-bins.sh "
+fi
