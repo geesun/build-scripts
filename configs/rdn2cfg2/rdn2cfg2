@@ -32,6 +32,8 @@ export CROSS_COMPILE_64=${TOP_DIR}/tools/gcc/gcc-arm-10.2-2020.11-x86_64-aarch64
 export CROSS_COMPILE=$CROSS_COMPILE_64
 export LINUX_COMPILER=$CROSS_COMPILE_64
 
+BUILD_SCRIPTS=""
+
 #Default linux configs per OS
 LINUX_CONFIG_LIST=""
 BUSYBOX_LINUX_CONFIG_LIST="defconfig"
@@ -74,6 +76,13 @@ VALID_FILESYSTEMS="busybox buildroot"
 
 # Virtualization Options
 ARM_VIRT_KVM_TOOL=1
+KVM_UNIT_TESTS_BUILD_ENABLED=1
+KVMTOOL_BUILD_ENABLED=1
+KVMTOOL_SUPPORT_PLATFORM="rdn2"
+if [ "${KVMTOOL_BUILD_ENABLED}" == "1" ] ||
+	[ "${KVM_UNIT_TESTS_BUILD_ENABLED}" == "1" ]; then
+	BUILD_SCRIPTS="${BUILD_SCRIPTS} build-kvmtool.sh"
+fi
 
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
@@ -142,4 +151,4 @@ TARGET_rdn2[tbbr]=1 #rdn2cfg2 is a variant of rdn2 in arm-tf
 TARGET_rdn2cfg2[tbbr]=1
 TARGET_rdn2cfg2[scp]="rdn2"
 SCP_BYPASS_ROM_SUPPORT[rdn2]=false
-BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-target-bins.sh "
+BUILD_SCRIPTS="${BUILD_SCRIPTS} build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-target-bins.sh "
