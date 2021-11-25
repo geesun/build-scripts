@@ -99,64 +99,6 @@ append_chosen_node()
 	rm $1.dts
 }
 
-relative_path()
-{
-	# both $1 and $2 are absolute paths beginning with /
-	# returns relative path to $2/$target from $1/$source
-	source=$2
-	target=$1
-
-	common_part=$source # for now
-	result="" # for now
-
-	while [[ "${target#$common_part}" == "${target}" ]]; do
-		# no match, means that candidate common part is not correct
-		# go up one level (reduce common part)
-		common_part="$(dirname $common_part)"
-		# and record that we went back, with correct / handling
-		if [[ -z $result ]]; then
-			result=".."
-		else
-			result="../$result"
-		fi
-	done
-
-	if [[ $common_part == "/" ]]; then
-		# special case for root (no common path)
-		result="$result/"
-	fi
-
-	# since we now have identified the common part,
-	# compute the non-common part
-	forward_part="${target#$common_part}"
-
-	# and now stick all parts together
-	if [[ -n $result ]] && [[ -n $forward_part ]]; then
-		result="$result$forward_part"
-	elif [[ -n $forward_part ]]; then
-		# extra slash removal
-		result="${forward_part:1}"
-	fi
-	echo ${result}
-}
-
-# $1: TARGET_blah from variant
-# $2: target from variant
-# $3: file pattern
-create_tgt_symlinks()
-{
-	shopt -s nullglob
-
-	if [[ "${OUTDIR}/$1" != "${PLATDIR}/$2" ]]; then
-		mkdir -p ${PLATDIR}/$2
-		for bin in ${OUTDIR}/$1/$3; do
-			local dirlink=$(relative_path $(dirname ${bin}) ${PLATDIR}/$1)
-			local filename=$(basename ${bin})
-			ln -sf  ${dirlink}/${filename} ${PLATDIR}/$2/${filename}
-		done
-	fi
-}
-
 # $1: ramdisk address
 # $2: devtree
 update_devtree()
@@ -432,4 +374,5 @@ do_package()
 }
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $DIR/common_utils.sh
 source $DIR/framework.sh $@
