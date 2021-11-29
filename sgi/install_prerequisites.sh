@@ -182,6 +182,58 @@ Check log file to find the specific reason for failure\n"
 
 ############################################################################
 #                                                                          #
+#  Function: install_gcc_toolchain                                         #
+#  Description: Download and install GCC toolchain into tools/gcc path     #
+#                                                                          #
+############################################################################
+function install_gcc_toolchain()
+{
+	# Create the target path if not present
+	mkdir -p tools/gcc
+	pushd tools/gcc
+
+	echo
+	echo -ne "Downloading gcc-10.2 toolchain..."
+	echo
+
+	# Download the toolchain and the checksum files from developer.arm.com
+	wget https://developer.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2 &
+	wget https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz &
+	wget https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz.asc?revision=9209a723-af18-46c9-9c3e-3d2e3572e220&la=en&hash=15703A3D3E2735F069EA1282363247724E92E216 &
+
+	# Wait for the download to complete
+	wait
+
+	# verify the md5 checksum for the downloaded tar files
+	if md5sum -c gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz.asc?revision=9209a723-af18-46c9-9c3e-3d2e3572e220
+	then
+		echo
+		echo -ne "Extracting ..."
+		echo
+
+		# Extract the toolchain
+		tar -xf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+		tar -xf gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz
+
+		echo
+		echo -e "${BOLD}${GREEN}GCC 10.2 toolchain setup complete${NORMAL}\n"
+		echo
+	else
+		echo
+		echo -e "${BOLD}${RED}GCC 10.2 md5checksum failed! Please execute the install_prerequistes.sh script again.${NORMAL}\n"
+		echo
+	fi
+
+	# Remove the downloaded files
+	rm gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz.asc?revision=9209a723-af18-46c9-9c3e-3d2e3572e220 \
+		gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2 \
+		gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz
+
+	popd
+}
+
+############################################################################
+#                                                                          #
 #  Function: shutdown                                                      #
 #  Description: Handle untrapping trapped signals and output of the final  #
 #               return code from the script.                               #
@@ -227,6 +279,9 @@ ${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
 	echo -e "\n Installing CMake - \n\n"
 	pip install cmake --upgrade >> $LOGFILE 2>&1
 	echo -e "${BOLD}${GREEN}done${NORMAL}"
+
+	echo -e "\nInstalling toolchain:\n\n"
+	install_gcc_toolchain
 
 	echo -e "\nInstalltion of prerequisites ended at \
 ${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
