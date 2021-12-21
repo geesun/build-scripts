@@ -182,6 +182,33 @@ Check log file to find the specific reason for failure\n"
 
 ############################################################################
 #                                                                          #
+#  Function: install_libfdt                                                #
+#  Description: Download, build and install LIBFDT into GCC toolchain      #
+#                                                                          #
+############################################################################
+function install_libfdt()
+{
+	local CC SYSROOT
+
+	# Clone the LIBFDT git repo
+	git clone git://git.kernel.org/pub/scm/utils/dtc/dtc.git
+	wait
+
+	# Compile and install library
+	export CC="${PWD}/${1}gcc"
+	SYSROOT=$($CC -print-sysroot)
+	pushd dtc
+	make clean
+	make libfdt
+	make DESTDIR=$SYSROOT PREFIX=/usr LIBDIR=/usr/lib/ install-lib install-includes
+
+	# Clean Up
+	popd
+	rm -rf dtc
+}
+
+############################################################################
+#                                                                          #
 #  Function: install_gcc_toolchain                                         #
 #  Description: Download and install GCC toolchain into tools/gcc path     #
 #                                                                          #
@@ -217,6 +244,17 @@ function install_gcc_toolchain()
 
 		echo
 		echo -e "${BOLD}${GREEN}GCC 10.2 toolchain setup complete${NORMAL}\n"
+		echo
+
+		echo
+		echo -ne "Installing LIBFDT library ..."
+		echo
+
+		# Install LIBFDT library for GCC 10.2
+		install_libfdt "gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-"
+
+		echo
+		echo -e "${BOLD}${GREEN}LIBFDT library installation complete${NORMAL}\n"
 		echo
 	else
 		echo
