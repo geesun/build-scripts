@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -30,6 +30,7 @@
 
 do_build() {
     make --no-print-directory -C "bsp/arm-tf/tools/fiptool"
+    make --no-print-directory -C "bsp/arm-tf/tools/cert_create"
 
     local make_opts=(
         --no-print-directory
@@ -38,7 +39,14 @@ do_build() {
         PLAT=n1sdp
         ARCH=aarch64
         E=0
-        bl31 dtbs
+        PLAT=n1sdp
+        ARM_ROTPK_LOCATION="devel_rsa"
+        CREATE_KEYS=1
+        GENERATE_COT=1
+        MBEDTLS_DIR="$WORKSPACE_DIR/bsp/deps/mbedtls"
+        ROT_KEY="plat/arm/board/common/rotpk/arm_rotprivk_rsa.pem"
+        TRUSTED_BOARD_BOOT=1
+        all
     )
 
     artifact_dir="bsp/arm-tf/build/n1sdp/"
@@ -65,19 +73,31 @@ do_build() {
 
     make "${make_opts[@]}"
     mkdir -p "$PLATFORM_OUT_DIR/intermediates"
+    cp "$artifact_dir/bl1.bin" \
+                "$PLATFORM_OUT_DIR/intermediates/tf-bl1.bin"
+    cp "$artifact_dir/bl2.bin" \
+                "$PLATFORM_OUT_DIR/intermediates/tf-bl2.bin"
     cp "$artifact_dir/bl31.bin" \
-               "$PLATFORM_OUT_DIR/intermediates/bl31.bin"
+                "$PLATFORM_OUT_DIR/intermediates/tf-bl31.bin"
     cp "$artifact_dir/fdts/$PLATFORM-single-chip.dtb" \
                "$PLATFORM_OUT_DIR/intermediates/$PLATFORM-single-chip.dtb"
     cp "$artifact_dir/fdts/$PLATFORM-multi-chip.dtb" \
                "$PLATFORM_OUT_DIR/intermediates/$PLATFORM-multi-chip.dtb"
+    cp "$artifact_dir/fdts/"$PLATFORM"_fw_config.dtb" \
+               "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_fw_config.dtb"
+    cp "$artifact_dir/fdts/"$PLATFORM"_tb_fw_config.dtb" \
+               "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_tb_fw_config.dtb"
 }
 
 do_clean() {
     rm -f \
         "$PLATFORM_OUT_DIR/intermediates/$PLATFORM-single-chip.dtb" \
         "$PLATFORM_OUT_DIR/intermediates/$PLATFORM-multi-chip.dtb" \
-        "$PLATFORM_OUT_DIR/intermediates/bl31.bin"
+        "$PLATFORM_OUT_DIR/intermediates/tf-bl1.bin" \
+        "$PLATFORM_OUT_DIR/intermediates/tf-bl2.bin" \
+        "$PLATFORM_OUT_DIR/intermediates/tf-bl31.bin" \
+        "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_fw_config.dtb" \
+        "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_tb_fw_config.dtb"
 
     make --no-print-directory -C "bsp/arm-tf" distclean
 }

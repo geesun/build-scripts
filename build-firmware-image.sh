@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -45,8 +45,8 @@ prepare_package() {
         "${PLATFORM_OUT_DIR}/intermediates/${PRIMARY_DIR}"
     rm -rf "${PLATFORM_OUT_DIR}/intermediates/${PRIMARY_DIR}/SOFTWARE"/*
 
-    # Copy uefi binary
-    cp -v "${PLATFORM_OUT_DIR}/firmware/uefi.bin" \
+    # Copy fip binary
+    cp -v "${PLATFORM_OUT_DIR}/firmware/fip.bin" \
             "${PLATFORM_OUT_DIR}/intermediates/${PRIMARY_DIR}/SOFTWARE/"
 
     # Copy SOC binaries
@@ -95,7 +95,7 @@ do_build() {
     "bsp/arm-tf/tools/fiptool/fiptool" \
         create \
         --scp-fw "$PLATFORM_OUT_DIR/intermediates/scp-ram.bin" \
-        --soc-fw "$PLATFORM_OUT_DIR/intermediates/bl31.bin" \
+        --blob uuid=cfacc2c4-15e8-4668-82be-430a38fad705,file="$PLATFORM_OUT_DIR/intermediates/tf-bl1.bin" \
         "$PLATFORM_OUT_DIR/intermediates/scp_fw.bin"
 
     "bsp/arm-tf/tools/fiptool/fiptool" \
@@ -103,18 +103,33 @@ do_build() {
         --blob uuid=54464222-a4cf-4bf8-b1b6-cee7dade539e,file="$PLATFORM_OUT_DIR/intermediates/mcp-ram.bin" \
         "$PLATFORM_OUT_DIR/intermediates/mcp_fw.bin"
 
-    mkdir -p "$PLATFORM_OUT_DIR/firmware"
-    install --mode=644 "$PLATFORM_OUT_DIR/intermediates/scp_rom.bin" \
-        "$PLATFORM_OUT_DIR/firmware/scp_rom.bin"
-    install --mode=644 "$PLATFORM_OUT_DIR/intermediates/scp_fw.bin" \
-        "$PLATFORM_OUT_DIR/firmware/scp_fw.bin"
-    install --mode=644 "$PLATFORM_OUT_DIR/intermediates/mcp_rom.bin" \
-        "$PLATFORM_OUT_DIR/firmware/mcp_rom.bin"
-    install --mode=644 "$PLATFORM_OUT_DIR/intermediates/mcp_fw.bin" \
-        "$PLATFORM_OUT_DIR/firmware/mcp_fw.bin"
-    install --mode=644 "$PLATFORM_OUT_DIR/intermediates/uefi.bin" \
-        "$PLATFORM_OUT_DIR/firmware/uefi.bin"
 
+local fip_tool_opts=(
+        --tb-fw "$PLATFORM_OUT_DIR/intermediates/tf-bl2.bin"
+        --nt-fw "$PLATFORM_OUT_DIR/intermediates/uefi.bin"
+        --soc-fw "$PLATFORM_OUT_DIR/intermediates/tf-bl31.bin"
+        --fw-config "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_fw_config.dtb"
+        --tb-fw-config "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_tb_fw_config.dtb"
+        --trusted-key-cert "$PLATFORM_OUT_DIR/intermediates/tfa-certs/trusted_key.crt"
+        --soc-fw-key-cert "$PLATFORM_OUT_DIR/intermediates/tfa-certs/bl31_key.crt"
+        --nt-fw-key-cert "$PLATFORM_OUT_DIR/intermediates/tfa-certs/bl33_key.crt"
+        --soc-fw-cert "$PLATFORM_OUT_DIR/intermediates/tfa-certs/bl31.crt"
+        --nt-fw-cert "$PLATFORM_OUT_DIR/intermediates/tfa-certs/bl33.crt"
+        --tb-fw-cert "$PLATFORM_OUT_DIR/intermediates/tfa-certs/bl2.crt"
+    )
+
+    mkdir -p "$PLATFORM_OUT_DIR/intermediates/tfa-certs"
+    "bsp/arm-tf/tools/cert_create/cert_create" "${fip_tool_opts[@]}" -n --tfw-nvctr 0 --ntfw-nvctr 0 \
+        --rot-key "bsp/arm-tf/plat/arm/board/common/rotpk/arm_rotprivk_rsa.pem"
+
+    "bsp/arm-tf/tools/fiptool/fiptool" update "${fip_tool_opts[@]}" "$PLATFORM_OUT_DIR/intermediates/fip.bin"
+
+    mkdir -p "$PLATFORM_OUT_DIR/firmware"
+    install --mode=644 "$PLATFORM_OUT_DIR/intermediates/scp_fw.bin"   "$PLATFORM_OUT_DIR/firmware/scp_fw.bin"
+    install --mode=644 "$PLATFORM_OUT_DIR/intermediates/mcp_fw.bin"   "$PLATFORM_OUT_DIR/firmware/mcp_fw.bin"
+    install --mode=644 "$PLATFORM_OUT_DIR/intermediates/fip.bin"      "$PLATFORM_OUT_DIR/firmware/fip.bin"
+    install --mode=644 "$PLATFORM_OUT_DIR/intermediates/scp_rom.bin"  "$PLATFORM_OUT_DIR/firmware/scp_rom.bin"
+    install --mode=644 "$PLATFORM_OUT_DIR/intermediates/mcp_rom.bin"  "$PLATFORM_OUT_DIR/firmware/mcp_rom.bin"
     prepare_package
 }
 
@@ -122,17 +137,19 @@ do_clean() {
     rm -f \
         "$PLATFORM_OUT_DIR/intermediates/mcp_fw.bin" \
         "$PLATFORM_OUT_DIR/intermediates/scp_fw.bin" \
+        "$PLATFORM_OUT_DIR/intermediates/fip.bin" \
         "$PLATFORM_OUT_DIR/firmware/mcp_fw.bin" \
         "$PLATFORM_OUT_DIR/firmware/mcp_rom.bin" \
         "$PLATFORM_OUT_DIR/firmware/scp_fw.bin" \
         "$PLATFORM_OUT_DIR/firmware/scp_rom.bin" \
-        "$PLATFORM_OUT_DIR/firmware/uefi.bin" \
         "$PLATFORM_OUT_DIR/firmware/n1sdp-board-firmware_primary.tar.gz" \
-        "$PLATFORM_OUT_DIR/firmware/n1sdp-board-firmware_secondary.tar.gz"
+        "$PLATFORM_OUT_DIR/firmware/n1sdp-board-firmware_secondary.tar.gz" \
+        "$PLATFORM_OUT_DIR/firmware/fip.bin"
 
     rm -rf \
         "${PLATFORM_OUT_DIR}/intermediates/${PRIMARY_DIR}" \
-        "${PLATFORM_OUT_DIR}/intermediates/${SECONDARY_DIR}"
+        "${PLATFORM_OUT_DIR}/intermediates/${SECONDARY_DIR}" \
+        "${PLATFORM_OUT_DIR}/intermediates/tfa-certs"
 
     if [[ -e "$PLATFORM_OUT_DIR/firmware" ]] ; then
         rmdir --ignore-fail-on-non-empty "$PLATFORM_OUT_DIR/firmware"
