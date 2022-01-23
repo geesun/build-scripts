@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -31,7 +31,7 @@
 shopt -s nullglob
 
 readonly libelf_URL="https://sourceware.org/pub/elfutils/0.178/elfutils-0.178.tar.bz2"
-readonly opencsd_URL="https://github.com/Linaro/OpenCSD/archive/v0.14.0.tar.gz"
+readonly opencsd_URL="https://github.com/Linaro/OpenCSD/archive/v1.2.0.tar.gz"
 readonly perf_URL="/dev/null"
 readonly zlib_URL="https://zlib.net/zlib-1.2.12.tar.xz"
 
@@ -82,12 +82,10 @@ libelf_configure() {
 perf_compile() {
     cd "$WORKSPACE_DIR/linux/tools/perf/"
 
-    # if some other deps of perf is a cxx lib then this will fail with symbol duplications...
-    local libcxx="$(${MRTOOLPREFIX}gcc -print-file-name=libstdc++.a)"
     local CORESIGHT_OPTS=( \
         "CORESIGHT=1" \
         "CSINCLUDES=\"$BDIR/sysroot/include\"" \
-        "CSLIBS=\"$BDIR/sysroot/lib\" -Wl,--whole-archive,$libcxx,--no-whole-archive" \
+        "CSLIBS=\"$BDIR/sysroot/lib\"" \
     )
 
     mkdir -p "$DIR_BUILD"

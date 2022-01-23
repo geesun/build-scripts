@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-UBUNTU_COMMIT_ID="b1e42052a91b8732153a8801bed1a218b2de5bdc"
+UBUNTU_COMMIT_ID="ea2285daccaa73a7e9189a079ec7c581ff18e682"
 UBUNTU_URL="git://git.launchpad.net/~ubuntu-kernel-test/ubuntu/+source/linux/+git/mainline-crack"
 
 do_build() {
@@ -62,7 +62,12 @@ do_build() {
         --enable CORESIGHT_STM
         --enable CORESIGHT_CPU_DEBUG
         --enable STM_SOURCE_CONSOLE
-        --disable DEBUG_INFO
+        --enable DEBUG_INFO_NONE
+    )
+
+    local -r ubuntu_kernel_5_18_4_config=(
+        --disable SYSTEM_TRUSTED_KEYS
+        --disable SYSTEM_REVOCATION_LIST
     )
 
     if [ "$(git rev-parse --abbrev-ref HEAD)" != "n1sdp-branch" ] ; then
@@ -79,6 +84,7 @@ do_build() {
     ./scripts/config --file "$LINUX_OUT_DIR/.config" --enable REALTEK_PHY
     ./scripts/config --file "$LINUX_OUT_DIR/.config" --enable R8169
     ./scripts/config --file "$LINUX_OUT_DIR/.config" --enable USB_CONN_GPIO
+    ./scripts/config --file "$LINUX_OUT_DIR/.config" --disable USB_XHCI_PCI_RENESAS
 
     make O="$LINUX_OUT_DIR" "${make_opts[@]}" Image
 
@@ -104,6 +110,7 @@ do_build() {
         # change
         export KCONFIG_CONFIG_UBUNTU="$UBUNTU_OUT_DIR/.config"
         ./scripts/config --file "$KCONFIG_CONFIG_UBUNTU" "${kernel_config_coresight[@]}"
+        ./scripts/config --file "$KCONFIG_CONFIG_UBUNTU" "${ubuntu_kernel_5_18_4_config[@]}"
 
         make "${make_opts[@]}" O="$UBUNTU_OUT_DIR" olddefconfig
         make "${make_opts[@]}" O="$UBUNTU_OUT_DIR" bindeb-pkg
