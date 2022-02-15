@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -33,13 +33,13 @@
 #                  have changed it will trigger a new download.
 # [sanity_file]  : this file should exist after extraction
 
-readonly -A TOOL_linaro_gcc=(
-    [data_url]="https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz"
+readonly -A TOOL_arm_linux_gcc=(
+    [data_url]="https://developer.arm.com/-/media/Files/downloads/gnu-a/10.3-2021.07/binrel/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu.tar.xz"
     [checksum_url]=""
-    [sanity_file]="bin/aarch64-linux-gnu-gcc"
+    [sanity_file]="bin/aarch64-none-linux-gnu-gcc"
     [extract]="yes"
 )
-readonly -A TOOL_arm_gcc=(
+readonly -A TOOL_arm_eabi_gcc=(
     [data_url]="https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2020q2/gcc-arm-none-eabi-9-2020-q2-update-x86_64-linux.tar.bz2"
     [checksum_url]=""
     [sanity_file]="bin/arm-none-eabi-gcc"
@@ -57,7 +57,7 @@ readonly -A TOOL_linuxfirmware=(
     [sanity_file]=""
     [extract]=""
 )
-readonly TOOLS=( linaro_gcc arm_gcc ubuntu_bionic linuxfirmware )
+readonly TOOLS=( arm_linux_gcc arm_eabi_gcc ubuntu_bionic linuxfirmware )
 readonly DO_DESC_build="download tools if not already downloaded"
 
 do_build() {

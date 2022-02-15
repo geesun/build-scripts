@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -148,8 +148,8 @@ readonly DO_DESC_clean
 readonly SCRIPT_DIR="$(realpath --no-symlinks "$(dirname "${BASH_SOURCE[0]}")")"
 readonly WORKSPACE_DIR="$(realpath --no-symlinks "$SCRIPT_DIR/..")"
 
-readonly GCC_ARM64_PREFIX="$WORKSPACE_DIR/tools/linaro_gcc/bin/aarch64-linux-gnu-"
-readonly GCC_ARM32_PREFIX="$WORKSPACE_DIR/tools/arm_gcc/bin/arm-none-eabi-"
+readonly GCC_ARM64_PREFIX="$WORKSPACE_DIR/tools/arm_linux_gcc/bin/aarch64-none-linux-gnu-"
+readonly GCC_ARM32_PREFIX="$WORKSPACE_DIR/tools/arm_eabi_gcc/bin/arm-none-eabi-"
 
 source "$SCRIPT_DIR/parse_params.sh"
 
