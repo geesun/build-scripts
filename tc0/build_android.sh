@@ -37,7 +37,7 @@ incorrect_script_use () {
 	echo "Incorrect script use, call script as:"
 	echo "<path to build_android.sh> [OPTIONS]"
 	echo "OPTIONS:"
-	echo "-d, --distro				distro version, values supported [android-nano, android-swr]"
+	echo "-d, --distro				distro version, values supported [android-swr]"
 	echo "-a, --avb				[OPTIONAL] avb boot, values supported [true, false], DEFAULT: false"
 	exit 1
 }
@@ -85,17 +85,6 @@ echo "AVB=$AVB"
 KERNEL_IMAGE=../bsp/build-poky/tmp-poky/deploy/images/tc0/Image
 . build/envsetup.sh
 case $DISTRO in
-    android-nano)
-		if [ "$AVB" == true ]
-		then
-			check_file_exists_and_exit $KERNEL_IMAGE
-			echo "Using $KERNEL_IMAGE for kernel"
-			cp $KERNEL_IMAGE device/arm/tc
-			lunch tc_nano-userdebug;
-		else
-			lunch tc_nano-eng;
-		fi
-		;;
     android-swr)
 		if [ "$AVB" == true ]
 		then
