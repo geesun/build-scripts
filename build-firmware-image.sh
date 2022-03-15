@@ -110,6 +110,7 @@ local fip_tool_opts=(
         --soc-fw "$PLATFORM_OUT_DIR/intermediates/tf-bl31.bin"
         --fw-config "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_fw_config.dtb"
         --tb-fw-config "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_tb_fw_config.dtb"
+        --nt-fw-config "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_nt_fw_config.dtb"
         --trusted-key-cert "$PLATFORM_OUT_DIR/intermediates/tfa-certs/trusted_key.crt"
         --soc-fw-key-cert "$PLATFORM_OUT_DIR/intermediates/tfa-certs/bl31_key.crt"
         --nt-fw-key-cert "$PLATFORM_OUT_DIR/intermediates/tfa-certs/bl33_key.crt"

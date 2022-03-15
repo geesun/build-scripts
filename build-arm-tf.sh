@@ -82,11 +82,13 @@ do_build() {
     cp "$artifact_dir/fdts/$PLATFORM-single-chip.dtb" \
                "$PLATFORM_OUT_DIR/intermediates/$PLATFORM-single-chip.dtb"
     cp "$artifact_dir/fdts/$PLATFORM-multi-chip.dtb" \
-               "$PLATFORM_OUT_DIR/intermediates/$PLATFORM-multi-chip.dtb"
+                "$PLATFORM_OUT_DIR/intermediates/$PLATFORM-multi-chip.dtb"
     cp "$artifact_dir/fdts/"$PLATFORM"_fw_config.dtb" \
                "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_fw_config.dtb"
     cp "$artifact_dir/fdts/"$PLATFORM"_tb_fw_config.dtb" \
                "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_tb_fw_config.dtb"
+    cp "$artifact_dir/fdts/"$PLATFORM"_nt_fw_config.dtb" \
+                "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_nt_fw_config.dtb"
 }
 
 do_clean() {
@@ -97,7 +99,8 @@ do_clean() {
         "$PLATFORM_OUT_DIR/intermediates/tf-bl2.bin" \
         "$PLATFORM_OUT_DIR/intermediates/tf-bl31.bin" \
         "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_fw_config.dtb" \
-        "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_tb_fw_config.dtb"
+        "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_tb_fw_config.dtb" \
+        "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_nt_fw_config.dtb" \
 
     make --no-print-directory -C "bsp/arm-tf" distclean
 }
