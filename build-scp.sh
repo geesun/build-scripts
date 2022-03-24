@@ -29,48 +29,48 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 do_build() {
-    local makeopts=(
-        --no-print-directory
-        -C "bsp/scp"
-        -j "$PARALLELISM"
-        CC="${GCC_ARM32_PREFIX}gcc"
-        DEBUGGER="n"
-        PRODUCT="n1sdp"
-    )
+    local build_path="output/$PLATFORM/intermediates/scp/cmake-build/product/n1sdp"
+    for scp_fw in mcp_romfw scp_romfw scp_ramfw mcp_ramfw; do
+        local makeopts=(
+            -S "bsp/scp"
+            -B "$build_path/$scp_fw"
+            -DCMAKE_ASM_COMPILER="${GCC_ARM32_PREFIX}gcc"
+            -DCMAKE_C_COMPILER="${GCC_ARM32_PREFIX}gcc"
+            -DSCP_ENABLE_DEBUGGER="$SCP_CLI_DEBUGGER"
+            -DSCP_FIRMWARE_SOURCE_DIR:PATH="n1sdp/$scp_fw"
+            -DSCP_TOOLCHAIN:STRING="GNU"
+            -DDISABLE_CPPCHECK="$SCP_DISABLE_CPPCHECK"
+        )
 
-    if [[ -v "SCP_LOG_LEVEL" ]] ; then
-        makeopts+=( "LOG_LEVEL=${SCP_LOG_LEVEL^^}" )
-    fi
+        case "${SCP_BUILD_MODE,,}" in
+        ("release") makeopts+=( "-DCMAKE_BUILD_TYPE=Release" ) ;;
+        ("debug") makeopts+=( "-DCMAKE_BUILD_TYPE=Debug" ) ;;
+        (*) die "Unsupported value for SCP_BUILD_MODE: $SCP_BUILD_MODE"
+        esac
 
-    local -r build_mode="${SCP_BUILD_MODE,,}"
-    case "$build_mode" in
-    ("release"|"debug")
-        makeopts+=( "MODE=$build_mode" )
-        ;;
-    (*) die "Unsupported value for SCP_BUILD_MODE: $SCP_BUILD_MODE"
-    esac
+        if [[ -v "SCP_LOG_LEVEL" ]] ; then
+            makeopts+=( "-DSCP_LOG_LEVEL=${SCP_LOG_LEVEL^^}" )
+        fi
 
-    make "${makeopts[@]}"
+        cmake "${makeopts[@]}"
+        cmake --build "$build_path/$scp_fw" --parallel "$PARALLELISM"
+    done
 
     mkdir -p "$PLATFORM_OUT_DIR/intermediates"
-    cp "bsp/scp/build/product/n1sdp/scp_ramfw/$build_mode/bin/firmware.bin" \
-        "$PLATFORM_OUT_DIR/intermediates/scp-ram.bin"
-    cp "bsp/scp/build/product/n1sdp/scp_romfw/$build_mode/bin/firmware.bin" \
-        "$PLATFORM_OUT_DIR/intermediates/scp_rom.bin"
-    cp "bsp/scp/build/product/n1sdp/mcp_ramfw/$build_mode/bin/firmware.bin" \
-        "$PLATFORM_OUT_DIR/intermediates/mcp-ram.bin"
-    cp "bsp/scp/build/product/n1sdp/mcp_romfw/$build_mode/bin/firmware.bin" \
-        "$PLATFORM_OUT_DIR/intermediates/mcp_rom.bin"
+    cp "$build_path/scp_ramfw/bin/n1sdp-bl2.bin"     "$PLATFORM_OUT_DIR/intermediates/scp-ram.bin"
+    cp "$build_path/scp_romfw/bin/n1sdp-bl1.bin"     "$PLATFORM_OUT_DIR/intermediates/scp_rom.bin"
+    cp "$build_path/mcp_ramfw/bin/n1sdp-mcp-bl2.bin" "$PLATFORM_OUT_DIR/intermediates/mcp-ram.bin"
+    cp "$build_path/mcp_romfw/bin/n1sdp-mcp-bl1.bin" "$PLATFORM_OUT_DIR/intermediates/mcp_rom.bin"
 }
 
 do_clean() {
-    make --no-print-directory -C "bsp/scp" clean
-
-    rm -f \
+    rm -rf \
+        "$PLATFORM_OUT_DIR/intermediates/scp/cmake-build/product/n1sdp" \
         "$PLATFORM_OUT_DIR/intermediates/mcp-ram.bin" \
         "$PLATFORM_OUT_DIR/intermediates/mcp_rom.bin" \
         "$PLATFORM_OUT_DIR/intermediates/scp-ram.bin" \
         "$PLATFORM_OUT_DIR/intermediates/scp_rom.bin"
+
 }
 
 source "$(dirname ${BASH_SOURCE[0]})/framework.sh"
