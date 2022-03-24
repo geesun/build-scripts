@@ -75,6 +75,7 @@ VALID_FILESYSTEMS="busybox buildroot linuxboot"
 
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
+UEFI_BUILD_CXL_MEM=1
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
 	UEFI_PLATFORMS="rdn2cfg1 rdn2cfg1_mm_standalone"
 else
@@ -85,6 +86,9 @@ UEFI_PLAT_rdn2cfg1[platname]="RdN2Cfg1"
 UEFI_PLAT_rdn2cfg1[dsc]="Platform/ARM/SgiPkg/RdN2Cfg1/RdN2Cfg1.dsc"
 UEFI_PLAT_rdn2cfg1[output]=css-common
 UEFI_PLAT_rdn2cfg1[defines]="-D EDK2_PLAT=rdn2cfg1 -D VALIDATION_LVL=$VALIDATION_LVL"
+if [ "$UEFI_BUILD_CXL_MEM" == "1" ]; then
+	UEFI_PLAT_rdn2cfg1[defines]="${UEFI_PLAT_rdn2cfg1[defines]} -D EDK2_ENABLE_REMOTE_CXL_MEM"
+fi
 if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
 	UEFI_PLAT_rdn2cfg1[defines]="${UEFI_PLAT_rdn2cfg1[defines]} -D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_FIRMWARE_FIRST"
 fi
