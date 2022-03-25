@@ -142,6 +142,8 @@ do_clean ()
 
 		for name in $LINUX_CONFIG_LIST; do
 			local lpath=LINUX_$name[path];
+			local outpath=LINUX_$name[outpath];
+			rm -rf ${OUTDIR}/${!outpath}/tools/iommu/smmute
 			pushd $TOP_DIR/${!lpath};
 			echo
 			echo -e "${RED}Cleaning linux $name on [`date`]${NORMAL}"
@@ -189,6 +191,11 @@ do_package ()
 					done
 				done
 				cp ${OUTDIR}/${!outpath}/$LINUX_IMAGE_TYPE.$name ${OUTDIR}/${!outpath}/$LINUX_IMAGE_TYPE
+
+				if [ "$LINUX_TOOLS_IOMMU_BUILD" == "1" ]; then
+					mkdir -p ${OUTDIR}/${!outpath}/tools/iommu/smmute
+					cp $TOP_DIR/${!lpath}/$LINUX_OUT_DIR/$name/tools/iommu/smmute/smmute ${OUTDIR}/${!outpath}/tools/iommu/smmute/
+				fi
 			fi
 
 			if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
