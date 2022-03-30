@@ -33,7 +33,7 @@ shopt -s nullglob
 readonly libelf_URL="https://sourceware.org/pub/elfutils/0.178/elfutils-0.178.tar.bz2"
 readonly opencsd_URL="https://github.com/Linaro/OpenCSD/archive/v0.14.0.tar.gz"
 readonly perf_URL="/dev/null"
-readonly zlib_URL="https://zlib.net/zlib-1.2.11.tar.xz"
+readonly zlib_URL="https://zlib.net/zlib-1.2.12.tar.xz"
 
 readonly COMPONENTS=( \
     opencsd \
