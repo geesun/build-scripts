@@ -128,7 +128,7 @@ setup_go_and_uroot()
 	echo
 	echo "Downloading u-root..."
 	echo
-	go get github.com/u-root/u-root
+	$GO_INSTALL_PATH/go/bin/go get github.com/u-root/u-root
 
 	echo "Go and u-root setup complete!"
 }
