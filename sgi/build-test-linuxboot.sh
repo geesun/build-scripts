@@ -87,7 +87,7 @@ parse_params()
 }
 
 # Go Version to download
-VERSION=1.16.5
+VERSION=1.17
 # Host OS
 OS=linux
 # Host Architecture
@@ -99,7 +99,7 @@ GO_INSTALL_PATH=${TOP_DIR}/tools/go/go_source
 
 INITRAMFS_OUTPUT_PATH=${TOP_DIR}/tools/go/output/u-root.initramfs.linux_arm64.cpio
 
-# Path to directory where u-root package for go  will be downloaded and installed
+# Path to directory where u-root package for go will be downloaded and installed
 # This is different from $GO_INSTALL_PATH
 GO_PATH=${TOP_DIR}/tools/go/go_workspace
 
@@ -114,14 +114,11 @@ setup_go_and_uroot()
 	# Download Go
 	echo "Downloading Go..."
 	echo
-	wget -nc https://golang.org/dl/go$VERSION.$OS-$ARCH.tar.gz -P ${TOP_DIR}/tools/go/
+	wget -nc https://go.dev/dl/go$VERSION.$OS-$ARCH.tar.gz -P ${TOP_DIR}/tools/go/
 
 	# Extract Go
 	mkdir -p $GO_INSTALL_PATH
 	tar -C $GO_INSTALL_PATH -xzf ${TOP_DIR}/tools/go/go$VERSION.$OS-$ARCH.tar.gz
-
-	# Add go/bin to $PATH if not present already
-	[[ ":$PATH:" != *":$GO_INSTALL_PATH/go/bin:"* ]] && PATH="${PATH}:$GO_INSTALL_PATH/go/bin"
 
 	export GO111MODULE=off
 
@@ -144,12 +141,18 @@ build_uroot()
 	echo "Building u-root initramfs"
 	echo "-------------------------"
 
-	mkdir $TOP_DIR/tools/go/output
+	mkdir -p $TOP_DIR/tools/go/output
 	export GOARCH=arm64
 
-	${GOPATH}/bin/u-root -files "build-scripts/scripts/linuxboot-uroot-automation.sh:/linuxboot-uroot-automation.sh" -uinitcmd="/bin/sh /linuxboot-uroot-automation.sh" -o $INITRAMFS_OUTPUT_PATH
+	${GOPATH}/bin/u-root -build=bb -files "build-scripts/scripts/linuxboot-uroot-automation.sh:/linuxboot-uroot-automation.sh" -uinitcmd="/bin/sh /linuxboot-uroot-automation.sh" -o $INITRAMFS_OUTPUT_PATH
 
-	echo "u-root initramfs created at $INITRAMFS_OUTPUT_PATH"
+	if [ -f  "$INITRAMFS_OUTPUT_PATH" ]
+	then
+		echo "u-root initramfs created at $INITRAMFS_OUTPUT_PATH"
+	else
+		echo "Error occurred in creating u-root initramfs. Exiting..."
+		exit 1
+	fi
 }
 
 #parse the command line parameters
@@ -160,12 +163,12 @@ parse_params $@
 #---------------------------------------
 if [[ $BUILD_CMD == "clean" ]] || [[ $BUILD_CMD == "all"  ]]
 then
-	if [[ -d $TOP_DIR/tools/go/output/ ]]
+	if [[ -d $TOP_DIR/tools/go ]]
 	then
 		echo "----------------------------"
-		echo " Cleaning uroot initramfs   "
+		echo " Cleaning go & uroot        "
 		echo "----------------------------"
-		rm -rf "$TOP_DIR/tools/go/output"
+		rm -rf "$TOP_DIR/tools/go"
 	fi
 
 	if [[ -d ${TOP_DIR}/linux/out/${SGI_PLATFORM}/linuxboot_defconfig ]]
@@ -195,7 +198,7 @@ then
 	fi
 
 	# check if u-root initramfs is built already
-	if [ ! -d  "$TOP_DIR/tools/go/output" ]
+	if [ ! -f  "$INITRAMFS_OUTPUT_PATH" ]
 	then
 		# build uroot initramfs
 		build_uroot
