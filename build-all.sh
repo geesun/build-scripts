@@ -50,10 +50,13 @@ for_each_build_script() {
         scripts+=(
             "build-grub.sh"
             "build-linux.sh"
-            "build-perf.sh"
             "build-ubuntu.sh"
             "build-disk-image.sh"
         )
+
+        if [[ $ENABLE_PERF_BUILD == 1 ]]; then
+              scripts+=("build-perf.sh")
+        fi
         ;;
     ("none")
         ;;

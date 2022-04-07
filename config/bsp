@@ -20,3 +20,8 @@ LINUX_TOOLCHAIN=GNU
 
 # File-system specific variables
 BUSYBOX_FS_EXT4_SIZE=8
+
+# Enable/Disable perf utility build during Ubuntu build, supported values:
+#     0 - perf utility build off
+#     1 - perf utility build on
+ENABLE_PERF_BUILD=0
