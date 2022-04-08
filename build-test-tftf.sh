@@ -125,3 +125,8 @@ parse_params $@
 #override the command line parameters for build-all.sh
 set -- "-p $ARM_PLATFORM -f none $BUILD_CMD"
 source ./build-scripts/build-all.sh
+
+echo
+echo "build-test-tftf.sh: build completed successfully!"
+echo "-------------------------------------------------"
+echo
