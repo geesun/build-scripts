@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2015-2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -177,6 +177,8 @@ do_package()
 				fi
 				if [ "$UEFI_BUILD_ENABLED" == "1" ]; then
 					local uefi_out=TARGET_$target[uefi]
+				else
+					local uefi_out=""
 				fi
 				local fdt_pattern=TARGET_$target[fdts]
 				local linux_bins=TARGET_$target[linux]
@@ -310,7 +312,7 @@ do_package()
 						${PLATDIR}/${!target_name}/fip-uefi.bin
 				fi
 
-				if [ "${!uefi_out}" != "" ]; then
+				if [ "${uefi_out}" != "" ]; then
 					# remove existing fip
 					rm -f ${PLATDIR}/${!target_name}/fip-uefi.bin
 					mkdir -p ${PLATDIR}/${!target_name}
@@ -339,7 +341,7 @@ do_package()
 				if [ "${uboot_out}" ] && [ "${!uboot_out}" != "" ]; then
 					create_tgt_symlinks ${!uboot_out} ${!target_name} "uboot*"
 				fi
-				if [ "${!uefi_out}" != "" ]; then
+				if [ "${uefi_out}" != "" ]; then
 					create_tgt_symlinks ${!uefi_out} ${!target_name} "uefi*"
 				fi
 				for tgt in ${!fdt_pattern}; do
