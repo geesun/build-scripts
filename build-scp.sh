@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -41,6 +41,10 @@ do_build() {
             -DSCP_TOOLCHAIN:STRING="GNU"
             -DDISABLE_CPPCHECK="$SCP_DISABLE_CPPCHECK"
         )
+
+        if [[ "$scp_fw" == "scp_ramfw" ]] ; then
+           makeopts+=( "-DSCP_N1SDP_SENSOR_LIB_PATH=$WORKSPACE_DIR/bsp/n1sdp-board-firmware/LIB/sensor.a" )
+        fi
 
         case "${SCP_BUILD_MODE,,}" in
         ("release") makeopts+=( "-DCMAKE_BUILD_TYPE=Release" ) ;;
