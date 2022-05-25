@@ -106,8 +106,6 @@ do_build() {
             debian.master/config/arm64/config.common.arm64 \
             > $UBUNTU_OUT_DIR/.config
 
-        # avoid relinking due to timestamp on .config when its contents didn't
-        # change
         export KCONFIG_CONFIG_UBUNTU="$UBUNTU_OUT_DIR/.config"
         ./scripts/config --file "$KCONFIG_CONFIG_UBUNTU" "${kernel_config_coresight[@]}"
         ./scripts/config --file "$KCONFIG_CONFIG_UBUNTU" "${ubuntu_kernel_5_18_4_config[@]}"
