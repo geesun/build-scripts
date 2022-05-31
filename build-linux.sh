@@ -85,6 +85,8 @@ do_build() {
     ./scripts/config --file "$LINUX_OUT_DIR/.config" --enable R8169
     ./scripts/config --file "$LINUX_OUT_DIR/.config" --enable USB_CONN_GPIO
     ./scripts/config --file "$LINUX_OUT_DIR/.config" --disable USB_XHCI_PCI_RENESAS
+    ./scripts/config --file "$LINUX_OUT_DIR/.config" --enable NVME_CORE
+    ./scripts/config --file "$LINUX_OUT_DIR/.config" --enable BLK_DEV_NVME
 
     make O="$LINUX_OUT_DIR" "${make_opts[@]}" Image
 
