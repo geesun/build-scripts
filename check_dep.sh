@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -37,31 +37,20 @@
 set -e
 set -u
 
-readonly DEPS_ubuntu_bionic=(
+readonly DEPS_ubuntu_focal=(
     "autoconf"
     "autopoint"
-    "bc"
     "bison"
     "build-essential"
     "curl"
-    "debianutils"
     "device-tree-compiler"
-    "dosfstools"
     "flex"
-    "gettext-base"
     "git"
     "libssl-dev"
     "m4"
-    "mtools"
-    "parted"
-    "pkg-config"
-    "python"
-    "python3"
     "python3-distutils"
-    "rsync"
-    "unzip"
+    "python-is-python2"
     "uuid-dev"
-    "wget"
 )
 
 readonly DIST_INFO=( $(lsb_release -ics) )
