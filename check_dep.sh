@@ -48,8 +48,11 @@ readonly DEPS_ubuntu_focal=(
     "git"
     "libssl-dev"
     "m4"
+    "mtools"
+    "pkg-config"
     "python3-distutils"
     "python-is-python2"
+    "unzip"
     "uuid-dev"
 )
 
