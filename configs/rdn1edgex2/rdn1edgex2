@@ -50,6 +50,7 @@ ARM_TF_PLATS="rdn1edge"
 ARM_TF_DEBUG_ENABLED=1
 ARM_TF_ENABLE_SPM=1
 ARM_TF_RAS_FW_FIRST=0
+ARM_TF_BL31_IN_DRAM=1
 ARM_TF_BUILD_FLAGS=""
 
 # Enable support for secure partition, partition manager and RAS.
@@ -60,6 +61,9 @@ if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
 		ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS RAS_EXTENSION=1 SDEI_SUPPORT=1 HANDLE_EA_EL3_FIRST=1"
 	fi
 fi
+
+# Place BL31 to SRAM/DRAM based on ARM_BL31_IN_DRAM flag
+ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS ARM_BL31_IN_DRAM=$ARM_TF_BL31_IN_DRAM"
 
 # Enable multi-chip support by setting the chip count to 2
 ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS CSS_SGI_CHIP_COUNT=2"
