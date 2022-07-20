@@ -87,7 +87,7 @@ parse_params()
 }
 
 # Go Version to download
-VERSION=1.16.5
+VERSION=1.17.11
 # Host OS
 OS=linux
 # Host Architecture
@@ -95,21 +95,18 @@ ARCH=amd64
 
 # Path to directory where GO source files will be extracted
 GO_INSTALL_PATH=${TOP_DIR}/tools/go/go_source
-# Output path for u-root initramfs creation
 
+# Output path for u-root initramfs creation
 INITRAMFS_OUTPUT_PATH=${TOP_DIR}/tools/go/output/u-root.initramfs.linux_arm64.cpio
 
 # Path to directory where u-root package for go  will be downloaded and installed
 # This is different from $GO_INSTALL_PATH
 GO_PATH=${TOP_DIR}/tools/go/go_workspace
 
-# Set GOPATH for u-root
-export GOPATH=$GO_PATH
-
-#---------------------------------
-# Download and install Go & u-root
-#---------------------------------
-setup_go_and_uroot()
+#------------------------
+# Download and install Go
+#------------------------
+install_go()
 {
 	# Download Go
 	echo "Downloading Go..."
@@ -120,17 +117,43 @@ setup_go_and_uroot()
 	mkdir -p $GO_INSTALL_PATH
 	tar -C $GO_INSTALL_PATH -xzf ${TOP_DIR}/tools/go/go$VERSION.$OS-$ARCH.tar.gz
 
-	# Add go/bin to $PATH if not present already
-	[[ ":$PATH:" != *":$GO_INSTALL_PATH/go/bin:"* ]] && PATH="${PATH}:$GO_INSTALL_PATH/go/bin"
+	if [ $? -ne 0 ]
+	then
+		echo "ERROR: Unable to install Go"
+		rm -r ${TOP_DIR}/tools/go
+		exit 1
+	fi
+}
 
-	export GO111MODULE=off
+#-------------
+# Setup u-root
+#-------------
+setup_uroot()
+{
+	# Add go/bin to $PATH
+	PATH=${GO_INSTALL_PATH}/go/bin:$PATH
 
+	mkdir -p $GO_PATH
 	echo
 	echo "Downloading u-root..."
 	echo
-	go get github.com/u-root/u-root
 
-	echo "Go and u-root setup complete!"
+	pushd $GO_PATH
+	git clone -b v0.9.0 --depth 1  https://github.com/u-root/u-root
+
+	pushd u-root
+	go build
+
+	if [ $? -ne 0 ]
+	then
+		echo "ERROR: Unable to install u-root"
+		popd
+		popd
+		rm -r $GO_PATH
+		exit 1
+	fi
+	popd
+	popd
 }
 
 #--------------------------------------------
@@ -138,17 +161,26 @@ setup_go_and_uroot()
 #--------------------------------------------
 build_uroot()
 {
-	export GO111MODULE=off
-
 	echo "-------------------------"
 	echo "Building u-root initramfs"
 	echo "-------------------------"
 
-	mkdir $TOP_DIR/tools/go/output
-	export GOARCH=arm64
+        PATH=${GO_INSTALL_PATH}/go/bin:$PATH
+	mkdir -p $TOP_DIR/tools/go/output
+	pushd $GO_PATH/u-root
 
-	${GOPATH}/bin/u-root -files "build-scripts/scripts/linuxboot-uroot-automation.sh:/linuxboot-uroot-automation.sh" -uinitcmd="/bin/sh /linuxboot-uroot-automation.sh" -o $INITRAMFS_OUTPUT_PATH
+	GOOS=linux GOARCH=arm64 ./u-root -uroot-source "./" -files \
+	"${TOP_DIR}/build-scripts/scripts/linuxboot-uroot-automation.sh:/linuxboot-uroot-automation.sh" \
+	-uinitcmd="/bin/sh /linuxboot-uroot-automation.sh" -o $INITRAMFS_OUTPUT_PATH
 
+	if [ $? -ne 0 ]
+	then
+		echo "ERROR: Unable to create u-root initramfs!"
+		rm -r $TOP_DIR/tools/go/output
+		popd
+		exit 1
+	fi
+	popd
 	echo "u-root initramfs created at $INITRAMFS_OUTPUT_PATH"
 }
 
@@ -182,19 +214,24 @@ then
 	fi
 fi
 
-#---------------------------------
-# Build stage-1 linux kernel image
-#---------------------------------
+#-------------------------------------------------------
+# Build stage-1 linux kernel image with u-root initramfs
+#-------------------------------------------------------
 if [[ $BUILD_CMD == "build" ]] || [[ $BUILD_CMD == "all" ]]
 then
 	# Check if tools/go exists, if not, install go and u-root
 	if [ ! -d "${TOP_DIR}/tools/go" ]
 	then
-		# call the install_root function to download and install u-root
-		setup_go_and_uroot
+		install_go
 	fi
 
-	# check if u-root initramfs is built already
+	# Check if u-root exists, if not, setup u-root
+	if [ ! -d "${TOP_DIR}/tools/go/go_workspace" ]
+	then
+		setup_uroot
+	fi
+
+	# Check if u-root initramfs is built already
 	if [ ! -d  "$TOP_DIR/tools/go/output" ]
 	then
 		# build uroot initramfs
@@ -216,11 +253,12 @@ then
 	# create SgiPkg/LinuxBootPkg/AArch64 directory
 	if [[ ! -d ${TOP_DIR}/uefi/edk2/edk2-platforms/Platform/ARM/SgiPkg/LinuxBootPkg/AArch64/ ]]
 	then
-		mkdir ${TOP_DIR}/uefi/edk2/edk2-platforms/Platform/ARM/SgiPkg/LinuxBootPkg/AArch64/
+		mkdir -p ${TOP_DIR}/uefi/edk2/edk2-platforms/Platform/ARM/SgiPkg/LinuxBootPkg/AArch64/
 	fi
 
 	# Copy the stage-1 linux kernel image to SgiPkg/LinuxBootPkg/AArch64
-	cp ${TOP_DIR}/linux/out/${SGI_PLATFORM}/linuxboot_defconfig/arch/arm64/boot/Image ${TOP_DIR}/uefi/edk2/edk2-platforms/Platform/ARM/SgiPkg/LinuxBootPkg/AArch64/
+	cp ${TOP_DIR}/linux/out/${SGI_PLATFORM}/linuxboot_defconfig/arch/arm64/boot/Image \
+	${TOP_DIR}/uefi/edk2/edk2-platforms/Platform/ARM/SgiPkg/LinuxBootPkg/AArch64/
 fi
 
 __do_override_build_configs()
