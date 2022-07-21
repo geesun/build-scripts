@@ -29,7 +29,7 @@
 source $DIR/configs/common/common.base
 
 if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
-	export CROSS_COMPILE_64=${TOP_DIR}/tools/gcc/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+	export CROSS_COMPILE_64=${TOP_DIR}/tools/gcc/gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
 	export CROSS_COMPILE=$CROSS_COMPILE_64
 	export LINUX_COMPILER=$CROSS_COMPILE_64
 fi
@@ -106,7 +106,7 @@ SCP_BUILD_MODE=Debug
 SCP_PLATFORM_VARIANT=0
 SCP_PRODUCT_BUILD_PARAMS="PLATFORM_VARIANT=$SCP_PLATFORM_VARIANT"
 if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
-	SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-none-eabi-10-2020-q4-major/bin
+	SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi/bin
 fi
 
 # Buildroot options
