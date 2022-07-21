@@ -220,42 +220,50 @@ function install_gcc_toolchain()
 	pushd tools/gcc
 
 	echo
-	echo -ne "Downloading gcc-10.2 toolchain..."
+	echo -ne "Downloading gcc-11.2 toolchain..."
 	echo
 
 	# Download the toolchain and the checksum files from developer.arm.com
-	wget https://developer.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2 &
-	wget https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz &
-	wget https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz.asc?revision=9209a723-af18-46c9-9c3e-3d2e3572e220&la=en&hash=15703A3D3E2735F069EA1282363247724E92E216 &
+	# AArch32 bare-metal target (arm-none-eabi)
+	wget https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi.tar.xz &
+	wget https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi.tar.xz.asc &
+
+	#  AArch64 GNU/Linux target (aarch64-none-linux-gnu)
+	wget https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel/gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu.tar.xz &
+	wget https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel/gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu.tar.xz.asc &
 
 	# Wait for the download to complete
 	wait
 
+	# Command to verify the MD5 hash
+	VERIFY_TOOLCHAIN_1="md5sum -c gcc-arm-11.2-2022.02-x86_64-arm-none-eabi.tar.xz.asc"
+	VERIFY_TOOLCHAIN_2="md5sum -c gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu.tar.xz.asc"
+
 	# verify the md5 checksum for the downloaded tar files
-	if md5sum -c gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz.asc?revision=9209a723-af18-46c9-9c3e-3d2e3572e220
+	if $VERIFY_TOOLCHAIN_1 && $VERIFY_TOOLCHAIN_2
 	then
 		echo
 		echo -ne "Extracting ..."
 		echo
 
 		# Extract the toolchain
-		tar -xf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-		tar -xf gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz
+		tar -xf gcc-arm-11.2-2022.02-x86_64-arm-none-eabi.tar.xz
+		tar -xf gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu.tar.xz
 
 		echo
-		echo -e "${BOLD}${GREEN}GCC 10.2 toolchain setup complete${NORMAL}\n"
+		echo -e "${BOLD}${GREEN}GCC 11.2 toolchain setup complete${NORMAL}\n"
 		echo
 	else
 		echo
-		echo -e "${BOLD}${RED}GCC 10.2 md5checksum failed! Please execute the install_prerequistes.sh script again.${NORMAL}\n"
+		echo -e "${BOLD}${RED}GCC 11.2 md5checksum failed! Please execute the install_prerequistes.sh script again.${NORMAL}\n"
 		echo
 	fi
 
 	# Remove the downloaded files
-	rm gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz.asc?revision=9209a723-af18-46c9-9c3e-3d2e3572e220 \
-		gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2 \
-		gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz
-
+	rm gcc-arm-11.2-2022.02-x86_64-arm-none-eabi.tar.xz
+	rm gcc-arm-11.2-2022.02-x86_64-arm-none-eabi.tar.xz.asc
+	rm gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu.tar.xz
+	rm gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu.tar.xz.asc
 	popd
 }
 
