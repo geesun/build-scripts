@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2017, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -47,8 +47,10 @@ do_build ()
 	if [ "$GRUB_BUILD_ENABLED" == "1" ]; then
 		if [ -d $TOP_DIR/$GRUB_PATH ]; then
 			pushd $TOP_DIR/$GRUB_PATH
-			CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
-	                PATH="$PATH:$CROSS_COMPILE_DIR"
+			if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
+				CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
+				PATH="$PATH:$CROSS_COMPILE_DIR"
+			fi
 			mkdir -p $TOP_DIR/$GRUB_PATH/output
 			# On the master branch of grub, commit '35b90906' ("gnulib: Upgrade Gnulib and switch to bootstrap tool")
 			# required the bootstrap tool to be executed before the configure step.
@@ -59,7 +61,11 @@ do_build ()
 			fi
 			if [ ! -e config.status ]; then
 				./autogen.sh
-				./configure STRIP=$CROSS_COMPILE_DIR/aarch64-none-linux-gnu-strip --target=aarch64-none-linux-gnu --with-platform=efi --prefix=$TOP_DIR/$GRUB_PATH/output/ --disable-werror
+				if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
+					./configure STRIP=$CROSS_COMPILE_DIR/aarch64-none-linux-gnu-strip --target=aarch64-none-linux-gnu --with-platform=efi --prefix=$TOP_DIR/$GRUB_PATH/output/ --disable-werror
+				else
+					./configure STRIP=aarch64-none-linux-gnu-strip --target=aarch64-none-linux-gnu --with-platform=efi --prefix=$TOP_DIR/$GRUB_PATH/output/ --disable-werror
+				fi
 			fi
 			make -j $PARALLELISM install
 			output/bin/grub-mkimage -v -c ${GRUB_PLAT_CONFIG_FILE} -o output/grubaa64.efi -O arm64-efi -p "" part_gpt part_msdos ntfs ntfscomp hfsplus fat ext2 normal chain boot configfile linux help part_msdos terminal terminfo configfile lsefi search normal gettext loadenv read search_fs_file search_fs_uuid search_label

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -68,8 +68,10 @@ do_build ()
 		echo -e "${BLUE}Setting cross compiler path${NORMAL}"
 		echo
 		set -x
-		CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
-		PATH="$PATH:$CROSS_COMPILE_DIR"
+		if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
+			CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
+			PATH="$PATH:$CROSS_COMPILE_DIR"
+		fi
 		{ set +x;  } 2> /dev/null
 
 		#Temporary fix to resolve repo tool issue with fetching git submodules
@@ -130,8 +132,10 @@ do_clean ()
 		echo -e "${BLUE}Exporting environment variables and sourcing edk2setup.sh script${NORMAL}"
 		echo
 		set -x
-		CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
-		PATH="$PATH:$CROSS_COMPILE_DIR"
+		if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
+			CROSS_COMPILE_DIR=$(dirname $CROSS_COMPILE)
+			PATH="$PATH:$CROSS_COMPILE_DIR"
+		fi
 		{ set +x;  } 2> /dev/null
 		echo "++ source ./edksetup.sh" # not setting -x for ./edksetup.sh to avoid prints within the script
 		source ./edksetup.sh

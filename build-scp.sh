@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2015-2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -96,13 +96,21 @@ do_build ()
 					echo  -e "${GREEN}Configuring CMake to build $scp_fw for $plat_string on [`date`]${NORMAL}"
 					echo
 					set -x
-					cmake -S "." -B "./cmake-build/$item/$scp_fw" \
-						-DSCP_TOOLCHAIN:STRING="GNU" \
-						-DCMAKE_BUILD_TYPE=$SCP_BUILD_MODE \
-						-DSCP_FIRMWARE_SOURCE_DIR:PATH="$item/$scp_fw" \
-						-DCMAKE_C_COMPILER=${SCP_COMPILER_PATH}/arm-none-eabi-gcc \
-						-DCMAKE_ASM_COMPILER=${SCP_COMPILER_PATH}/arm-none-eabi-gcc \
-						$prd_build_params
+					if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
+						cmake -S "." -B "./cmake-build/$item/$scp_fw" \
+							-DSCP_TOOLCHAIN:STRING="GNU" \
+							-DCMAKE_BUILD_TYPE=$SCP_BUILD_MODE \
+							-DSCP_FIRMWARE_SOURCE_DIR:PATH="$item/$scp_fw" \
+							-DCMAKE_C_COMPILER=${SCP_COMPILER_PATH}/arm-none-eabi-gcc \
+							-DCMAKE_ASM_COMPILER=${SCP_COMPILER_PATH}/arm-none-eabi-gcc \
+							$prd_build_params
+					else
+						cmake -S "." -B "./cmake-build/$item/$scp_fw" \
+							-DSCP_TOOLCHAIN:STRING="GNU" \
+							-DCMAKE_BUILD_TYPE=$SCP_BUILD_MODE \
+							-DSCP_FIRMWARE_SOURCE_DIR:PATH="$item/$scp_fw" \
+							$prd_build_params
+					fi
 					{ set +x;  } 2> /dev/null
 
 					echo
@@ -153,7 +161,11 @@ do_build ()
 				echo  -e "${GREEN}Building SCP for $plat_string on [`date`]${NORMAL}"
 				echo
 				set -x
-				make -j $PARALLELISM PRODUCT=$item $prd_build_params MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-none-eabi-gcc
+				if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
+					make -j $PARALLELISM PRODUCT=$item $prd_build_params MODE=$SCP_BUILD_MODE CC=${SCP_COMPILER_PATH}/arm-none-eabi-gcc
+				else
+					make -j $PARALLELISM PRODUCT=$item $prd_build_params MODE=$SCP_BUILD_MODE CC=arm-none-eabi-gcc
+				fi
 				{ set +x;  } 2> /dev/null
 				cp -r build/product/$item/* ${outdir}/$vpath
 			fi
