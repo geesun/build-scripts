@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2019-2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2019-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -280,8 +280,11 @@ ${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
 	pip install cmake --upgrade >> $LOGFILE 2>&1
 	echo -e "${BOLD}${GREEN}done${NORMAL}"
 
-	echo -e "\nInstalling toolchain:\n\n"
-	install_gcc_toolchain
+	ARCH_VERSION=$(uname -m)
+	if [ "$ARCH_VERSION" ==  "x86_64" ]; then
+		echo -e "\nInstalling toolchain:\n\n"
+		install_gcc_toolchain
+	fi
 
 	echo -e "\nInstalltion of prerequisites ended at \
 ${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
