@@ -61,7 +61,6 @@ APT_PACKAGES_COMMON=(
 		"genext2fs"
 		"gperf"
 		"libc6:i386"
-		"libssl-dev"
 		"libstdc++6:i386"
 		"libncurses5:i386"
 		"libxml2"
@@ -234,6 +233,39 @@ function install_gcc_toolchain()
 
 ############################################################################
 #                                                                          #
+#  Function: install_openssl3_0                                            #
+#  Description: Download and install openssl3_0                            #
+#                                                                          #
+############################################################################
+function install_openssl3_0()
+{
+	#uninstall existing libssl-dev
+	apt-get remove -y libssl-dev
+
+	# Install OpenSSL 3.0
+	TOOLS_DIR=/tmp
+	OPENSSL_VER="3.0.2"
+	OPENSSL_DIRNAME="openssl-${OPENSSL_VER}"
+	OPENSSL_FILENAME="openssl-${OPENSSL_VER}"
+	OPENSSL_CHECKSUM="98e91ccead4d4756ae3c9cde5e09191a8e586d9f4d50838e7ec09d6411dfdb63"
+
+	curl --connect-timeout 5 --retry 5 --retry-delay 1 --create-dirs \
+		-fsSLo /tmp/${OPENSSL_FILENAME}.tar.gz \
+		https://www.openssl.org/source/${OPENSSL_FILENAME}.tar.gz
+	echo "${OPENSSL_CHECKSUM}  /tmp/${OPENSSL_FILENAME}.tar.gz" | \
+		sha256sum -c
+	mkdir -p ${TOOLS_DIR}/${OPENSSL_DIRNAME} && tar -xzf \
+		/tmp/${OPENSSL_FILENAME}.tar.gz \
+		-C ${TOOLS_DIR}/${OPENSSL_DIRNAME} --strip-components=1
+	cd ${TOOLS_DIR}/${OPENSSL_DIRNAME}
+	./Configure --libdir=lib --prefix=/usr --api=1.0.1
+	cd ${TOOLS_DIR}
+	make -C ${TOOLS_DIR}/${OPENSSL_DIRNAME}
+	make -C ${TOOLS_DIR}/${OPENSSL_DIRNAME} install
+}
+
+############################################################################
+#                                                                          #
 #  Function: shutdown                                                      #
 #  Description: Handle untrapping trapped signals and output of the final  #
 #               return code from the script.                               #
@@ -285,6 +317,9 @@ ${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
 		echo -e "\nInstalling toolchain:\n\n"
 		install_gcc_toolchain
 	fi
+
+	echo -e "\nInstalling OpenSSL 3.0:\n\n"
+	install_openssl3_0
 
 	echo -e "\nInstalltion of prerequisites ended at \
 ${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
