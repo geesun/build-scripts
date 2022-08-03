@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -26,11 +26,22 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+ARCH_VERSION=$(uname -m)
+if [ "$ARCH_VERSION" ==  "aarch64" ]; then
+	BUILD_MACHINE_ARCH="aarch64"
+elif [ "$ARCH_VERSION" ==  "x86_64" ]; then
+	BUILD_MACHINE_ARCH="x86_64"
+else
+	BUILD_MACHINE_ARCH="unknown"
+fi
+
 #Set the default toolchain
-export CROSS_COMPILE_64=${TOP_DIR}/tools/gcc/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
-export CROSS_COMPILE=$CROSS_COMPILE_64
-export CROSS_COMPILE_32=${TOP_DIR}/tools/gcc/gcc-linaro-6.2.1-2016.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
-export LINUX_COMPILER=tools/gcc/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
+	export CROSS_COMPILE_64=${TOP_DIR}/tools/gcc/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+	export CROSS_COMPILE=$CROSS_COMPILE_64
+	export CROSS_COMPILE_32=${TOP_DIR}/tools/gcc/gcc-linaro-6.2.1-2016.11-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+	export LINUX_COMPILER=tools/gcc/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+fi
 
 #BUILD_SCRIPTS - A list of scripts to be run, relative to this repository
 #       root. This variable is added to throughout this file.
