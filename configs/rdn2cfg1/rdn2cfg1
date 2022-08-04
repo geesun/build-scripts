@@ -1,4 +1,4 @@
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,9 +28,11 @@
 
 source $DIR/configs/common/common.base
 
-export CROSS_COMPILE_64=${TOP_DIR}/tools/gcc/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
-export CROSS_COMPILE=$CROSS_COMPILE_64
-export LINUX_COMPILER=$CROSS_COMPILE_64
+if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
+	export CROSS_COMPILE_64=${TOP_DIR}/tools/gcc/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+	export CROSS_COMPILE=$CROSS_COMPILE_64
+	export LINUX_COMPILER=$CROSS_COMPILE_64
+fi
 
 #Default linux configs per OS
 LINUX_CONFIG_LIST=""
@@ -49,7 +51,11 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rdn2cfg1/grub_config/rdn2
 # ARM_TF Flags
 ARM_TF_PLATS="rdn2"
 ARM_TF_DEBUG_ENABLED=1
-ARM_TF_ENABLE_SPM=1
+if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
+	ARM_TF_ENABLE_SPM=1
+else
+	ARM_TF_ENABLE_SPM=0
+fi
 ARM_TF_RAS_FW_FIRST=0
 ARM_TF_BUILD_FLAGS=""
 ARM_TF_BUILD_VARIANT="rdn2cfg1"
@@ -106,7 +112,9 @@ SCP_PLATFORMS="rdn2"
 SCP_BUILD_MODE=Debug
 SCP_PLATFORM_VARIANT=1
 SCP_PRODUCT_BUILD_PARAMS="PLATFORM_VARIANT=$SCP_PLATFORM_VARIANT"
-SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-none-eabi-10-2020-q4-major/bin
+if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
+	SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-none-eabi-10-2020-q4-major/bin
+fi
 
 # Buildroot options
 BUILDROOT_DEFCONFIG=aarch64_rdinfra_defconfig
