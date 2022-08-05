@@ -80,7 +80,7 @@ do_build ()
 					plat_string="$plat_string and variant $SCP_PLATFORM_VARIANT"
 				fi
 
-				for scp_fw in mcp_romfw mcp_ramfw scp_romfw scp_ramfw; do
+				for scp_fw in scp_ramfw mcp_ramfw scp_romfw mcp_romfw; do
 					local outdir=$TOP_DIR/$SCP_PATH/output
 					if [ -z "$SCP_PLATFORM_VARIANT" ]; then
 						vpath="$item"
