@@ -51,11 +51,7 @@ GRUB_PLAT_CONFIG_FILE=${TOP_DIR}/build-scripts/configs/rdn2/grub_config/rdn2.cfg
 # ARM_TF Flags
 ARM_TF_PLATS="rdn2"
 ARM_TF_DEBUG_ENABLED=1
-if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
-	ARM_TF_ENABLE_SPM=1
-else
-	ARM_TF_ENABLE_SPM=0
-fi
+ARM_TF_ENABLE_SPM=1
 ARM_TF_RAS_FW_FIRST=0
 ARM_TF_BUILD_FLAGS=""
 
