@@ -1,0 +1,111 @@
+From 87de666de8df44fb275b2b91936e5dc7753004c4 Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Wed, 4 May 2022 13:03:26 +0000
+Subject: [PATCH] spmc S-EL2: Disable tests using timeouts
+
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Change-Id: Iff41766477570b64d7885dc64fefd2855de1bbb7
+Upstream-Status: Inappropriate [Temporary fix]
+---
+ lib/tipc/test/main/main.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/lib/tipc/test/main/main.c b/lib/tipc/test/main/main.c
+index 185907e..9c0b3f3 100644
+--- a/lib/tipc/test/main/main.c
++++ b/lib/tipc/test/main/main.c
+@@ -299,6 +299,7 @@ TEST(ipc, port_create) {
+     }
+ }
+ 
++#if !TRUSTY_ARM_ARCH_SECURE_EL2
+ /*
+  *
+  */
+@@ -346,6 +347,7 @@ TEST(ipc, wait_on_port) {
+         ports[i] = INVALID_IPC_HANDLE;
+     }
+ }
++#endif
+ 
+ /****************************************************************************/
+ 
+@@ -475,6 +477,7 @@ static void run_connect_close_by_peer_test(const char* test) {
+     EXPECT_EQ(0, chan_cnt, "%s", test);
+ }
+ 
++#if !TRUSTY_ARM_ARCH_SECURE_EL2
+ TEST(ipc, connect_close_by_peer_1) {
+     run_connect_close_by_peer_test("closer1");
+ }
+@@ -650,6 +653,7 @@ TEST(ipc, connect_selfie) {
+         EXPECT_EQ(NO_ERROR, rc, "close selfie");
+     }
+ }
++#endif
+ 
+ TEST(ipc, connect_access) {
+     int rc;
+@@ -1559,6 +1563,7 @@ TEST(ipc, hset_wait_on_empty_set) {
+ abort_test:;
+ }
+ 
++#if !TRUSTY_ARM_ARCH_SECURE_EL2
+ TEST(ipc, hset_wait_on_non_empty_set) {
+     int rc;
+     handle_t hset1;
+@@ -1594,6 +1599,7 @@ abort_test:
+     close(hset1);
+     close(hset2);
+ }
++#endif
+ 
+ /*
+  * Disabled per b/140836874 - believed to be a race in the test code, not
+@@ -1750,6 +1756,7 @@ abort_test:
+     close(hset2);
+ }
+ 
++#if !TRUSTY_ARM_ARCH_SECURE_EL2
+ TEST(ipc, hset_event_mask) {
+     int rc;
+     uevent_t evt;
+@@ -1833,9 +1840,10 @@ abort_test:
+     close(chan1);
+     close(hset1);
+ }
++#endif
+ 
+ /****************************************************************************/
+-
++#if !TRUSTY_ARM_ARCH_SECURE_EL2
+ TEST(ipc, send_handle) {
+     int rc;
+     struct iovec iov;
+@@ -1884,6 +1892,7 @@ err_connect2:
+     EXPECT_EQ(NO_ERROR, rc, "close chan1");
+ err_connect1:;
+ }
++#endif
+ 
+ TEST(ipc, send_handle_negative) {
+     int rc;
+@@ -2119,6 +2128,7 @@ TEST(ipc, recv_handle_negative) {
+ err_connect1:;
+ }
+ 
++#if !TRUSTY_ARM_ARCH_SECURE_EL2
+ TEST(ipc, send_handle_bulk) {
+     int rc;
+     struct iovec iov;
+@@ -2208,6 +2218,7 @@ err_connect2:
+     EXPECT_EQ(NO_ERROR, rc, "close chan1");
+ err_connect1:;
+ }
++#endif
+ 
+ TEST(ipc, echo_handle_bulk) {
+     int rc;
+-- 
+2.17.1
+

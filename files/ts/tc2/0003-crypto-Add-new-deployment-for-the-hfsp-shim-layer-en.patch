@@ -1,0 +1,333 @@
+From a2fa4100cdeeb9c945e9d0d2bfbf705e8de5ad33 Mon Sep 17 00:00:00 2001
+From: Davidson K <davidson.kumaresan@arm.com>
+Date: Tue, 9 Mar 2021 17:53:03 +0530
+Subject: [PATCH 3/6] crypto: Add new deployment for the hfsp-shim layer
+ environment
+
+It builds the Crypto service provider (S-EL0) and shim layer (S-EL1)
+into an S-EL1 secure partition that has to be hosted by Hafnium in
+the role of SPM.
+
+Signed-off-by: Davidson K <davidson.kumaresan@arm.com>
+Change-Id: Id3fdf50470e4b9df7388c00e445f75b7bc8362d8
+---
+ deployments/crypto/hfsp-shim/CMakeLists.txt | 129 ++++++++++++++++++++
+ deployments/crypto/hfsp-shim/crypto.dts     |  20 +++
+ deployments/crypto/hfsp-shim/crypto_sp.c    | 102 ++++++++++++++++
+ deployments/crypto/hfsp-shim/sp_def.h       |  16 +++
+ tools/b-test/test_data.yaml                 |   4 +
+ 5 files changed, 271 insertions(+)
+ create mode 100644 deployments/crypto/hfsp-shim/CMakeLists.txt
+ create mode 100644 deployments/crypto/hfsp-shim/crypto.dts
+ create mode 100644 deployments/crypto/hfsp-shim/crypto_sp.c
+ create mode 100644 deployments/crypto/hfsp-shim/sp_def.h
+
+diff --git a/deployments/crypto/hfsp-shim/CMakeLists.txt b/deployments/crypto/hfsp-shim/CMakeLists.txt
+new file mode 100644
+index 0000000..27ad41d
+--- /dev/null
++++ b/deployments/crypto/hfsp-shim/CMakeLists.txt
+@@ -0,0 +1,129 @@
++#-------------------------------------------------------------------------------
++# Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
++#
++# SPDX-License-Identifier: BSD-3-Clause
++#
++#-------------------------------------------------------------------------------
++cmake_minimum_required(VERSION 3.16)
++include(../../deployment.cmake REQUIRED)
++
++#-------------------------------------------------------------------------------
++#  The CMakeLists.txt for building the crypto deployment with the hfsp-shim layer
++#
++#  Builds the Crypto service provider for running in an SEL0 secure partition
++#  with the hfsp-shim layer in SEL1 hosted by Hafnium in the role of SPM.
++#-------------------------------------------------------------------------------
++include(${TS_ROOT}/environments/hfsp-shim/env.cmake)
++project(trusted-services LANGUAGES C ASM)
++add_executable(crypto-sp)
++target_include_directories(crypto-sp PRIVATE "${TOP_LEVEL_INCLUDE_DIRS}")
++set(SP_UUID "d9df52d5-16a2-4bb2-9aa4-d26d3b84e8c0")
++
++#-------------------------------------------------------------------------------
++#  Use the selected platform to provide drivers needed by the deployment
++#
++#-------------------------------------------------------------------------------
++# temporarily force platform - with this change, the build interface to
++# an external builder such as a Yocto recipe is unchanged.  Should remove
++# once the build interface is published.
++set(TS_PLATFORM "arm/total_compute" CACHE STRING "Overridden" FORCE)
++
++add_components(TARGET "crypto-sp"
++	BASE_DIR ${TS_ROOT}
++	COMPONENTS
++		"components/common/tlv"
++		"components/config/ramstore"
++		"components/config/loader/sp"
++		"components/messaging/ffa/libsp"
++		"components/rpc/ffarpc/endpoint"
++		"components/rpc/ffarpc/caller/sp"
++		"components/rpc/common/caller"
++		"components/rpc/common/interface"
++		"components/service/common/include"
++		"components/service/common/serializer/protobuf"
++		"components/service/common/provider"
++		"components/service/crypto/provider/mbedcrypto"
++		"components/service/crypto/provider/mbedcrypto/trng_adapter/platform"
++		"components/service/crypto/provider/serializer/protobuf"
++		"components/service/crypto/provider/serializer/packed-c"
++		"components/service/secure_storage/include"
++		"components/service/secure_storage/frontend/psa/its"
++		"components/service/secure_storage/backend/secure_storage_client"
++		"components/service/secure_storage/backend/null_store"
++		"components/service/secure_storage/factory/sp/rot_store"
++		"protocols/rpc/common/packed-c"
++		"protocols/service/secure_storage/packed-c"
++		"protocols/service/crypto/protobuf"
++		"environments/hfsp-shim"
++)
++
++target_sources(crypto-sp PRIVATE
++	crypto_sp.c
++)
++
++add_platform(TARGET "crypto-sp")
++
++#-------------------------------------------------------------------------------
++#  Components used from external projects
++#
++#-------------------------------------------------------------------------------
++
++# Nanopb
++include(../../../external/nanopb/nanopb.cmake)
++target_link_libraries(crypto-sp PRIVATE nanopb::protobuf-nanopb-static)
++protobuf_generate_all(TGT "crypto-sp" NAMESPACE "protobuf" BASE_DIR "${TS_ROOT}/protocols")
++
++# Mbed TLS provides libmbedcrypto
++include(../../../external/MbedTLS/MbedTLS.cmake)
++target_link_libraries(crypto-sp PRIVATE mbedcrypto)
++
++#################################################################
++
++target_compile_definitions(crypto-sp PRIVATE
++	ARM64=1
++	CRYPTO=1
++)
++
++target_include_directories(crypto-sp PRIVATE
++	${TS_ROOT}/deployments/crypto/hfsp-shim
++)
++
++if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
++
++	# Compile definitions for the assembly files
++	target_compile_definitions(crypto-sp PRIVATE
++		$<$<COMPILE_LANGUAGE:ASM>:__ASSEMBLY__=1>
++	)
++
++	target_compile_options(crypto-sp PRIVATE
++		-fdiagnostics-show-option
++		-fpic
++		-gdwarf-2
++		-mstrict-align
++		-nostdinc
++		-O0
++		-std=gnu99
++		-ffreestanding
++		-mgeneral-regs-only
++	)
++
++	# Options for GCC that control linking
++	target_link_options(crypto-sp PRIVATE
++		-fno-lto
++		-nostdlib
++		-pie
++		-zmax-page-size=4096
++		-T${CMAKE_BINARY_DIR}/sp.ld
++	)
++
++	# Options directly for LD, these are not understood by GCC
++	target_link_options(crypto-sp PRIVATE
++		-Wl,--as-needed
++		-Wl,--sort-section=alignment
++		-Wl,-Map=crypto.map
++	)
++
++endif()
++
++compiler_generate_stripped_elf(TARGET crypto-sp NAME "${SP_UUID}.stripped.elf" RES STRIPPED_ELF)
++compiler_generate_binary_output(TARGET crypto-sp RES STRIPPED_ELF)
+diff --git a/deployments/crypto/hfsp-shim/crypto.dts b/deployments/crypto/hfsp-shim/crypto.dts
+new file mode 100644
+index 0000000..655acfd
+--- /dev/null
++++ b/deployments/crypto/hfsp-shim/crypto.dts
+@@ -0,0 +1,20 @@
++/*
++ * Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++
++/dts-v1/;
++
++/ {
++	compatible = "arm,ffa-manifest-1.0";
++	ffa-version = <0x00010000>; /* 31:16 - Major, 15:0 - Minor */
++	uuid = <0xd552dfd9 0xb24ba216 0x6dd2a49a 0xc0e8843b>;
++	description = "crypto-sp";
++	execution-ctx-count = <1>;
++	exception-level = <2>; /* S-EL1 */
++	execution-state = <0>; /* AArch64 */
++	entrypoint-offset = <0x00001000>;
++	xlat-granule = <0>; /* 4KiB */
++	messaging-method = <0x3>; /* Direct request/response supported */
++};
+diff --git a/deployments/crypto/hfsp-shim/crypto_sp.c b/deployments/crypto/hfsp-shim/crypto_sp.c
+new file mode 100644
+index 0000000..a9853be
+--- /dev/null
++++ b/deployments/crypto/hfsp-shim/crypto_sp.c
+@@ -0,0 +1,102 @@
++/*
++ * Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++
++#include <rpc/ffarpc/endpoint/ffarpc_call_ep.h>
++#include <service/secure_storage/factory/storage_factory.h>
++#include <service/crypto/provider/mbedcrypto/crypto_provider.h>
++#include <service/crypto/provider/serializer/protobuf/pb_crypto_provider_serializer.h>
++#include <service/crypto/provider/serializer/packed-c/packedc_crypto_provider_serializer.h>
++#include <protocols/rpc/common/packed-c/status.h>
++#include <config/ramstore/config_ramstore.h>
++#include <config/loader/sp/sp_config_loader.h>
++#include <ffa_api.h>
++#include <sp_api.h>
++#include <sp_messaging.h>
++#include <sp_rxtx.h>
++#include <trace.h>
++#include <malloc_wrapper.h>
++#include <sp_def.h>
++
++
++uint8_t sp_heap[SP_HEAP_SIZE] __aligned(16);
++
++uint16_t own_id = 0; /* !!Needs refactoring as parameter to ffarpc_caller_init */
++
++static int sp_init(uint16_t *own_sp_id);
++
++void __noreturn sp_main(struct ffa_init_info *init_info)
++{
++	struct mbed_crypto_provider crypto_provider;
++	struct ffa_call_ep ffarpc_call_ep;
++	struct rpc_interface *crypto_iface;
++	struct sp_msg req_msg = { 0 };
++	struct sp_msg resp_msg = { 0 };
++	struct storage_backend *storage_backend;
++
++	/* Boot phase */
++	if (sp_init(&own_id) != 0) goto fatal_error;
++
++	/* initialize the heap */
++	init_mspace(sp_heap, SP_HEAP_SIZE);
++
++	config_ramstore_init();
++
++	/* Create a storage backend for persistent key storage - prefer ITS */
++	storage_backend = storage_factory_create(storage_factory_security_class_INTERNAL_TRUSTED);
++	if (!storage_backend) goto fatal_error;
++
++	/* Initialize the crypto service */
++	crypto_iface = mbed_crypto_provider_init(&crypto_provider, storage_backend, 0);
++
++	mbed_crypto_provider_register_serializer(&crypto_provider,
++                    TS_RPC_ENCODING_PROTOBUF, pb_crypto_provider_serializer_instance());
++
++	mbed_crypto_provider_register_serializer(&crypto_provider,
++                    TS_RPC_ENCODING_PACKED_C, packedc_crypto_provider_serializer_instance());
++
++	ffa_call_ep_init(&ffarpc_call_ep, crypto_iface);
++
++	/* End of boot phase */
++	sp_msg_wait(&req_msg);
++
++	while (1) {
++		ffa_call_ep_receive(&ffarpc_call_ep, &req_msg, &resp_msg);
++
++		resp_msg.source_id = req_msg.destination_id;
++		resp_msg.destination_id = req_msg.source_id;
++
++		sp_msg_send_direct_resp(&resp_msg, &req_msg);
++	}
++
++fatal_error:
++	/* SP is not viable */
++	EMSG("Crypto SP error");
++	while (1) {}
++}
++
++void sp_interrupt_handler(uint32_t interrupt_id)
++{
++	(void)interrupt_id;
++}
++
++static int sp_init(uint16_t *own_sp_id)
++{
++	int status = -1;
++	ffa_result ffa_res;
++	sp_result sp_res;
++	static uint8_t tx_buffer[4096] __aligned(4096);
++	static uint8_t rx_buffer[4096] __aligned(4096);
++
++	sp_res = sp_rxtx_buffer_map(tx_buffer, rx_buffer, sizeof(rx_buffer));
++	if (sp_res == SP_RESULT_OK) {
++		ffa_res = ffa_id_get(own_sp_id);
++		if (ffa_res == FFA_OK) {
++			status = 0;
++		}
++	}
++
++	return status;
++}
+diff --git a/deployments/crypto/hfsp-shim/sp_def.h b/deployments/crypto/hfsp-shim/sp_def.h
+new file mode 100644
+index 0000000..f832c79
+--- /dev/null
++++ b/deployments/crypto/hfsp-shim/sp_def.h
+@@ -0,0 +1,16 @@
++/*
++ * Copyright (c) 2021, Arm Limited. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++
++#ifndef SP_DEF_H
++#define SP_DEF_H
++
++/* Memory reserved for stack of S-EL1 shim and S-EL0 crypto SP */
++#define SP_STACK_SIZE			(32 * 1024)
++
++/* Memory reserved for heap of S-EL0 crypto SP */
++#define SP_HEAP_SIZE                   (480 * 1024)
++
++#endif /* SP_DEF_H */
+diff --git a/tools/b-test/test_data.yaml b/tools/b-test/test_data.yaml
+index 3e7e36c..4c29782 100644
+--- a/tools/b-test/test_data.yaml
++++ b/tools/b-test/test_data.yaml
+@@ -42,6 +42,10 @@ data:
+       params:
+           - "-GUnix Makefiles"
+           - "-DSP_DEV_KIT_DIR=$SP_DEV_KIT_DIR"
++    - name: "crypto-hfsp-shim"
++      src: "$TS_ROOT/deployments/crypto/hfsp-shim"
++      params:
++          - "-GUnix Makefiles"
+     - name: "component-test-arm-linux"
+       src: "$TS_ROOT/deployments/component-test/arm-linux"
+       os_id : "GNU/Linux"
+-- 
+2.17.1
+

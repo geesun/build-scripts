@@ -1,0 +1,204 @@
+From c7258409c70932ad0be3c46cf0e964e610bb4b9b Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Wed, 8 Sep 2021 15:38:00 +0000
+Subject: [PATCH 04/22] [lib][arm_ffa] Initialize arm_ffa independently from
+ shared_memory
+
+Checks the FF-A version of the SPMC
+
+Change-Id: I98fbfa7fcfe46eedeb32ec910521d57ce421ce60
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                     | 86 +++++++++++++++++++++++++++
+ lib/arm_ffa/include/lib/arm_ffa/ffa.h | 29 +++++++++
+ lib/arm_ffa/rules.mk                  |  3 +
+ lib/sm/shared_mem.c                   | 15 ++---
+ 4 files changed, 124 insertions(+), 9 deletions(-)
+ create mode 100644 lib/arm_ffa/ffa.c
+ create mode 100644 lib/arm_ffa/include/lib/arm_ffa/ffa.h
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+new file mode 100644
+index 0000000..c68d297
+--- /dev/null
++++ b/lib/arm_ffa/ffa.c
+@@ -0,0 +1,86 @@
++/*
++ * Copyright (c) 2022, Arm Limited. All rights reserved.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining
++ * a copy of this software and associated documentation files
++ * (the "Software"), to deal in the Software without restriction,
++ * including without limitation the rights to use, copy, modify, merge,
++ * publish, distribute, sublicense, and/or sell copies of the Software,
++ * and to permit persons to whom the Software is furnished to do so,
++ * subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be
++ * included in all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
++ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++#include <err.h>
++#include <trace.h>
++#include <sys/types.h>
++
++#include <lib/arm_ffa/arm_ffa.h>
++#include <lib/smc/smc.h>
++#include <lk/init.h>
++
++static bool ffa_init_is_success = false;
++
++bool ffa_is_init(void) {
++    return ffa_init_is_success;
++}
++
++static status_t ffa_call_version(uint16_t major, uint16_t minor,
++                                 uint16_t *major_ret, uint16_t *minor_ret) {
++    struct smc_ret8 smc_ret;
++
++    smc_ret = smc8(SMC_FC_FFA_VERSION, FFA_VERSION(major, minor),
++                   0, 0, 0, 0, 0, 0);
++    if (smc_ret.r0 == (ulong) FFA_ERROR_NOT_SUPPORTED) {
++        return ERR_NOT_SUPPORTED;
++    }
++    *major_ret = FFA_VERSION_TO_MAJOR(smc_ret.r0);
++    *minor_ret = FFA_VERSION_TO_MINOR(smc_ret.r0);
++
++    return NO_ERROR;
++}
++
++static status_t ffa_setup(void) {
++    status_t res;
++    uint16_t ver_major_ret;
++    uint16_t ver_minor_ret;
++
++    res = ffa_call_version(FFA_CURRENT_VERSION_MAJOR, FFA_CURRENT_VERSION_MINOR,
++                           &ver_major_ret, &ver_minor_ret);
++    if (res != NO_ERROR) {
++        TRACEF("No compatible FF-A version found\n");
++        return res;
++    } else if (FFA_CURRENT_VERSION_MAJOR != ver_major_ret ||
++               FFA_CURRENT_VERSION_MINOR > ver_minor_ret) {
++        /* When trusty supports more FF-A versions downgrade may be possible */
++        TRACEF("Incompatible FF-A interface version, %u.%u\n",
++              ver_major_ret, ver_minor_ret);
++        return ERR_NOT_SUPPORTED;
++    }
++    return res;
++}
++
++static void ffa_init(uint level) {
++    status_t res;
++
++    res = ffa_setup();
++
++    if (res == NO_ERROR) {
++        ffa_init_is_success = true;
++    } else {
++        TRACEF("Failed to initialize FF-A (err=%d)\n", res);
++    }
++
++    return;
++}
++LK_INIT_HOOK(ffa_init, ffa_init, LK_INIT_LEVEL_PLATFORM - 2);
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa.h b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+new file mode 100644
+index 0000000..9d3c277
+--- /dev/null
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+@@ -0,0 +1,29 @@
++/*
++ * Copyright (c) 2022, Arm Limited. All rights reserved.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining
++ * a copy of this software and associated documentation files
++ * (the "Software"), to deal in the Software without restriction,
++ * including without limitation the rights to use, copy, modify, merge,
++ * publish, distribute, sublicense, and/or sell copies of the Software,
++ * and to permit persons to whom the Software is furnished to do so,
++ * subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be
++ * included in all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
++ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++#pragma once
++
++/* Check whether or not this module initialized successfully.
++   This should only be called once ffa_init() is guaranteed to have
++   returned. */
++bool ffa_is_init(void);
+diff --git a/lib/arm_ffa/rules.mk b/lib/arm_ffa/rules.mk
+index 9cbbb8d..18393cc 100644
+--- a/lib/arm_ffa/rules.mk
++++ b/lib/arm_ffa/rules.mk
+@@ -28,6 +28,9 @@ MODULE := $(LOCAL_DIR)
+ GLOBAL_INCLUDES += \
+ 	$(LOCAL_DIR)/include
+ 
++MODULE_SRCS += \
++	$(LOCAL_DIR)/ffa.c \
++
+ MODULE_DEPS += \
+ 	trusty/kernel/lib/smc \
+ 
+diff --git a/lib/sm/shared_mem.c b/lib/sm/shared_mem.c
+index 91f2287..98b8395 100644
+--- a/lib/sm/shared_mem.c
++++ b/lib/sm/shared_mem.c
+@@ -30,6 +30,7 @@
+ #include <lib/page_alloc.h>
+ #include <lib/sm.h>
+ #include <lib/arm_ffa/arm_ffa.h>
++#include <lib/arm_ffa/ffa.h>
+ #include <lib/smc/smc.h>
+ #include <lk/init.h>
+ #include <string.h>
+@@ -563,14 +564,10 @@ static void shared_mem_init(uint level) {
+     size_t count;
+     struct smc_ret8 smc_ret;
+ 
+-    /* Get FF-A version and check if it is compatible */
+-    smc_ret = smc8(SMC_FC_FFA_VERSION, FFA_CURRENT_VERSION, 0, 0, 0, 0, 0, 0);
+-    if (FFA_VERSION_TO_MAJOR((uint32_t)smc_ret.r0) !=
+-        FFA_CURRENT_VERSION_MAJOR) {
+-        /* TODO: support more than one (minor) version. */
+-        TRACEF("%s: unsupported FF-A version 0x%lx, expected 0x%x\n", __func__,
+-               smc_ret.r0, FFA_CURRENT_VERSION);
+-        goto err_version;
++    /* Check the FF-A module initialized successfully */
++    if (!ffa_is_init()) {
++        TRACEF("The arm_ffa module is not initialized\n");
++        goto err_ffa_module;
+     }
+ 
+     /* Check that SMC_FC_FFA_MEM_SHARE is implemented */
+@@ -674,7 +671,7 @@ err_alloc_rx:
+ err_alloc_tx:
+ err_id_get:
+ err_features:
+-err_version:
++err_ffa_module:
+     TRACEF("failed to initialize FF-A\n");
+     if (sm_check_and_lock_api_version(TRUSTY_API_VERSION_MEM_OBJ)) {
+         panic("shared_mem_init failed after mem_obj version selected\n");
+-- 
+2.17.1
+

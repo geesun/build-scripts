@@ -1,0 +1,136 @@
+From da9e9473cae6802e085834fd849bf969ef5ad078 Mon Sep 17 00:00:00 2001
+From: Olivier Deprez <olivier.deprez@arm.com>
+Date: Wed, 13 Apr 2022 23:16:20 +0100
+Subject: [PATCH] WIP: hafnium para virt-fixes
+
+Signed-off-by: Olivier Deprez <olivier.deprez@arm.com>
+Signed-off-by: Arunachalam Ganapathy <arunachalam.ganapathy@arm.com>
+Change-Id: I097e1668fa40fc43442dbdd66861ace4cc03c8b6
+---
+ lib/arm_ffa/ffa_hf_call.c         | 37 +++++++++++++++++++++++++++++++
+ lib/arm_ffa/rules.mk              |  1 +
+ lib/smc/arch/arm64/smc.S          | 18 +++++++++++++++
+ lib/smc/include/lib/smc/smc.h     | 11 +++++++++
+ platform/generic-arm64/platform.c |  5 ++++-
+ 5 files changed, 71 insertions(+), 1 deletion(-)
+ create mode 100644 lib/arm_ffa/ffa_hf_call.c
+
+diff --git a/lib/arm_ffa/ffa_hf_call.c b/lib/arm_ffa/ffa_hf_call.c
+new file mode 100644
+index 0000000..ccf5c8e
+--- /dev/null
++++ b/lib/arm_ffa/ffa_hf_call.c
+@@ -0,0 +1,37 @@
++/* TODO: add copyright header. */
++
++#include <lib/smc/smc.h>
++
++#define HF_INTERRUPT_GET               (0xff04)
++#define HF_INTERRUPT_ENABLE            (0xff03)
++#define HF_INTERRUPT_DEACTIVATE        (0xff08)
++
++uint32_t hf_interrupt_get(void)
++{
++	hvc_ret8 res;
++
++	res = hvc8((ulong)HF_INTERRUPT_GET,
++		0, 0, 0, 0, 0, 0, 0);
++
++	return (uint32_t)res.r0;
++}
++
++int64_t hf_interrupt_enable(uint32_t vintid, bool enable, uint32_t type)
++{
++	hvc_ret8 res;
++
++	res = hvc8((ulong)HF_INTERRUPT_ENABLE,
++		(ulong)vintid, (ulong)enable, (ulong)type, 0, 0, 0, 0);
++
++	return (int64_t)res.r0;
++}
++
++int64_t hf_interrupt_deactivate(uint32_t vintid)
++{
++	hvc_ret8 res;
++
++	res = hvc8((ulong)HF_INTERRUPT_DEACTIVATE,
++		(ulong)vintid, (ulong)vintid, 0, 0, 0, 0, 0);
++
++	return (int64_t)res.r0;
++}
+diff --git a/lib/arm_ffa/rules.mk b/lib/arm_ffa/rules.mk
+index 18393cc..3de9532 100644
+--- a/lib/arm_ffa/rules.mk
++++ b/lib/arm_ffa/rules.mk
+@@ -30,6 +30,7 @@ GLOBAL_INCLUDES += \
+ 
+ MODULE_SRCS += \
+ 	$(LOCAL_DIR)/ffa.c \
++	$(LOCAL_DIR)/ffa_hf_call.c
+ 
+ MODULE_DEPS += \
+ 	trusty/kernel/lib/smc \
+diff --git a/lib/smc/arch/arm64/smc.S b/lib/smc/arch/arm64/smc.S
+index 36a4418..b2c1236 100644
+--- a/lib/smc/arch/arm64/smc.S
++++ b/lib/smc/arch/arm64/smc.S
+@@ -41,3 +41,21 @@ FUNCTION(smc8)
+     stp     x6, x7, [x8], #16
+ 
+     ret
++
++FUNCTION(hvc8)
++    /*
++     * Save x8 (return value ptr) and lr. The SMC calling convention says el3
++     * does not need to preserve x8. The normal ABI does not require either x8
++     * or lr to be preserved.
++     */
++    push    x8, lr
++    hvc     #0
++    pop     x8, lr
++
++    /* Copy 8-register smc return value to struct smc_ret8 return value */
++    stp     x0, x1, [x8], #16
++    stp     x2, x3, [x8], #16
++    stp     x4, x5, [x8], #16
++    stp     x6, x7, [x8], #16
++
++    ret
+diff --git a/lib/smc/include/lib/smc/smc.h b/lib/smc/include/lib/smc/smc.h
+index f63c017..1ec3d58 100644
+--- a/lib/smc/include/lib/smc/smc.h
++++ b/lib/smc/include/lib/smc/smc.h
+@@ -44,3 +44,14 @@ struct smc_ret8 smc8(ulong r0,
+                      ulong r5,
+                      ulong r6,
+                      ulong r7);
++
++typedef struct smc_ret8 hvc_ret8;
++
++hvc_ret8 hvc8(ulong r0,
++              ulong r1,
++              ulong r2,
++              ulong r3,
++              ulong r4,
++              ulong r5,
++              ulong r6,
++              ulong r7);
+diff --git a/platform/generic-arm64/platform.c b/platform/generic-arm64/platform.c
+index 814cef8..60b1f69 100644
+--- a/platform/generic-arm64/platform.c
++++ b/platform/generic-arm64/platform.c
+@@ -129,7 +129,10 @@ static void platform_after_vm_init(uint level) {
+ #endif
+ 
+     /* initialize the timer block */
+-    arm_generic_timer_init(ARM_GENERIC_TIMER_INT, 0);
++    // arm_generic_timer_init(ARM_GENERIC_TIMER_INT, 0);
++
++    /* EL2 CNTHPS emulated through CNTP accessses. */
++    arm_generic_timer_init(ARM_GENERIC_TIMER_INT_CNTHPS, 0);
+ }
+ 
+ LK_INIT_HOOK(platform_after_vm, platform_after_vm_init, LK_INIT_LEVEL_VM + 1);
+-- 
+2.17.1
+

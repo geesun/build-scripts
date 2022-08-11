@@ -1,0 +1,46 @@
+From 5781ee35acfb74ee6ff1400cc2ffc2a509b70700 Mon Sep 17 00:00:00 2001
+From: Davidson K <davidson.kumaresan@arm.com>
+Date: Wed, 29 Jun 2022 16:52:20 +0530
+Subject: [PATCH] manifest: change entrypoint of secure partitions
+
+The secure partition package has the manifest and the binary. The
+entrypoint will be set to the beginning of the binary. Since the
+size of the manifest is increased from 0x1000 to 0x4000 for boot
+protocol support, the entrypoint also has to be changed.
+
+Signed-off-by: Davidson K <davidson.kumaresan@arm.com>
+Change-Id: Iaaf2c0e2216e4329096cc489821a378ef6d5449d
+---
+ deployments/crypto/hfsp-shim/crypto.dts                         | 2 +-
+ .../hfsp-shim/internal-trusted-storage.dts                      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/deployments/crypto/hfsp-shim/crypto.dts b/deployments/crypto/hfsp-shim/crypto.dts
+index 655acfd..4145e6f 100644
+--- a/deployments/crypto/hfsp-shim/crypto.dts
++++ b/deployments/crypto/hfsp-shim/crypto.dts
+@@ -14,7 +14,7 @@
+ 	execution-ctx-count = <1>;
+ 	exception-level = <2>; /* S-EL1 */
+ 	execution-state = <0>; /* AArch64 */
+-	entrypoint-offset = <0x00001000>;
++	entrypoint-offset = <0x00004000>;
+ 	xlat-granule = <0>; /* 4KiB */
+ 	messaging-method = <0x3>; /* Direct request/response supported */
+ };
+diff --git a/deployments/internal-trusted-storage/hfsp-shim/internal-trusted-storage.dts b/deployments/internal-trusted-storage/hfsp-shim/internal-trusted-storage.dts
+index aafa769..263f908 100644
+--- a/deployments/internal-trusted-storage/hfsp-shim/internal-trusted-storage.dts
++++ b/deployments/internal-trusted-storage/hfsp-shim/internal-trusted-storage.dts
+@@ -14,7 +14,7 @@
+ 	execution-ctx-count = <1>;
+ 	exception-level = <2>; /* S-EL1 */
+ 	execution-state = <0>; /* AArch64 */
+-	entrypoint-offset = <0x00001000>;
++	entrypoint-offset = <0x00004000>;
+ 	xlat-granule = <0>; /* 4KiB */
+ 	messaging-method = <0x3>; /* Direct request/response supported */
+ };
+-- 
+2.34.1
+

@@ -1,0 +1,159 @@
+From 74ed22ae608e772f083d1b7d01d890d0e108a18d Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Tue, 7 Sep 2021 16:19:05 +0000
+Subject: [PATCH 02/22] [lib][smc] Move smc architectural defines to the smc
+ module
+
+Trusty specific smc defines remain in the sm module.
+
+Change-Id: I40becd0ac648c2626ce245f871343be8a798c070
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/sm/include/lib/sm/arm_ffa.h   |  3 +-
+ lib/sm/include/lib/sm/smcall.h    | 40 +------------------
+ lib/smc/include/lib/smc/smc_def.h | 64 +++++++++++++++++++++++++++++++
+ 3 files changed, 68 insertions(+), 39 deletions(-)
+ create mode 100644 lib/smc/include/lib/smc/smc_def.h
+
+diff --git a/lib/sm/include/lib/sm/arm_ffa.h b/lib/sm/include/lib/sm/arm_ffa.h
+index aecd3bb..7b63381 100644
+--- a/lib/sm/include/lib/sm/arm_ffa.h
++++ b/lib/sm/include/lib/sm/arm_ffa.h
+@@ -28,7 +28,8 @@
+  * (https://developer.arm.com/docs/den0077/a) needed for shared memory.
+  */
+ 
+-#include "smcall.h"
++#include <stdint.h>
++#include <lib/smc/smc_def.h>
+ 
+ #ifndef STATIC_ASSERT
+ #define STATIC_ASSERT(e) _Static_assert(e, #e)
+diff --git a/lib/sm/include/lib/sm/smcall.h b/lib/sm/include/lib/sm/smcall.h
+index 7139dca..2857711 100644
+--- a/lib/sm/include/lib/sm/smcall.h
++++ b/lib/sm/include/lib/sm/smcall.h
+@@ -23,47 +23,11 @@
+ #ifndef __LIB_SM_SMCALL_H
+ #define __LIB_SM_SMCALL_H
+ 
+-#define SMC_NUM_ENTITIES 64
++#include <lib/smc/smc_def.h>
++
+ #define SMC_NUM_ARGS 4
+ #define SMC_NUM_PARAMS (SMC_NUM_ARGS - 1)
+ 
+-#define SMC_IS_FASTCALL(smc_nr) ((smc_nr)&0x80000000)
+-#define SMC_IS_SMC64(smc_nr) ((smc_nr)&0x40000000)
+-#define SMC_ENTITY(smc_nr) (((smc_nr)&0x3F000000) >> 24)
+-#define SMC_FUNCTION(smc_nr) ((smc_nr)&0x0000FFFF)
+-
+-#define SMC_NR(entity, fn, fastcall, smc64)               \
+-    ((((fastcall)&0x1U) << 31) | (((smc64)&0x1U) << 30) | \
+-     (((entity)&0x3FU) << 24) | ((fn)&0xFFFFU))
+-
+-#define SMC_FASTCALL_NR(entity, fn) SMC_NR((entity), (fn), 1, 0)
+-#define SMC_STDCALL_NR(entity, fn) SMC_NR((entity), (fn), 0, 0)
+-#define SMC_FASTCALL64_NR(entity, fn) SMC_NR((entity), (fn), 1, 1)
+-#define SMC_STDCALL64_NR(entity, fn) SMC_NR((entity), (fn), 0, 1)
+-
+-/* ARM Architecture calls */
+-#define SMC_ENTITY_ARCH 0
+-/* CPU Service calls */
+-#define SMC_ENTITY_CPU 1
+-/* SIP Service calls */
+-#define SMC_ENTITY_SIP 2
+-/* OEM Service calls */
+-#define SMC_ENTITY_OEM 3
+-/* Standard Service calls */
+-#define SMC_ENTITY_STD 4
+-/* Reserved for future use */
+-#define SMC_ENTITY_RESERVED 5
+-/* Trusted Application calls */
+-#define SMC_ENTITY_TRUSTED_APP 48
+-/* Trusted OS calls */
+-#define SMC_ENTITY_TRUSTED_OS 50
+-/* Used for secure -> nonsecure logging */
+-#define SMC_ENTITY_LOGGING 51
+-/* Used for secure -> nonsecure tests */
+-#define SMC_ENTITY_TEST 52
+-/* Trusted OS calls internal to secure monitor */
+-#define SMC_ENTITY_SECURE_MONITOR 60
+-
+ /* FC = Fast call, SC = Standard call */
+ #define SMC_SC_RESTART_LAST SMC_STDCALL_NR(SMC_ENTITY_SECURE_MONITOR, 0)
+ #define SMC_SC_LOCKED_NOP SMC_STDCALL_NR(SMC_ENTITY_SECURE_MONITOR, 1)
+diff --git a/lib/smc/include/lib/smc/smc_def.h b/lib/smc/include/lib/smc/smc_def.h
+new file mode 100644
+index 0000000..dd3d9e0
+--- /dev/null
++++ b/lib/smc/include/lib/smc/smc_def.h
+@@ -0,0 +1,64 @@
++/*
++ * Copyright (c) 2013-2016 Google Inc. All rights reserved
++ * Copyright (c) 2021, Arm Ltd.  All rights reserved
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining
++ * a copy of this software and associated documentation files
++ * (the "Software"), to deal in the Software without restriction,
++ * including without limitation the rights to use, copy, modify, merge,
++ * publish, distribute, sublicense, and/or sell copies of the Software,
++ * and to permit persons to whom the Software is furnished to do so,
++ * subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be
++ * included in all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
++ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++#pragma once
++
++#define SMC_IS_FASTCALL(smc_nr) ((smc_nr)&0x80000000)
++#define SMC_IS_SMC64(smc_nr) ((smc_nr)&0x40000000)
++#define SMC_ENTITY(smc_nr) (((smc_nr)&0x3F000000) >> 24)
++#define SMC_FUNCTION(smc_nr) ((smc_nr)&0x0000FFFF)
++
++#define SMC_NR(entity, fn, fastcall, smc64)               \
++    ((((fastcall)&0x1U) << 31) | (((smc64)&0x1U) << 30) | \
++     (((entity)&0x3FU) << 24) | ((fn)&0xFFFFU))
++
++#define SMC_FASTCALL_NR(entity, fn) SMC_NR((entity), (fn), 1, 0)
++#define SMC_STDCALL_NR(entity, fn) SMC_NR((entity), (fn), 0, 0)
++#define SMC_FASTCALL64_NR(entity, fn) SMC_NR((entity), (fn), 1, 1)
++#define SMC_STDCALL64_NR(entity, fn) SMC_NR((entity), (fn), 0, 1)
++
++/* ARM Architecture calls */
++#define SMC_ENTITY_ARCH 0
++/* CPU Service calls */
++#define SMC_ENTITY_CPU 1
++/* SIP Service calls */
++#define SMC_ENTITY_SIP 2
++/* OEM Service calls */
++#define SMC_ENTITY_OEM 3
++/* Standard Service calls */
++#define SMC_ENTITY_STD 4
++/* Reserved for future use */
++#define SMC_ENTITY_RESERVED 5
++/* Trusted Application calls */
++#define SMC_ENTITY_TRUSTED_APP 48
++/* Trusted OS calls */
++#define SMC_ENTITY_TRUSTED_OS 50
++/* Used for secure -> nonsecure logging */
++#define SMC_ENTITY_LOGGING 51
++/* Used for secure -> nonsecure tests */
++#define SMC_ENTITY_TEST 52
++/* Trusted OS calls internal to secure monitor */
++#define SMC_ENTITY_SECURE_MONITOR 60
++
++#define SMC_NUM_ENTITIES 64
+-- 
+2.17.1
+

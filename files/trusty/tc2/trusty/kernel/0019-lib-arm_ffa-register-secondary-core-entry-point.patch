@@ -1,0 +1,129 @@
+From c8bd5b6b465daa60a90efab1dfcb9e960c8b4efd Mon Sep 17 00:00:00 2001
+From: Arunachalam Ganapathy <arunachalam.ganapathy@arm.com>
+Date: Fri, 15 Oct 2021 16:43:11 +0100
+Subject: [PATCH 19/22] [lib][arm_ffa] register secondary core entry point
+
+In ffa_init register secondary core entry point if FFA ABIs are used
+for messaging. This is skipped for Trusty using FFA only for memory
+sharing.
+
+Signed-off-by: Arunachalam Ganapathy <arunachalam.ganapathy@arm.com>
+Change-Id: If2c29bba82dae31ffc5f534aa7ba4ebafa5dff9e
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                 | 56 ++++++++++++++++++++++++++++++-
+ lib/arm_ffa/include/lib/arm_ffa.h | 20 +++++++++++
+ 2 files changed, 75 insertions(+), 1 deletion(-)
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+index 99f139f..2bce381 100644
+--- a/lib/arm_ffa/ffa.c
++++ b/lib/arm_ffa/ffa.c
+@@ -335,6 +335,49 @@ static status_t ffa_call_rx_release(void) {
+     }
+ }
+ 
++#if WITH_SMP
++static bool ffa_secondary_ep_register_is_implemented(void) {
++    bool is_implemented = false;
++    status_t res;
++
++    res  = ffa_call_features(SMC_FC64_FFA_SECONDARY_EP_REGISTER, 0,
++                             &is_implemented, 0, 0);
++    if (res) {
++        TRACEF("Failed to query for feature FFA_SECONDARY_EP_REGISTER, "
++               "err = %d\n", res);
++        return false;
++    }
++    return is_implemented;
++}
++
++static status_t ffa_call_secondary_ep_register(void) {
++    struct smc_ret8 smc_ret;
++    paddr_t secondary_ep_paddr;
++
++    secondary_ep_paddr = vaddr_to_paddr((void *) kernel_base_addr);
++
++    smc_ret = smc8(SMC_FC64_FFA_SECONDARY_EP_REGISTER, secondary_ep_paddr, 0, 0,
++                   0, 0, 0, 0);
++    switch (smc_ret.r0) {
++    case SMC_FC_FFA_SUCCESS:
++    case SMC_FC64_FFA_SUCCESS:
++        return NO_ERROR;
++
++    case SMC_FC_FFA_ERROR:
++        switch ((int)smc_ret.r2) {
++        case FFA_ERROR_NOT_SUPPORTED:
++            return ERR_NOT_SUPPORTED;
++        case FFA_ERROR_INVALID_PARAMETERS:
++            return ERR_INVALID_ARGS;
++        default:
++            return ERR_NOT_VALID;
++        }
++    default:
++        return ERR_NOT_VALID;
++    }
++}
++#endif /* WITH_SMP */
++
+ static status_t decode_smc_ret(const struct smc_ret8 *smc_ret,
+                                struct ffa_incall *ffa_incall) {
+     DEBUG_ASSERT(smc_ret && ffa_incall);
+@@ -959,7 +1002,7 @@ static status_t ffa_setup(void) {
+     ffa_tx = tx_vaddr;
+     ffa_rx = rx_vaddr;
+ 
+-    return res;
++    return NO_ERROR;
+ 
+ err_rxtx_map:
+ err_alloc_rx:
+@@ -978,6 +1021,17 @@ static void ffa_init(uint level) {
+         ffa_init_is_success = true;
+         if (ffa_msg_send_direct_resp_32bit_is_implemented()) {
+             ffa_msg_direct_resp_32bit_supported = true;
++#if WITH_SMP
++            if (ffa_secondary_ep_register_is_implemented()) {
++                res = ffa_call_secondary_ep_register();
++                if (res != NO_ERROR) {
++                    TRACEF("Failed to register secondary core entry point "
++                           "(err=%d)\n", res);
++                }
++            } else {
++                TRACEF("FFA_SECONDARY_EP_REGISTER is not implemented\n");
++            }
++#endif
+         }
+     } else {
+         TRACEF("Failed to initialize FF-A (err=%d)\n", res);
+diff --git a/lib/arm_ffa/include/lib/arm_ffa.h b/lib/arm_ffa/include/lib/arm_ffa.h
+index ff9eb0f..5cc232b 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa.h
+@@ -732,3 +732,23 @@ typedef uint32_t ffa_features3_t;
+  * * w1/x1-w5/x5:    See opcode in w0.
+  */
+ #define SMC_FC_FFA_MEM_FRAG_TX SMC_FASTCALL_NR_SHARED_MEMORY(0x7B)
++
++/* FF-A v1.1 */
++/**
++ * SMC_FC64_FFA_SECONDARY_EP_REGISTER - SMC opcode to register secondary
++ * core entrypoint.
++ *
++ * Register arguments:
++ *
++ * * x1:     Entry point address of a secondary execution context
++ *
++ * Return:
++ * * x0:     &SMC_FC64_FFA_SUCCESS
++ *
++ * or
++ *
++ * * x0:     &SMC_FC_FFA_ERROR
++ * * x2:     %FFA_ERROR_NOT_SUPPORTED Not supported
++ *           %FFA_ERROR_INVALID_PARAMETERS Invalid entry point specified
++ */
++#define SMC_FC64_FFA_SECONDARY_EP_REGISTER SMC_FASTCALL64_NR_SHARED_MEMORY(0x87)
+-- 
+2.17.1
+

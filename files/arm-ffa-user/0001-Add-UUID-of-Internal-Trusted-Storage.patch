@@ -1,0 +1,28 @@
+From bb202c6c7b8d99a77f2efc39811f35136d65ae7d Mon Sep 17 00:00:00 2001
+From: Davidson K <davidson.kumaresan@arm.com>
+Date: Wed, 1 Sep 2021 18:50:11 +0530
+Subject: [PATCH] Add UUID of Internal Trusted Storage
+
+Change-Id: I00e63b4cedc3516c68d4ce263ecb83929ecea6bd
+Signed-off-by: Davidson K <davidson.kumaresan@arm.com>
+---
+ arm_ffa_user.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arm_ffa_user.c b/arm_ffa_user.c
+index 210117a..dced210 100644
+--- a/arm_ffa_user.c
++++ b/arm_ffa_user.c
+@@ -44,6 +44,9 @@ static const struct ffa_device_id ffa_user_device_id[] = {
+ 	/* crypto SP */
+ 	{ UUID_INIT(0xd9df52d5, 0x16a2, 0x4bb2,
+ 		    0x9a, 0xa4, 0xd2, 0x6d, 0x3b, 0x84, 0xe8, 0xc0) },
++	/* Internal Trusted Storage SP */
++	{ UUID_INIT(0xdc1eef48, 0xb17a, 0x4ccf,
++		    0xac, 0x8b, 0xdf, 0xcf, 0xf7, 0x71, 0x1b, 0x14) },
+ };
+ 
+ static int ffa_user_probe(struct ffa_device *ffa_dev)
+-- 
+2.17.1
+

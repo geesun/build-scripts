@@ -1,0 +1,27 @@
+From 41e2b82bd9839d2bb1979f881d2c6650cb5ed148 Mon Sep 17 00:00:00 2001
+From: Davidson K <davidson.kumaresan@arm.com>
+Date: Fri, 8 Jul 2022 10:42:45 +0530
+Subject: [PATCH] hfsp-shim: set hfsp-shim commit id for tc2_q2_rel
+
+Change-Id: Ib2abd43d138663d987c0324a01f381a0560dd0f3
+Signed-off-by: Davidson K <davidson.kumaresan@arm.com>
+---
+ environments/hfsp-shim/component.cmake | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/environments/hfsp-shim/component.cmake b/environments/hfsp-shim/component.cmake
+index 341c00b..ee80a1b 100644
+--- a/environments/hfsp-shim/component.cmake
++++ b/environments/hfsp-shim/component.cmake
+@@ -9,7 +9,7 @@ if (NOT DEFINED TGT)
+ endif()
+ 
+ set(HFSP_SHIM_URL "https://git.gitlab.arm.com/arm-reference-solutions/sel1_shim.git" CACHE STRING "hfsp-shim layer repository URL")
+-set(HFSP_SHIM_TAG "master" CACHE STRING "master branch")
++set(HFSP_SHIM_TAG "27fc6daf3d0b96f60f9c4a9a5c7cf3c22e34a974" CACHE STRING "master branch")
+ 
+ include(FetchContent)
+ 
+-- 
+2.34.1
+

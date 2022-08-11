@@ -1,0 +1,48 @@
+From 9461e4ab9c7017db186303978019f254de6d9fcc Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Wed, 30 Mar 2022 13:15:59 +0000
+Subject: [PATCH 2/4] Save the kernel base address after kaslr
+
+Change-Id: I981015e5148355f6e7bb6b3a11cae7fcefdd219a
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ arch/arm64/early_mmu.c | 4 ++++
+ include/kernel/vm.h    | 1 +
+ 2 files changed, 5 insertions(+)
+
+diff --git a/arch/arm64/early_mmu.c b/arch/arm64/early_mmu.c
+index a444d76c..9a988a2e 100644
+--- a/arch/arm64/early_mmu.c
++++ b/arch/arm64/early_mmu.c
+@@ -32,6 +32,8 @@
+ pte_t arm64_kernel_translation_table[MMU_KERNEL_PAGE_TABLE_ENTRIES_TOP]
+     __ALIGNED(MMU_KERNEL_PAGE_TABLE_ENTRIES_TOP * 8);
+ 
++vaddr_t kernel_base_addr;
++
+ static void* early_mmu_paddr_to_kvaddr(paddr_t paddr) {
+     return (void*)paddr;
+ }
+@@ -89,4 +91,6 @@ void arm64_early_mmu_init(ulong ram_size, uintptr_t* relr_start,
+ 
+     /* Relocate the kernel to its final virtual address */
+     relocate_kernel(relr_start, relr_end, kernel_paddr, kernel_final_vaddr);
++
++    kernel_base_addr = kernel_final_vaddr;
+ }
+diff --git a/include/kernel/vm.h b/include/kernel/vm.h
+index 091c77c9..ae100d3a 100644
+--- a/include/kernel/vm.h
++++ b/include/kernel/vm.h
+@@ -478,6 +478,7 @@ void *boot_alloc_memalign(size_t len, size_t alignment) __MALLOC;
+  */
+ void *boot_alloc_mem(size_t len) __MALLOC;
+ 
++extern vaddr_t kernel_base_addr;
+ #ifdef KERNEL_BASE_ASLR
+ /* select a random address for KERNEL_BASE_ASLR */
+ vaddr_t aslr_randomize_kernel_base(vaddr_t kernel_base);
+-- 
+2.17.1
+

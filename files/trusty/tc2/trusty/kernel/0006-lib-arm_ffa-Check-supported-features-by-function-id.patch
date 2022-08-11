@@ -1,0 +1,292 @@
+From 2be4051c8b0e03a74ddee207f6d86aa01a498d0e Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Thu, 9 Sep 2021 09:24:40 +0000
+Subject: [PATCH 06/22] [lib][arm_ffa] Check supported features by function id
+
+Change-Id: I5a77d1193ebc58d00637c05ab7a1fa952b383f94
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                     | 143 ++++++++++++++++++++++++++
+ lib/arm_ffa/include/lib/arm_ffa/ffa.h |   2 +
+ lib/sm/shared_mem.c                   |  58 +----------
+ 3 files changed, 147 insertions(+), 56 deletions(-)
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+index 835f62c..c5e09d4 100644
+--- a/lib/arm_ffa/ffa.c
++++ b/lib/arm_ffa/ffa.c
+@@ -21,6 +21,7 @@
+  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#include <assert.h>
+ #include <err.h>
+ #include <trace.h>
+ #include <sys/types.h>
+@@ -31,6 +32,8 @@
+ 
+ static bool ffa_init_is_success = false;
+ uint16_t ffa_local_id;
++size_t ffa_buf_size;
++bool supports_ns_bit = false;
+ 
+ bool ffa_is_init(void) {
+     return ffa_init_is_success;
+@@ -74,10 +77,124 @@ static status_t ffa_call_version(uint16_t major, uint16_t minor,
+     return NO_ERROR;
+ }
+ 
++/* TODO: When adding support for FFA version 1.1 feature ids should be added. */
++static status_t ffa_call_features(ulong id, bool request_ns_bit,
++                                  bool *is_implemented,
++                                  ffa_features2_t *features2,
++                                  ffa_features3_t *features3) {
++    struct smc_ret8 smc_ret;
++
++    ASSERT(is_implemented != NULL);
++    ASSERT(!request_ns_bit ||
++           id == SMC_FC_FFA_MEM_RETRIEVE_REQ ||
++           id == SMC_FC64_FFA_MEM_RETRIEVE_REQ);
++
++    /* The NS bit input parameter must be zero (MBZ) in FF-A version 1.0.
++       This still requests use of the NS bit in the FFA_MEM_RETRIEVE_RESP ABI.
++       In FF-A version 1.1 the input parameter NS bit must be set to request
++       it's use.  See section 10.10.4.1.1, Discovery of NS bit usage, in the
++       FF-A 1.1 BETA specification.
++       (https://developer.arm.com/documentation/den0077/c) */
++    request_ns_bit = 0;
++
++    smc_ret = smc8(SMC_FC_FFA_FEATURES, id, request_ns_bit ? (1 << 1) : 0,
++                   0, 0, 0, 0, 0);
++
++    switch (smc_ret.r0) {
++    case SMC_FC_FFA_SUCCESS:
++    case SMC_FC64_FFA_SUCCESS:
++        *is_implemented = true;
++        if (features2) {
++            *features2 = (ffa_features2_t) smc_ret.r2;
++        }
++        if (features3) {
++            *features3 = (ffa_features3_t) smc_ret.r3;
++        }
++        return NO_ERROR;
++
++    case SMC_FC_FFA_ERROR:
++        if (smc_ret.r2 == (ulong) FFA_ERROR_NOT_SUPPORTED) {
++            *is_implemented = false;
++            return NO_ERROR;
++        } else {
++            return ERR_NOT_VALID;
++        }
++
++    default:
++        return ERR_NOT_VALID;
++    }
++}
++
++bool ffa_rxtx_map_is_implemented(size_t *buf_size_log2) {
++    ffa_features2_t features2;
++    bool is_implemented = false;
++    status_t res;
++    res  = ffa_call_features(SMC_FC64_FFA_RXTX_MAP, 0,
++                             &is_implemented, &features2, NULL);
++    if (res) {
++        TRACEF("Failed to query for feature FFA_RXTX_MAP, err = %d\n", res);
++        return false;
++    }
++    if (!is_implemented) {
++        return false;
++    }
++    if (buf_size_log2) {
++        switch (features2 & FFA_FEATURES2_RXTX_MAP_BUF_SIZE_MASK) {
++        case FFA_FEATURES2_RXTX_MAP_BUF_SIZE_4K:
++            *buf_size_log2 = 12;
++            break;
++        case FFA_FEATURES2_RXTX_MAP_BUF_SIZE_16K:
++            *buf_size_log2 = 14;
++            break;
++        case FFA_FEATURES2_RXTX_MAP_BUF_SIZE_64K:
++            *buf_size_log2 = 16;
++            break;
++        default:
++            TRACEF("Unexpected rxtx buffer size identifier");
++            return false;
++        }
++    }
++    return true;
++}
++
++bool ffa_mem_retrieve_req_is_implemented(bool request_ns_bit,
++                                         bool *dyn_alloc_supp,
++                                         bool *has_ns_bit,
++                                         size_t *ref_count_num_bits) {
++    ffa_features2_t features2;
++    ffa_features3_t features3;
++    bool is_implemented = false;
++    status_t res;
++    res  = ffa_call_features(SMC_FC_FFA_MEM_RETRIEVE_REQ, 0,
++                             &is_implemented, &features2, &features3);
++    if (res) {
++        TRACEF("Failed  to query for feature FFA_MEM_RETRIEVE_REQ, err = %d\n",
++               res);
++        return false;
++    }
++    if (!is_implemented) {
++        return false;
++    }
++    if (dyn_alloc_supp) {
++        *dyn_alloc_supp = !!(features2 & FFA_FEATURES2_MEM_DYNAMIC_BUFFER);
++    }
++    if (has_ns_bit) {
++        *has_ns_bit = !!(features2 & FFA_FEATURES2_MEM_HAS_NS_BIT);
++    }
++    if (ref_count_num_bits) {
++        *ref_count_num_bits =
++          (features3 & FFA_FEATURES3_MEM_RETRIEVE_REQ_REFCOUNT_MASK) + 1;
++    }
++    return true;
++}
++
+ static status_t ffa_setup(void) {
+     status_t res;
+     uint16_t ver_major_ret;
+     uint16_t ver_minor_ret;
++    size_t buf_size_log2;
++    size_t buf_page_count;
++    size_t ref_count_num_bits;
+ 
+     res = ffa_call_version(FFA_CURRENT_VERSION_MAJOR, FFA_CURRENT_VERSION_MINOR,
+                            &ver_major_ret, &ver_minor_ret);
+@@ -98,6 +215,32 @@ static status_t ffa_setup(void) {
+         return res;
+     }
+ 
++    if (!ffa_rxtx_map_is_implemented(&buf_size_log2)) {
++        TRACEF("FFA_RXTX_MAP is not implemented\n");
++        return ERR_NOT_SUPPORTED;
++    }
++
++    if (!ffa_mem_retrieve_req_is_implemented(true, NULL, &supports_ns_bit,
++                                             &ref_count_num_bits)) {
++        TRACEF("FFA_MEM_RETRIEVE_REQ is not implemented\n");
++        return ERR_NOT_SUPPORTED;
++    }
++
++    if (ref_count_num_bits < 64) {
++        /*
++         * Expect 64 bit reference count. If we don't have it, future calls to
++         * SMC_FC_FFA_MEM_RETRIEVE_REQ can fail if we receive the same handle
++         * multiple times. Warn about this, but don't return an error as we only
++         * receive each handle once in the typical case.
++         */
++        TRACEF("Warning FFA_MEM_RETRIEVE_REQ does not have 64 bit reference count (%ld)\n",
++               ref_count_num_bits);
++    }
++
++    ffa_buf_size = 1U << buf_size_log2;
++    buf_page_count = DIV_ROUND_UP(ffa_buf_size, FFA_PAGE_SIZE);
++    ASSERT((ffa_buf_size % FFA_PAGE_SIZE) == 0);
++
+     return res;
+ }
+ 
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa.h b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+index 424e40f..cb06482 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa/ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+@@ -31,3 +31,5 @@ bool ffa_is_init(void);
+ /* TODO: Temporary share variables with lib/sm/shared_mem.c while
+    implementation is being moved to lib/arm_ffa. */
+ extern uint16_t ffa_local_id;
++extern size_t ffa_buf_size;
++extern bool supports_ns_bit;
+diff --git a/lib/sm/shared_mem.c b/lib/sm/shared_mem.c
+index b812488..fad564d 100644
+--- a/lib/sm/shared_mem.c
++++ b/lib/sm/shared_mem.c
+@@ -45,10 +45,8 @@ struct sm_mem_obj {
+ 
+ static mutex_t sm_mem_ffa_lock = MUTEX_INITIAL_VALUE(sm_mem_ffa_lock);
+ 
+-static size_t ffa_buf_size;
+ static void* ffa_tx;
+ static void* ffa_rx;
+-static bool supports_ns_bit = false;
+ 
+ static void sm_mem_obj_compat_destroy(struct vmm_obj* vmm_obj) {
+     struct ext_mem_obj* obj = containerof(vmm_obj, struct ext_mem_obj, vmm_obj);
+@@ -569,58 +567,7 @@ static void shared_mem_init(uint level) {
+         goto err_ffa_module;
+     }
+ 
+-    /* Check that SMC_FC_FFA_MEM_SHARE is implemented */
+-    smc_ret = smc8(SMC_FC_FFA_FEATURES, SMC_FC_FFA_MEM_SHARE, 0, 0, 0, 0, 0, 0);
+-    if ((uint32_t)smc_ret.r0 != SMC_FC_FFA_SUCCESS) {
+-        TRACEF("%s: SMC_FC_FFA_FEATURES(SMC_FC_FFA_MEM_SHARE) failed 0x%lx 0x%lx 0x%lx\n",
+-               __func__, smc_ret.r0, smc_ret.r1, smc_ret.r2);
+-        goto err_features;
+-    }
+-
+-    smc_ret = smc8(SMC_FC_FFA_FEATURES, SMC_FC_FFA_MEM_RETRIEVE_REQ, 0, 0, 0, 0,
+-                   0, 0);
+-    if ((uint32_t)smc_ret.r0 != SMC_FC_FFA_SUCCESS) {
+-        TRACEF("%s: SMC_FC_FFA_FEATURES(SMC_FC_FFA_MEM_RETRIEVE_REQ) failed 0x%lx 0x%lx 0x%lx\n",
+-               __func__, smc_ret.r0, smc_ret.r1, smc_ret.r2);
+-        goto err_features;
+-    }
+-
+-    /* Whether NS bit is filled in on RETRIEVE */
+-    supports_ns_bit = !!(smc_ret.r2 & FFA_FEATURES2_MEM_HAS_NS_BIT);
+-
+-    if ((smc_ret.r3 & FFA_FEATURES3_MEM_RETRIEVE_REQ_REFCOUNT_MASK) < 63) {
+-        /*
+-         * Expect 64 bit reference count. If we don't have it, future calls to
+-         * SMC_FC_FFA_MEM_RETRIEVE_REQ can fail if we receive the same handle
+-         * multile times. Warn about this, but don't return an error as we only
+-         * receive each handle once in the typical case.
+-         */
+-        TRACEF("%s: Warning SMC_FC_FFA_MEM_RETRIEVE_REQ does not have 64 bit reference count (%ld)\n",
+-               __func__, (smc_ret.r3 & 0xff) + 1);
+-    }
+-
+-    smc_ret = smc8(SMC_FC_FFA_FEATURES, SMC_FC_FFA_RXTX_MAP, 0, 0, 0, 0, 0, 0);
+-    if ((uint32_t)smc_ret.r0 != SMC_FC_FFA_SUCCESS) {
+-        TRACEF("%s: SMC_FC_FFA_FEATURES(SMC_FC_FFA_RXTX_MAP) failed 0x%lx 0x%lx 0x%lx\n",
+-               __func__, smc_ret.r0, smc_ret.r1, smc_ret.r2);
+-        goto err_features;
+-    }
+-
+-    switch (smc_ret.r2 & FFA_FEATURES2_RXTX_MAP_BUF_SIZE_MASK) {
+-    case FFA_FEATURES2_RXTX_MAP_BUF_SIZE_4K:
+-        buf_size_shift = 12;
+-        break;
+-    case FFA_FEATURES2_RXTX_MAP_BUF_SIZE_64K:
+-        buf_size_shift = 16;
+-        break;
+-    case FFA_FEATURES2_RXTX_MAP_BUF_SIZE_16K:
+-        buf_size_shift = 14;
+-        break;
+-    default:
+-        TRACEF("%s: Invalid FFA_RXTX_MAP buf size value\n", __func__);
+-        goto err_features;
+-    }
+-    ffa_buf_size = 1U << buf_size_shift;
++    buf_size_shift = __builtin_ffs(ffa_buf_size) - 1;
+     buf_page_count = DIV_ROUND_UP(ffa_buf_size, PAGE_SIZE);
+ 
+     ASSERT((ffa_buf_size % FFA_PAGE_SIZE) == 0);
+@@ -659,9 +606,8 @@ err_rxtx_map:
+ err_alloc_rx:
+     pmm_free(&page_list);
+ err_alloc_tx:
+-err_features:
+ err_ffa_module:
+-    TRACEF("failed to initialize FF-A\n");
++    TRACEF("Failed to initialize FF-A\n");
+     if (sm_check_and_lock_api_version(TRUSTY_API_VERSION_MEM_OBJ)) {
+         panic("shared_mem_init failed after mem_obj version selected\n");
+     }
+-- 
+2.17.1
+

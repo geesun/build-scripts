@@ -1,0 +1,46 @@
+From efcf0179303d43f128678badf6d4760d78ffdb89 Mon Sep 17 00:00:00 2001
+From: Davidson K <davidson.kumaresan@arm.com>
+Date: Fri, 25 Jun 2021 19:46:32 +0530
+Subject: [PATCH 2/6] Create a platform for total compute
+
+It is currently using mock driver for the TRNG.
+
+Signed-off-by: Davidson K <davidson.kumaresan@arm.com>
+Change-Id: I2185a0f01aca2958689eee058d7ae37fc9fdbc56
+---
+ .../arm/total_compute/platform.cmake          | 23 +++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+ create mode 100644 platform/providers/arm/total_compute/platform.cmake
+
+diff --git a/platform/providers/arm/total_compute/platform.cmake b/platform/providers/arm/total_compute/platform.cmake
+new file mode 100644
+index 0000000..4793c0c
+--- /dev/null
++++ b/platform/providers/arm/total_compute/platform.cmake
+@@ -0,0 +1,23 @@
++#-------------------------------------------------------------------------------
++# Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
++#
++# SPDX-License-Identifier: BSD-3-Clause
++#
++# Platform definition for the 'total_compute' virtual platform.
++#-------------------------------------------------------------------------------
++if (NOT DEFINED TGT)
++	message(FATAL_ERROR "mandatory parameter TGT is not defined.")
++endif()
++
++get_property(_platform_driver_dependencies TARGET ${TGT}
++	PROPERTY TS_PLATFORM_DRIVER_DEPENDENCIES
++)
++
++#-------------------------------------------------------------------------------
++#  Map platform dependencies to suitable drivers for this platform
++#
++#  Currently using mock drivers.  TODO: To enable hardware TRNG for TC
++#-------------------------------------------------------------------------------
++if ("trng" IN_LIST _platform_driver_dependencies)
++	target_sources(${TGT} PRIVATE "${TS_ROOT}/platform/drivers/mock/mock_trng.c")
++endif()
+-- 
+2.17.1
+

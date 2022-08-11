@@ -1,0 +1,16 @@
+{
+	"internal-trusted-storage" : {
+		"image": "internal-trusted-storage.bin",
+		"pm": "internal-trusted-storage.dts"
+	},
+
+	"crypto" : {
+		"image": "crypto-sp.bin",
+		"pm": "crypto.dts"
+	},
+
+	"op-tee" : {
+		"image": "tee-pager_v2.bin",
+		"pm": "optee_sp_manifest.dts"
+	}
+}

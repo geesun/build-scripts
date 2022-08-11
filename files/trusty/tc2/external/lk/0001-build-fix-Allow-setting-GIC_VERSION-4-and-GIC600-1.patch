@@ -1,0 +1,30 @@
+From 8e3098536222e573f276cef75336aa2c8464f5cc Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Fri, 4 Mar 2022 19:45:48 +0000
+Subject: [PATCH 1/4] build fix: Allow setting GIC_VERSION=4 and GIC600=1
+
+GIC600 is used to indicate the presence of the GICR_PWRR register
+
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Change-Id: I1f07ece1bec68439dabb9a1ddf416eb3c9993562
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ dev/interrupt/arm_gic/rules.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dev/interrupt/arm_gic/rules.mk b/dev/interrupt/arm_gic/rules.mk
+index 07926932..84265b59 100644
+--- a/dev/interrupt/arm_gic/rules.mk
++++ b/dev/interrupt/arm_gic/rules.mk
+@@ -10,7 +10,7 @@ MODULE_DEFINES += \
+ MODULE_SRCS += \
+ 	$(LOCAL_DIR)/arm_gic.c
+ 
+-ifeq (3,$(GIC_VERSION))
++ifneq (,$(filter 3 4,$(GIC_VERSION)))
+ MODULE_SRCS += $(LOCAL_DIR)/gic_v3.c
+ endif
+ 
+-- 
+2.17.1
+

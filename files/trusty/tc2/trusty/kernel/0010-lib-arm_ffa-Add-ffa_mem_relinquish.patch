@@ -1,0 +1,189 @@
+From c502bf8d2581d6aebe0e428f711616a849bc1b84 Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Mon, 13 Sep 2021 08:55:12 +0000
+Subject: [PATCH 10/22] [lib][arm_ffa] Add ffa_mem_relinquish
+
+Adapted from lib/sm/shared_mem.c
+
+Change-Id: I29a8bb74393f0de9b249ddb646b3ab1cc541f728
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                     | 65 +++++++++++++++++++++++++++
+ lib/arm_ffa/include/lib/arm_ffa/ffa.h |  3 ++
+ lib/sm/shared_mem.c                   | 39 +++-------------
+ 3 files changed, 75 insertions(+), 32 deletions(-)
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+index 7e225b7..b9311de 100644
+--- a/lib/arm_ffa/ffa.c
++++ b/lib/arm_ffa/ffa.c
+@@ -23,7 +23,9 @@
+ 
+ #include <assert.h>
+ #include <err.h>
++#include <string.h>
+ #include <trace.h>
++#include <kernel/mutex.h>
+ #include <kernel/vm.h>
+ #include <sys/types.h>
+ 
+@@ -39,6 +41,8 @@ bool supports_ns_bit = false;
+ void* ffa_tx;
+ void* ffa_rx;
+ 
++static mutex_t ffa_rxtx_buffer_lock = MUTEX_INITIAL_VALUE(ffa_rxtx_buffer_lock);
++
+ bool ffa_is_init(void) {
+     return ffa_init_is_success;
+ }
+@@ -129,6 +133,55 @@ static status_t ffa_call_features(ulong id, bool request_ns_bit,
+     }
+ }
+ 
++static status_t ffa_call_mem_relinquish(uint64_t handle, uint32_t flags,
++                                        uint32_t endpoint_count,
++                                        const ffa_endpoint_id16_t *endpoints) {
++    struct smc_ret8 smc_ret;
++    struct ffa_mem_relinquish_descriptor* req = ffa_tx;
++
++    mutex_acquire(&ffa_rxtx_buffer_lock);
++
++    if (!req) {
++        TRACEF("ERROR: no FF-A tx buffer");
++        return ERR_NOT_CONFIGURED;
++    }
++
++    req->handle = handle;
++    req->flags = flags;
++    req->endpoint_count = endpoint_count;
++
++    memcpy(req->endpoint_array, endpoints,
++           endpoint_count * sizeof (ffa_endpoint_id16_t));
++
++    smc_ret = smc8(SMC_FC_FFA_MEM_RELINQUISH, 0, 0, 0, 0, 0, 0, 0);
++
++    mutex_release(&ffa_rxtx_buffer_lock);
++
++    switch (smc_ret.r0) {
++    case SMC_FC_FFA_SUCCESS:
++    case SMC_FC64_FFA_SUCCESS:
++        return NO_ERROR;
++
++    case SMC_FC_FFA_ERROR:
++        switch ((int)smc_ret.r2) {
++        case FFA_ERROR_NOT_SUPPORTED:
++            return ERR_NOT_SUPPORTED;
++        case FFA_ERROR_INVALID_PARAMETERS:
++            return ERR_INVALID_ARGS;
++        case FFA_ERROR_NO_MEMORY:
++            return ERR_NO_MEMORY;
++        case FFA_ERROR_DENIED:
++            return ERR_BAD_STATE;
++        case FFA_ERROR_ABORTED:
++            return ERR_CANCELLED;
++        default:
++            return ERR_NOT_VALID;
++        }
++    default:
++        return ERR_NOT_VALID;
++    }
++}
++
+ static status_t ffa_call_rxtx_map(paddr_t tx_paddr, paddr_t rx_paddr,
+                                   size_t page_count) {
+     struct smc_ret8 smc_ret;
+@@ -225,6 +278,18 @@ bool ffa_mem_retrieve_req_is_implemented(bool request_ns_bit,
+     return true;
+ }
+ 
++status_t ffa_mem_relinquish(uint64_t handle) {
++    status_t res;
++
++    /* As flags are set to 0 no request to zero the memory is made */
++    res = ffa_call_mem_relinquish(handle, 0, 1, &ffa_local_id);
++    if (res != NO_ERROR) {
++        TRACEF("Failed to relinquish memory region, err = %d\n", res);
++    }
++
++    return res;
++}
++
+ static status_t ffa_setup(void) {
+     status_t res;
+     uint16_t ver_major_ret;
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa.h b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+index d78b431..7e9ec8b 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa/ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+@@ -35,3 +35,6 @@ extern size_t ffa_buf_size;
+ extern bool supports_ns_bit;
+ extern void* ffa_tx;
+ extern void* ffa_rx;
++
++/* Relinquish trusty's access to a memory region. */
++status_t ffa_mem_relinquish(uint64_t handle);
+diff --git a/lib/sm/shared_mem.c b/lib/sm/shared_mem.c
+index 112166d..d054d22 100644
+--- a/lib/sm/shared_mem.c
++++ b/lib/sm/shared_mem.c
+@@ -110,37 +110,6 @@ static status_t sm_mem_compat_get_vmm_obj(ext_mem_client_id_t client_id,
+     return 0;
+ }
+ 
+-/**
+- * ffa_mem_relinquish: Relinquish memory object.
+- * @obj:        Object to relinquish.
+- *
+- * Relinquish shared memory object id with SPM/Hypervisor. Allows the sender to
+- * reclaim the memory (if it has not been retrieved by anyone else).
+- */
+-static void ffa_mem_relinquish(struct sm_mem_obj* obj) {
+-    struct smc_ret8 smc_ret;
+-    struct ffa_mem_relinquish_descriptor* req = ffa_tx;
+-
+-    DEBUG_ASSERT(obj);
+-    DEBUG_ASSERT(is_mutex_held(&sm_mem_ffa_lock));
+-
+-    if (!req) {
+-        TRACEF("ERROR: no FF-A buffer, skip FFA_MEM_RELINQUISH\n");
+-        return;
+-    }
+-    req->handle = obj->ext_mem_obj.id;
+-    req->flags = 0; /* Tell SPM/Hypervisor to not clear memory. */
+-    req->endpoint_count = 1;
+-    req->endpoint_array[0] = ffa_local_id;
+-
+-    /* Release reference to @obj->ext_mem_obj.id in SPM/Hypervisor. */
+-    smc_ret = smc8(SMC_FC_FFA_MEM_RELINQUISH, 0, 0, 0, 0, 0, 0, 0);
+-    if ((uint32_t)smc_ret.r0 != SMC_FC_FFA_SUCCESS) {
+-        TRACEF("bad reply: 0x%lx 0x%lx 0x%lx\n", smc_ret.r0, smc_ret.r1,
+-               smc_ret.r2);
+-    }
+-}
+-
+ /**
+  * sm_mem_obj_destroy: Destroy memory object.
+  * @vmm_obj:    VMM object to destroy.
+@@ -149,11 +118,17 @@ static void ffa_mem_relinquish(struct sm_mem_obj* obj) {
+  * shared memory object id with SPM/Hypervisor and free local tracking object.
+  */
+ static void sm_mem_obj_destroy(struct vmm_obj* vmm_obj) {
++    int ret;
+     struct sm_mem_obj* obj =
+             containerof(vmm_obj, struct sm_mem_obj, ext_mem_obj.vmm_obj);
+ 
++    DEBUG_ASSERT(obj);
++
+     mutex_acquire(&sm_mem_ffa_lock);
+-    ffa_mem_relinquish(obj);
++    ret = ffa_mem_relinquish(obj->ext_mem_obj.id);
++    if (ret != NO_ERROR) {
++        TRACEF("Failed to relinquish the shared memory\n");
++    }
+     mutex_release(&sm_mem_ffa_lock);
+ 
+     free(obj);
+-- 
+2.17.1
+

@@ -1,0 +1,48 @@
+From 00be23f7d20437f2c2a88825362093cfcb22e37e Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Thu, 9 Sep 2021 09:52:42 +0000
+Subject: [PATCH 07/22] [lib][sm] Log and fix cleanup when allocating rx/tx
+ FF-A buffers
+
+Change-Id: Ia43bd7c52842e6cfa701c9cbb3eada871e1eeb44
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/sm/shared_mem.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/lib/sm/shared_mem.c b/lib/sm/shared_mem.c
+index fad564d..5ee67e8 100644
+--- a/lib/sm/shared_mem.c
++++ b/lib/sm/shared_mem.c
+@@ -575,6 +575,7 @@ static void shared_mem_init(uint level) {
+     count = pmm_alloc_contiguous(buf_page_count, buf_size_shift, &tx_paddr,
+                                  &page_list);
+     if (count != buf_page_count) {
++        TRACEF("Failed to allocate tx buffer\n");
+         goto err_alloc_tx;
+     }
+     tx_vaddr = paddr_to_kvaddr(tx_paddr);
+@@ -583,7 +584,8 @@ static void shared_mem_init(uint level) {
+     count = pmm_alloc_contiguous(buf_page_count, buf_size_shift, &rx_paddr,
+                                  &page_list);
+     if (count != buf_page_count) {
+-        goto err_alloc_tx;
++        TRACEF("Failed to allocate rx buffer\n");
++        goto err_alloc_rx;
+     }
+     rx_vaddr = paddr_to_kvaddr(rx_paddr);
+     ASSERT(rx_vaddr);
+@@ -604,8 +606,8 @@ static void shared_mem_init(uint level) {
+ 
+ err_rxtx_map:
+ err_alloc_rx:
+-    pmm_free(&page_list);
+ err_alloc_tx:
++    pmm_free(&page_list);
+ err_ffa_module:
+     TRACEF("Failed to initialize FF-A\n");
+     if (sm_check_and_lock_api_version(TRUSTY_API_VERSION_MEM_OBJ)) {
+-- 
+2.17.1
+

@@ -1,0 +1,29 @@
+From fe76bb1ec3677b119e24ebd22498403595891c3c Mon Sep 17 00:00:00 2001
+From: Rupinderjit Singh <rupinderjit.singh@arm.com>
+Date: Tue, 19 Jul 2022 17:04:00 +0100
+Subject: [PATCH] feat(tc): increase secure_tc heap page size
+
+Trusty sp requires more heap to acoomodate its page tables.
+
+Signed-off-by: Rupinderjit Singh <rupinderjit.singh@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ BUILD.gn | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 6b9b383..62ba763 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -235,7 +235,7 @@ aarch64_toolchains("secure_tc") {
+   gicd_base_address = "0x30000000"
+   gicr_base_address = "0x30080000"
+   gicr_frames = 8
+-  heap_pages = 60
++  heap_pages = 120
+   max_cpus = 8
+   max_vms = 16
+   branch_protection = "standard"
+-- 
+2.25.1
+

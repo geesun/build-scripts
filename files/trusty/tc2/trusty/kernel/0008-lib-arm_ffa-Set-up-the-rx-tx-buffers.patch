@@ -1,0 +1,250 @@
+From cf135fd98bfaa3b2c2d54c75672f7f85305963ff Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Wed, 22 Sep 2021 11:09:44 +0000
+Subject: [PATCH 08/22] [lib][arm_ffa] Set up the rx/tx buffers
+
+Currently shares variables with lib/sm/shared_mem.c. In later
+patches these will be moved to lib/arm_ffa.
+
+Change-Id: Icef0b50ba0f115a5d95fe5d7115f62a779e78dfd
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                     | 82 ++++++++++++++++++++++++++-
+ lib/arm_ffa/include/lib/arm_ffa/ffa.h |  2 +
+ lib/sm/shared_mem.c                   | 67 +---------------------
+ 3 files changed, 86 insertions(+), 65 deletions(-)
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+index c5e09d4..7e225b7 100644
+--- a/lib/arm_ffa/ffa.c
++++ b/lib/arm_ffa/ffa.c
+@@ -24,8 +24,10 @@
+ #include <assert.h>
+ #include <err.h>
+ #include <trace.h>
++#include <kernel/vm.h>
+ #include <sys/types.h>
+ 
++#include <lib/arm_ffa/ffa.h>
+ #include <lib/arm_ffa/arm_ffa.h>
+ #include <lib/smc/smc.h>
+ #include <lk/init.h>
+@@ -34,6 +36,8 @@ static bool ffa_init_is_success = false;
+ uint16_t ffa_local_id;
+ size_t ffa_buf_size;
+ bool supports_ns_bit = false;
++void* ffa_tx;
++void* ffa_rx;
+ 
+ bool ffa_is_init(void) {
+     return ffa_init_is_success;
+@@ -125,7 +129,40 @@ static status_t ffa_call_features(ulong id, bool request_ns_bit,
+     }
+ }
+ 
+-bool ffa_rxtx_map_is_implemented(size_t *buf_size_log2) {
++static status_t ffa_call_rxtx_map(paddr_t tx_paddr, paddr_t rx_paddr,
++                                  size_t page_count) {
++    struct smc_ret8 smc_ret;
++
++    /* Page count specified in bits [0:5] */
++    ASSERT(page_count > 0 && page_count < (1 << 6));
++
++    smc_ret = smc8(SMC_FC64_FFA_RXTX_MAP, tx_paddr, rx_paddr, page_count,
++                   0, 0, 0, 0);
++
++    switch (smc_ret.r0) {
++    case SMC_FC_FFA_SUCCESS:
++    case SMC_FC64_FFA_SUCCESS:
++        return NO_ERROR;
++
++    case SMC_FC_FFA_ERROR:
++        switch ((int)smc_ret.r2) {
++        case FFA_ERROR_NOT_SUPPORTED:
++            return ERR_NOT_SUPPORTED;
++        case FFA_ERROR_INVALID_PARAMETERS:
++            return ERR_INVALID_ARGS;
++        case FFA_ERROR_NO_MEMORY:
++            return ERR_NO_MEMORY;
++        case FFA_ERROR_DENIED:
++            return ERR_ALREADY_EXISTS;
++        default:
++            return ERR_NOT_VALID;
++        }
++    default:
++        return ERR_NOT_VALID;
++    }
++}
++
++static bool ffa_rxtx_map_is_implemented(size_t *buf_size_log2) {
+     ffa_features2_t features2;
+     bool is_implemented = false;
+     status_t res;
+@@ -195,6 +232,12 @@ static status_t ffa_setup(void) {
+     size_t buf_size_log2;
+     size_t buf_page_count;
+     size_t ref_count_num_bits;
++    size_t count;
++    paddr_t tx_paddr;
++    paddr_t rx_paddr;
++    void* tx_vaddr;
++    void* rx_vaddr;
++    struct list_node page_list = LIST_INITIAL_VALUE(page_list);
+ 
+     res = ffa_call_version(FFA_CURRENT_VERSION_MAJOR, FFA_CURRENT_VERSION_MINOR,
+                            &ver_major_ret, &ver_minor_ret);
+@@ -241,6 +284,43 @@ static status_t ffa_setup(void) {
+     buf_page_count = DIV_ROUND_UP(ffa_buf_size, FFA_PAGE_SIZE);
+     ASSERT((ffa_buf_size % FFA_PAGE_SIZE) == 0);
+ 
++    count = pmm_alloc_contiguous(buf_page_count, buf_size_log2, &tx_paddr,
++                                 &page_list);
++    if (count != buf_page_count) {
++        TRACEF("Failed to allocate tx buffer\n");
++        res = ERR_NO_MEMORY;
++        goto err_alloc_tx;
++    }
++    tx_vaddr = paddr_to_kvaddr(tx_paddr);
++    ASSERT(tx_vaddr);
++
++    count = pmm_alloc_contiguous(buf_page_count, buf_size_log2, &rx_paddr,
++                                 &page_list);
++    if (count != buf_page_count) {
++        TRACEF("Failed to allocate rx buffer\n");
++        res = ERR_NO_MEMORY;
++        goto err_alloc_rx;
++    }
++    rx_vaddr = paddr_to_kvaddr(rx_paddr);
++    ASSERT(rx_vaddr);
++
++    res = ffa_call_rxtx_map(tx_paddr, rx_paddr, buf_page_count);
++    if (res != NO_ERROR) {
++        TRACEF("failed to map tx @ 0x%lx, rx @ 0x%lx, page count 0x%zx (err=%d)\n",
++               tx_paddr, rx_paddr, buf_page_count, res);
++        goto err_rxtx_map;
++    }
++
++    ffa_tx = tx_vaddr;
++    ffa_rx = rx_vaddr;
++
++    return res;
++
++err_rxtx_map:
++err_alloc_rx:
++err_alloc_tx:
++    pmm_free(&page_list);
++
+     return res;
+ }
+ 
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa.h b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+index cb06482..d78b431 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa/ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+@@ -33,3 +33,5 @@ bool ffa_is_init(void);
+ extern uint16_t ffa_local_id;
+ extern size_t ffa_buf_size;
+ extern bool supports_ns_bit;
++extern void* ffa_tx;
++extern void* ffa_rx;
+diff --git a/lib/sm/shared_mem.c b/lib/sm/shared_mem.c
+index 5ee67e8..112166d 100644
+--- a/lib/sm/shared_mem.c
++++ b/lib/sm/shared_mem.c
+@@ -25,7 +25,6 @@
+ #include <debug.h>
+ #include <err.h>
+ #include <kernel/mutex.h>
+-#include <kernel/vm.h>
+ #include <lib/extmem/extmem.h>
+ #include <lib/page_alloc.h>
+ #include <lib/sm.h>
+@@ -45,9 +44,6 @@ struct sm_mem_obj {
+ 
+ static mutex_t sm_mem_ffa_lock = MUTEX_INITIAL_VALUE(sm_mem_ffa_lock);
+ 
+-static void* ffa_tx;
+-static void* ffa_rx;
+-
+ static void sm_mem_obj_compat_destroy(struct vmm_obj* vmm_obj) {
+     struct ext_mem_obj* obj = containerof(vmm_obj, struct ext_mem_obj, vmm_obj);
+     free(obj);
+@@ -547,71 +543,14 @@ status_t ext_mem_get_vmm_obj(ext_mem_client_id_t client_id,
+  * shared_mem_init - Connect to SPM/Hypervisor.
+  * @level:  Unused.
+  *
+- * Allocate message buffers and register them with the SPM/Hypervisor. Also
+- * retrieve FF-A endpoint ID.
+  */
+ static void shared_mem_init(uint level) {
+-    paddr_t tx_paddr;
+-    paddr_t rx_paddr;
+-    void* tx_vaddr;
+-    void* rx_vaddr;
+-    size_t buf_size_shift;
+-    size_t buf_page_count;
+-    struct list_node page_list = LIST_INITIAL_VALUE(page_list);
+-    size_t count;
+-    struct smc_ret8 smc_ret;
+-
+     /* Check the FF-A module initialized successfully */
+     if (!ffa_is_init()) {
+         TRACEF("The arm_ffa module is not initialized\n");
+-        goto err_ffa_module;
+-    }
+-
+-    buf_size_shift = __builtin_ffs(ffa_buf_size) - 1;
+-    buf_page_count = DIV_ROUND_UP(ffa_buf_size, PAGE_SIZE);
+-
+-    ASSERT((ffa_buf_size % FFA_PAGE_SIZE) == 0);
+-
+-    count = pmm_alloc_contiguous(buf_page_count, buf_size_shift, &tx_paddr,
+-                                 &page_list);
+-    if (count != buf_page_count) {
+-        TRACEF("Failed to allocate tx buffer\n");
+-        goto err_alloc_tx;
+-    }
+-    tx_vaddr = paddr_to_kvaddr(tx_paddr);
+-    ASSERT(tx_vaddr);
+-
+-    count = pmm_alloc_contiguous(buf_page_count, buf_size_shift, &rx_paddr,
+-                                 &page_list);
+-    if (count != buf_page_count) {
+-        TRACEF("Failed to allocate rx buffer\n");
+-        goto err_alloc_rx;
+-    }
+-    rx_vaddr = paddr_to_kvaddr(rx_paddr);
+-    ASSERT(rx_vaddr);
+-
+-    smc_ret = smc8(SMC_FC_FFA_RXTX_MAP, tx_paddr, rx_paddr,
+-                   ffa_buf_size / FFA_PAGE_SIZE, 0, 0, 0, 0);
+-    if ((uint32_t)smc_ret.r0 != SMC_FC_FFA_SUCCESS) {
+-        TRACEF("failed to map tx @ 0x%lx, rx @ 0x%lx, page count 0x%zx\n",
+-               tx_paddr, rx_paddr, ffa_buf_size / FFA_PAGE_SIZE);
+-        goto err_rxtx_map;
+-    }
+-    mutex_acquire(&sm_mem_ffa_lock);
+-    ffa_tx = tx_vaddr;
+-    ffa_rx = rx_vaddr;
+-    mutex_release(&sm_mem_ffa_lock);
+-
+-    return;
+-
+-err_rxtx_map:
+-err_alloc_rx:
+-err_alloc_tx:
+-    pmm_free(&page_list);
+-err_ffa_module:
+-    TRACEF("Failed to initialize FF-A\n");
+-    if (sm_check_and_lock_api_version(TRUSTY_API_VERSION_MEM_OBJ)) {
+-        panic("shared_mem_init failed after mem_obj version selected\n");
++        if (sm_check_and_lock_api_version(TRUSTY_API_VERSION_MEM_OBJ)) {
++            panic("shared_mem_init failed after mem_obj version selected\n");
++        }
+     }
+ }
+ 
+-- 
+2.17.1
+

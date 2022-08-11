@@ -1,0 +1,271 @@
+From 96ac101371bceb0b0ab773177c0262149a2f98c0 Mon Sep 17 00:00:00 2001
+From: Davidson K <davidson.kumaresan@arm.com>
+Date: Fri, 23 Jul 2021 12:15:27 +0530
+Subject: [PATCH 4/6] internal-trusted-storage: Add new deployment for the
+ hfsp-shim layer
+
+It builds the Internal Trusted Storage service (S-EL0) and shim
+layer (S-EL1) into an S-EL1 secure partition that has to be
+hosted by Hafnium in the role of SPM.
+
+Signed-off-by: Davidson K <davidson.kumaresan@arm.com>
+Change-Id: I2c10e4408d428457360aa7968334d30261b12b5b
+---
+ .../hfsp-shim/CMakeLists.txt                  | 98 +++++++++++++++++++
+ .../hfsp-shim/internal-trusted-storage.dts    | 20 ++++
+ .../internal-trusted-storage/hfsp-shim/sp.c   | 71 ++++++++++++++
+ .../hfsp-shim/sp_def.h                        | 16 +++
+ tools/b-test/test_data.yaml                   |  4 +
+ 5 files changed, 209 insertions(+)
+ create mode 100644 deployments/internal-trusted-storage/hfsp-shim/CMakeLists.txt
+ create mode 100644 deployments/internal-trusted-storage/hfsp-shim/internal-trusted-storage.dts
+ create mode 100644 deployments/internal-trusted-storage/hfsp-shim/sp.c
+ create mode 100644 deployments/internal-trusted-storage/hfsp-shim/sp_def.h
+
+diff --git a/deployments/internal-trusted-storage/hfsp-shim/CMakeLists.txt b/deployments/internal-trusted-storage/hfsp-shim/CMakeLists.txt
+new file mode 100644
+index 0000000..8c5981c
+--- /dev/null
++++ b/deployments/internal-trusted-storage/hfsp-shim/CMakeLists.txt
+@@ -0,0 +1,98 @@
++#-------------------------------------------------------------------------------
++# Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
++#
++# SPDX-License-Identifier: BSD-3-Clause
++#
++#-------------------------------------------------------------------------------
++cmake_minimum_required(VERSION 3.16)
++include(../../deployment.cmake REQUIRED)
++
++#-------------------------------------------------------------------------------
++#  The CMakeLists.txt for building the internal-trusted-storage deployment with
++#  hfsp-shim layer
++#
++#  Builds the Internal Trusted storage service provider for running in an SEL1
++#  secure partition hosted by Hafnium in the role of SPM.
++#-------------------------------------------------------------------------------
++include(${TS_ROOT}/environments/hfsp-shim/env.cmake)
++project(trusted-services LANGUAGES C ASM)
++add_executable(internal-trusted-storage)
++target_include_directories(internal-trusted-storage PRIVATE "${TOP_LEVEL_INCLUDE_DIRS}")
++set(SP_UUID "dc1eef48-b17a-4ccf-ac8b-dfcff7711b14")
++
++#-------------------------------------------------------------------------------
++#  Use the selected platform to provide drivers needed by the deployment
++#
++#-------------------------------------------------------------------------------
++set(TS_PLATFORM "arm/total_compute" CACHE STRING "Overridden" FORCE)
++
++add_components(TARGET "internal-trusted-storage"
++	BASE_DIR ${TS_ROOT}
++	COMPONENTS
++		components/messaging/ffa/libsp
++		components/rpc/ffarpc/endpoint
++		components/rpc/common/interface
++		components/service/common/include
++		components/service/common/provider
++		components/service/secure_storage/include
++		components/service/secure_storage/frontend/secure_storage_provider
++		components/service/secure_storage/backend/secure_flash_store
++		components/service/secure_storage/backend/secure_flash_store/flash_fs
++		components/service/secure_storage/backend/secure_flash_store/flash
++		components/service/secure_storage/factory/common/sfs
++		protocols/rpc/common/packed-c
++		protocols/service/secure_storage/packed-c
++		environments/hfsp-shim
++)
++
++target_sources(internal-trusted-storage PRIVATE
++	sp.c
++)
++
++target_compile_definitions(internal-trusted-storage PRIVATE
++	ARM64=1
++	INTERNAL_TRUSTED_STORAGE=1
++)
++
++target_include_directories(internal-trusted-storage PRIVATE
++	${TS_ROOT}/deployments/internal-trusted-storage/hfsp-shim
++)
++
++if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
++
++        target_compile_definitions(internal-trusted-storage PRIVATE
++                $<$<COMPILE_LANGUAGE:ASM>:__ASSEMBLY__=1>
++        )
++
++        target_compile_options(internal-trusted-storage PRIVATE
++                -fdiagnostics-show-option
++                -fpic
++                -gdwarf-2
++                -mstrict-align
++                -nostdinc
++                -O0
++                -std=gnu99
++                -ffreestanding
++                -mgeneral-regs-only
++        )
++
++        # Options for GCC that control linking
++        target_link_options(internal-trusted-storage PRIVATE
++                -fno-lto
++                -nostdlib
++                -pie
++                -zmax-page-size=4096
++                -T${CMAKE_BINARY_DIR}/sp.ld
++        )
++
++        # Options directly for LD, these are not understood by GCC
++        target_link_options(internal-trusted-storage PRIVATE
++                -Wl,--as-needed
++                -Wl,--sort-section=alignment
++                -Wl,-Map=internal-trusted-storage.map
++        )
++
++endif()
++
++compiler_generate_stripped_elf(TARGET internal-trusted-storage NAME "${SP_UUID}.stripped.elf" RES STRIPPED_ELF)
++compiler_generate_binary_output(TARGET internal-trusted-storage RES STRIPPED_ELF)
+diff --git a/deployments/internal-trusted-storage/hfsp-shim/internal-trusted-storage.dts b/deployments/internal-trusted-storage/hfsp-shim/internal-trusted-storage.dts
+new file mode 100644
+index 0000000..aafa769
+--- /dev/null
++++ b/deployments/internal-trusted-storage/hfsp-shim/internal-trusted-storage.dts
+@@ -0,0 +1,20 @@
++/*
++ * Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++
++/dts-v1/;
++
++/ {
++	compatible = "arm,ffa-manifest-1.0";
++	ffa-version = <0x00010000>; /* 31:16 - Major, 15:0 - Minor */
++	uuid = <0x48ef1edc 0xcf4c7ab1 0xcfdf8bac 0x141b71f7>;
++	description = "internal-trusted-storage";
++	execution-ctx-count = <1>;
++	exception-level = <2>; /* S-EL1 */
++	execution-state = <0>; /* AArch64 */
++	entrypoint-offset = <0x00001000>;
++	xlat-granule = <0>; /* 4KiB */
++	messaging-method = <0x3>; /* Direct request/response supported */
++};
+diff --git a/deployments/internal-trusted-storage/hfsp-shim/sp.c b/deployments/internal-trusted-storage/hfsp-shim/sp.c
+new file mode 100644
+index 0000000..17ddd86
+--- /dev/null
++++ b/deployments/internal-trusted-storage/hfsp-shim/sp.c
+@@ -0,0 +1,71 @@
++/*
++ * Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++
++#include <ffa_api.h>
++#include <components/rpc/common/endpoint/rpc_interface.h>
++#include <components/rpc/ffarpc/endpoint/ffarpc_call_ep.h>
++#include <components/service/secure_storage/factory/storage_factory.h>
++#include <components/service/secure_storage/frontend/secure_storage_provider/secure_storage_provider.h>
++#include <sp_api.h>
++#include <sp_messaging.h>
++#include <sp_rxtx.h>
++#include <trace.h>
++#include <sp_def.h>
++#include <malloc_wrapper.h>
++
++uint8_t sp_heap[SP_HEAP_SIZE] __aligned(16);
++uint16_t own_id = 0;
++static uint8_t tx_buffer[4096] __aligned(4096);
++static uint8_t rx_buffer[4096] __aligned(4096);
++
++void sp_main(struct ffa_init_info *init_info)
++{
++	ffa_result ffa_res;
++	sp_result sp_res;
++	struct rpc_interface *secure_storage_iface;
++	struct ffa_call_ep ffa_call_ep;
++	struct sp_msg req_msg = { 0 };
++	struct sp_msg resp_msg = { 0 };
++	struct secure_storage_provider secure_storage_provider;
++	struct storage_backend *storage_backend;
++
++	/* Boot */
++	(void) init_info;
++
++	/* initialize the heap */
++	init_mspace(sp_heap, SP_HEAP_SIZE);
++
++	ffa_res = ffa_id_get(&own_id);
++	if (ffa_res != FFA_OK) {
++		EMSG("id get error: %d", ffa_res);
++	}
++
++	sp_res = sp_rxtx_buffer_map(tx_buffer, rx_buffer, sizeof(rx_buffer));
++	if (sp_res != SP_RESULT_OK) {
++		EMSG("rxtx map error: %d", sp_res);
++	}
++
++	storage_backend = storage_factory_create(storage_factory_security_class_INTERNAL_TRUSTED);
++	secure_storage_iface = secure_storage_provider_init(&secure_storage_provider, storage_backend);
++	ffa_call_ep_init(&ffa_call_ep, secure_storage_iface);
++
++	/* End of boot phase */
++	sp_msg_wait(&req_msg);
++
++	while (1) {
++		ffa_call_ep_receive(&ffa_call_ep, &req_msg, &resp_msg);
++
++		resp_msg.source_id = req_msg.destination_id;
++		resp_msg.destination_id = req_msg.source_id;
++
++		sp_msg_send_direct_resp(&resp_msg, &req_msg);
++	}
++}
++
++void sp_interrupt_handler(uint32_t interrupt_id)
++{
++	(void)interrupt_id;
++}
+diff --git a/deployments/internal-trusted-storage/hfsp-shim/sp_def.h b/deployments/internal-trusted-storage/hfsp-shim/sp_def.h
+new file mode 100644
+index 0000000..ea676e9
+--- /dev/null
++++ b/deployments/internal-trusted-storage/hfsp-shim/sp_def.h
+@@ -0,0 +1,16 @@
++/*
++ * Copyright (c) 2021, Arm Limited. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++
++#ifndef SP_DEF_H
++#define SP_DEF_H
++
++/* Memory reserved for stack of S-EL1 shim and S-EL0 ITS SP */
++#define SP_STACK_SIZE                   (32 * 1024)
++
++/* Memory reserved for heap of S-EL0 ITS SP */
++#define SP_HEAP_SIZE                   (300 * 1024)
++
++#endif /* SP_DEF_H */
+diff --git a/tools/b-test/test_data.yaml b/tools/b-test/test_data.yaml
+index 4c29782..6957ffd 100644
+--- a/tools/b-test/test_data.yaml
++++ b/tools/b-test/test_data.yaml
+@@ -82,6 +82,10 @@ data:
+             - "-GUnix Makefiles"
+             - "-DSP_DEV_KIT_DIR=$SP_DEV_KIT_DIR"
+             - "-DCMAKE_VERBOSE_MAKEFILE=y"
++    - name: "internal-trusted-storage-hfsp-shim"
++      src: "$TS_ROOT/deployments/internal-trusted-storage/hfsp-shim"
++      params:
++            - "-GUnix Makefiles"
+     - name: "attestation-optee-arm"
+       src: "$TS_ROOT/deployments/attestation/opteesp"
+       params:
+-- 
+2.17.1
+

@@ -1,0 +1,136 @@
+From 1d2c7d0664b87c25b1d00fc460ce3ef49c7b0b60 Mon Sep 17 00:00:00 2001
+From: Davidson K <davidson.kumaresan@arm.com>
+Date: Mon, 8 Mar 2021 19:07:00 +0530
+Subject: [PATCH 1/6] Add a new environment to run TS with a shim layer in
+ S-EL1
+
+To run the trusted services with Hafnium as the Hypervisor executing
+at S-EL2, a shim layer that executes at S-EL1 is implemented.  The
+main purpose of the shim layer is to forward the synchronous exceptions
+between Hafnium and Trusted Service.
+
+The implementation of the shim layer is hosted at
+https://git.gitlab.arm.com/arm-reference-solutions/sel1_shim.git
+
+This patch provides the necessary environment settings for the
+deployments that builds for this new environment with the
+cross compiler options and downloads the shim layer.  It is
+implemented as a separate cmake component and the deployments can
+include it in their CMakeLists.txt.
+
+Signed-off-by: Davidson K <davidson.kumaresan@arm.com>
+Change-Id: Id1c8ffb9464eb29a97a354eedc23603115980791
+---
+ environments/hfsp-shim/component.cmake        | 43 +++++++++++++++++++
+ .../hfsp-shim/default_toolchain_file.cmake    | 18 ++++++++
+ environments/hfsp-shim/env.cmake              | 23 ++++++++++
+ 3 files changed, 84 insertions(+)
+ create mode 100644 environments/hfsp-shim/component.cmake
+ create mode 100644 environments/hfsp-shim/default_toolchain_file.cmake
+ create mode 100644 environments/hfsp-shim/env.cmake
+
+diff --git a/environments/hfsp-shim/component.cmake b/environments/hfsp-shim/component.cmake
+new file mode 100644
+index 0000000..341c00b
+--- /dev/null
++++ b/environments/hfsp-shim/component.cmake
+@@ -0,0 +1,43 @@
++#-------------------------------------------------------------------------------
++# Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
++#
++# SPDX-License-Identifier: BSD-3-Clause
++#
++#-------------------------------------------------------------------------------
++if (NOT DEFINED TGT)
++        message(FATAL_ERROR "mandatory parameter TGT is not defined.")
++endif()
++
++set(HFSP_SHIM_URL "https://git.gitlab.arm.com/arm-reference-solutions/sel1_shim.git" CACHE STRING "hfsp-shim layer repository URL")
++set(HFSP_SHIM_TAG "master" CACHE STRING "master branch")
++
++include(FetchContent)
++
++# Checking git
++find_program(GIT_COMMAND "git")
++if (NOT GIT_COMMAND)
++	message(FATAL_ERROR "Please install git")
++endif()
++
++# Declare the properties of hfsp-shim layer in FetchContent
++FetchContent_Declare(
++	hfsp-shim
++	GIT_REPOSITORY ${HFSP_SHIM_URL}
++	GIT_TAG ${HFSP_SHIM_TAG}
++	GIT_SHALLOW TRUE
++)
++
++# FetchContent_GetProperties exports hfsp-shim_SOURCE_DIR and hfsp-shim_BINARY_DIR variables
++FetchContent_GetProperties(hfsp-shim)
++
++# Fetch the content if not already fetched
++if(NOT hfsp-shim_POPULATED)
++	message(STATUS "Fetching hfsp-shim layer")
++	FetchContent_Populate(hfsp-shim)
++endif()
++
++# Compile hfsp-shim layer as part of the target (TS SP) compilation
++add_components(TARGET ${TGT}
++	COMPONENTS
++		${hfsp-shim_SOURCE_DIR}
++)
+diff --git a/environments/hfsp-shim/default_toolchain_file.cmake b/environments/hfsp-shim/default_toolchain_file.cmake
+new file mode 100644
+index 0000000..b80b06d
+--- /dev/null
++++ b/environments/hfsp-shim/default_toolchain_file.cmake
+@@ -0,0 +1,18 @@
++#-------------------------------------------------------------------------------
++# Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
++#
++# SPDX-License-Identifier: BSD-3-Clause
++#
++#-------------------------------------------------------------------------------
++
++#GNUARM v8 and v9 compilers use a different triplet.
++if(NOT CROSS_COMPILE AND NOT DEFINED ENV{CROSS_COMPILE})
++	set(CROSS_COMPILE "aarch64-elf-;aarch64-none-elf-;aarch64-linux-gnu-;aarch64-none-linux-gnu-" CACHE STRING "List of GCC prefix triplets to use.")
++endif()
++
++set(CMAKE_CROSSCOMPILING True)
++set(CMAKE_SYSTEM_NAME Generic)
++set(CMAKE_SYSTEM_PROCESSOR arm)
++set(CMAKE_POSITION_INDEPENDENT_CODE True)
++
++include($ENV{TS_ROOT}/tools/cmake/compiler/GCC.cmake REQUIRED)
+diff --git a/environments/hfsp-shim/env.cmake b/environments/hfsp-shim/env.cmake
+new file mode 100644
+index 0000000..7165207
+--- /dev/null
++++ b/environments/hfsp-shim/env.cmake
+@@ -0,0 +1,23 @@
++#-------------------------------------------------------------------------------
++# Copyright (c) 2021, Arm Limited and Contributors. All rights reserved.
++#
++# SPDX-License-Identifier: BSD-3-Clause
++#
++#-------------------------------------------------------------------------------
++
++#-------------------------------------------------------------------------------
++#  Environment file for deployments to Hafnium.  This is a cross-compiled
++#  enviroment where built executables along with the hfsp-shim run within
++#  secure partitions with hafnium acting as the secure partition manager.
++#-------------------------------------------------------------------------------
++set(TS_ENV "hfsp-shim" CACHE STRING "Environment identifier")
++
++# Default to using the base toolcahin file for the enviroment
++set(TS_BASE_TOOLCHAIN_FILE "${CMAKE_CURRENT_LIST_DIR}/default_toolchain_file.cmake" CACHE STRING "Base toolchainfile")
++
++# Replicate in environment variable for access from child cmake contexts
++set(ENV{TS_BASE_TOOLCHAIN_FILE} "${TS_BASE_TOOLCHAIN_FILE}")
++
++# Set toolchain files to use
++set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_LIST_DIR}/default_toolchain_file.cmake" CACHE STRING "Toolchain file")
++set(TS_EXTERNAL_LIB_TOOLCHAIN_FILE "${CMAKE_TOOLCHAIN_FILE}" CACHE STRING "External lib Toolchain file")
+-- 
+2.17.1
+

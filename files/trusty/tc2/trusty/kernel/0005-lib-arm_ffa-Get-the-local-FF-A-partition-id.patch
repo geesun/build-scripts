@@ -1,0 +1,119 @@
+From 3ccea6c59d361fed0ccfc5b7fe1076bf6b2d7ee3 Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Wed, 8 Sep 2021 16:07:40 +0000
+Subject: [PATCH 05/22] [lib][arm_ffa] Get the local FF-A partition id
+
+Change-Id: Ie1a8ca634755e5ef82df0ec6e1cae07439c56540
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                     | 31 +++++++++++++++++++++++++++
+ lib/arm_ffa/include/lib/arm_ffa/ffa.h |  4 ++++
+ lib/sm/shared_mem.c                   | 11 ----------
+ 3 files changed, 35 insertions(+), 11 deletions(-)
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+index c68d297..835f62c 100644
+--- a/lib/arm_ffa/ffa.c
++++ b/lib/arm_ffa/ffa.c
+@@ -30,11 +30,35 @@
+ #include <lk/init.h>
+ 
+ static bool ffa_init_is_success = false;
++uint16_t ffa_local_id;
+ 
+ bool ffa_is_init(void) {
+     return ffa_init_is_success;
+ }
+ 
++static status_t ffa_call_id_get(uint16_t *id) {
++    struct smc_ret8 smc_ret;
++
++    smc_ret = smc8(SMC_FC_FFA_ID_GET, 0, 0, 0, 0, 0, 0, 0);
++
++    switch (smc_ret.r0) {
++    case SMC_FC_FFA_SUCCESS:
++    case SMC_FC64_FFA_SUCCESS:
++        *id = (uint16_t) (smc_ret.r2 & 0xFFFF);
++        return NO_ERROR;
++
++    case SMC_FC_FFA_ERROR:
++        if (smc_ret.r2 == (ulong) FFA_ERROR_NOT_SUPPORTED) {
++            return ERR_NOT_SUPPORTED;
++        } else {
++            return ERR_NOT_VALID;
++        }
++
++    default:
++        return ERR_NOT_VALID;
++    }
++}
++
+ static status_t ffa_call_version(uint16_t major, uint16_t minor,
+                                  uint16_t *major_ret, uint16_t *minor_ret) {
+     struct smc_ret8 smc_ret;
+@@ -67,6 +91,13 @@ static status_t ffa_setup(void) {
+               ver_major_ret, ver_minor_ret);
+         return ERR_NOT_SUPPORTED;
+     }
++
++    res = ffa_call_id_get(&ffa_local_id);
++    if (res != NO_ERROR) {
++        TRACEF("Failed to get FF-A partition id (err=%d)\n", res);
++        return res;
++    }
++
+     return res;
+ }
+ 
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa.h b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+index 9d3c277..424e40f 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa/ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+@@ -27,3 +27,7 @@
+    This should only be called once ffa_init() is guaranteed to have
+    returned. */
+ bool ffa_is_init(void);
++
++/* TODO: Temporary share variables with lib/sm/shared_mem.c while
++   implementation is being moved to lib/arm_ffa. */
++extern uint16_t ffa_local_id;
+diff --git a/lib/sm/shared_mem.c b/lib/sm/shared_mem.c
+index 98b8395..b812488 100644
+--- a/lib/sm/shared_mem.c
++++ b/lib/sm/shared_mem.c
+@@ -48,7 +48,6 @@ static mutex_t sm_mem_ffa_lock = MUTEX_INITIAL_VALUE(sm_mem_ffa_lock);
+ static size_t ffa_buf_size;
+ static void* ffa_tx;
+ static void* ffa_rx;
+-static uint16_t ffa_local_id;
+ static bool supports_ns_bit = false;
+ 
+ static void sm_mem_obj_compat_destroy(struct vmm_obj* vmm_obj) {
+@@ -624,15 +623,6 @@ static void shared_mem_init(uint level) {
+     ffa_buf_size = 1U << buf_size_shift;
+     buf_page_count = DIV_ROUND_UP(ffa_buf_size, PAGE_SIZE);
+ 
+-    /* Get FF-A id. */
+-    smc_ret = smc8(SMC_FC_FFA_ID_GET, 0, 0, 0, 0, 0, 0, 0);
+-    if ((uint32_t)smc_ret.r0 != SMC_FC_FFA_SUCCESS) {
+-        TRACEF("%s: SMC_FC_FFA_ID_GET failed 0x%lx 0x%lx 0x%lx\n", __func__,
+-               smc_ret.r0, smc_ret.r1, smc_ret.r2);
+-        goto err_id_get;
+-    }
+-    ffa_local_id = smc_ret.r2;
+-
+     ASSERT((ffa_buf_size % FFA_PAGE_SIZE) == 0);
+ 
+     count = pmm_alloc_contiguous(buf_page_count, buf_size_shift, &tx_paddr,
+@@ -669,7 +659,6 @@ err_rxtx_map:
+ err_alloc_rx:
+     pmm_free(&page_list);
+ err_alloc_tx:
+-err_id_get:
+ err_features:
+ err_ffa_module:
+     TRACEF("failed to initialize FF-A\n");
+-- 
+2.17.1
+

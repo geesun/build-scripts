@@ -1,0 +1,46 @@
+From 1fadd09161e82b16e0eb379f1e4e2edf8100e45d Mon Sep 17 00:00:00 2001
+From: Jelle Sels <jelle.sels@arm.com>
+Date: Fri, 2 Jul 2021 10:10:02 +0200
+Subject: [PATCH] FF-A: Add ffa_rx_release in sp_memory_retrieve
+
+The RXbuffer wasn't released after being done with it
+in sp_memory_retrieve.
+
+Signed-off-by: Jelle Sels <jelle.sels@arm.com>
+Change-Id: Ib426c0d905160b2a787bc8094b848277d4b2e06d
+---
+ .../messaging/ffa/libsp/sp_memory_management.c       | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/components/messaging/ffa/libsp/sp_memory_management.c b/components/messaging/ffa/libsp/sp_memory_management.c
+index 52d03ac..9dd25ee 100644
+--- a/components/messaging/ffa/libsp/sp_memory_management.c
++++ b/components/messaging/ffa/libsp/sp_memory_management.c
+@@ -560,14 +560,22 @@ sp_result sp_memory_retrieve(struct sp_memory_descriptor *descriptor,
+ 	/* Fragmentation is not supported currently */
+ 	if (resp_total_length != resp_fragment_length) {
+ 		*out_region_count = UINT32_C(0);
+-		return SP_RESULT_INTERNAL_ERROR;
++		sp_res = SP_RESULT_INTERNAL_ERROR;
++		goto release_rx;
+ 	}
+ 
+ 	rx_buffer.used = resp_total_length;
+ 	parse_descriptors(&rx_buffer, descriptor, acc_desc, 1, regions,
+ 			  out_region_count);
+ 
+-	return SP_RESULT_OK;
++release_rx:
++
++	ffa_res = ffa_rx_release();
++	if (ffa_res != FFA_OK) {
++		return SP_RESULT_FFA(ffa_res);
++	}
++
++	return sp_res;
+ }
+ 
+ sp_result
+-- 
+2.17.1
+

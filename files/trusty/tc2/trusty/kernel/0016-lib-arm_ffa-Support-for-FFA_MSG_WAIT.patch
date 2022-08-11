@@ -1,0 +1,64 @@
+From 5af8adc53f14d77262bce69ef25649fbc9e1e11b Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Tue, 5 Oct 2021 13:36:55 +0000
+Subject: [PATCH 16/22] [lib][arm_ffa] Support for FFA_MSG_WAIT
+
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Change-Id: If5b5f7dbefa9d4a6ed665b73cd1fabaf398677c3
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                     | 26 ++++++++++++++++++++++++++
+ lib/arm_ffa/include/lib/arm_ffa/ffa.h |  3 +++
+ 2 files changed, 29 insertions(+)
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+index e9dfce6..a4b7298 100644
+--- a/lib/arm_ffa/ffa.c
++++ b/lib/arm_ffa/ffa.c
+@@ -402,6 +402,32 @@ void ffa_call_error(enum ffa_error err) {
+     arch_interrupt_restore(irq_fiq_state, SPIN_LOCK_FLAG_IRQ_FIQ);
+ }
+ 
++status_t ffa_call_msg_wait(void) {
++    struct smc_ret8 smc_ret;
++    spin_lock_saved_state_t irq_fiq_state;
++
++    arch_interrupt_save(&irq_fiq_state, SPIN_LOCK_FLAG_IRQ_FIQ);
++    smc_ret = smc8(SMC_FC_FFA_MSG_WAIT, 0, 0, 0, 0, 0, 0, 0);
++    ffa_incall_set(&smc_ret);
++    arch_interrupt_restore(irq_fiq_state, SPIN_LOCK_FLAG_IRQ_FIQ);
++
++    switch (smc_ret.r0) {
++    case SMC_FC_FFA_ERROR:
++        switch ((int)smc_ret.r2) {
++        case FFA_ERROR_NOT_SUPPORTED:
++            return ERR_NOT_SUPPORTED;
++        case FFA_ERROR_INVALID_PARAMETERS:
++            return ERR_INVALID_ARGS;
++        case FFA_ERROR_DENIED:
++            return ERR_BAD_STATE;
++        default:
++            return ERR_NOT_VALID;
++        }
++    default:
++        return NO_ERROR;
++    }
++}
++
+ static bool ffa_rxtx_map_is_implemented(size_t *buf_size_log2) {
+     ffa_features2_t features2;
+     bool is_implemented = false;
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa.h b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+index b1705c5..8c547e0 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa/ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+@@ -92,3 +92,6 @@ struct ffa_incall {
+    interrupts (irqs and fiqs) disabled so the incall is returned for
+    the current and unchanging cpu/pe. */
+ struct ffa_incall *ffa_incall_get(void);
++
++/* Messaging interfaces */
++status_t ffa_call_msg_wait(void);
+-- 
+2.17.1
+

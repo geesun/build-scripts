@@ -1,0 +1,74 @@
+From 637974cdc8263e1ef871a214311db042e93e636b Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Thu, 10 Mar 2022 13:38:30 +0000
+Subject: [PATCH 20/22] spmc S-EL2: Use CNTHPS interrupt and avoid access to
+ the gic
+
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Change-Id: I401e701c2e3767f1a00dd51219be9f17b106fc70
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ platform/generic-arm64/platform.c | 7 +++++++
+ platform/generic-arm64/rules.mk   | 5 +++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/platform/generic-arm64/platform.c b/platform/generic-arm64/platform.c
+index 14d85ee..814cef8 100644
+--- a/platform/generic-arm64/platform.c
++++ b/platform/generic-arm64/platform.c
+@@ -31,6 +31,7 @@
+ 
+ #include "smc.h"
+ 
++#define ARM_GENERIC_TIMER_INT_CNTHPS 20
+ #define ARM_GENERIC_TIMER_INT_CNTV 27
+ #define ARM_GENERIC_TIMER_INT_CNTPS 29
+ #define ARM_GENERIC_TIMER_INT_CNTP 30
+@@ -38,8 +39,12 @@
+ #define ARM_GENERIC_TIMER_INT_SELECTED(timer) ARM_GENERIC_TIMER_INT_##timer
+ #define XARM_GENERIC_TIMER_INT_SELECTED(timer) \
+     ARM_GENERIC_TIMER_INT_SELECTED(timer)
++#if TRUSTY_ARM_ARCH_SECURE_EL2
++#define ARM_GENERIC_TIMER_INT ARM_GENERIC_TIMER_INT_CNTHPS
++#else
+ #define ARM_GENERIC_TIMER_INT \
+     XARM_GENERIC_TIMER_INT_SELECTED(TIMER_ARM_GENERIC_SELECTED)
++#endif
+ 
+ #if GIC_VERSION <= 2
+ #define GICC_SIZE (0x1000)
+@@ -104,6 +109,7 @@ static paddr_t generic_arm64_get_reg_base(int reg) {
+ }
+ 
+ static void platform_after_vm_init(uint level) {
++#if !TRUSTY_ARM_ARCH_SECURE_EL2
+     paddr_t gicc = generic_arm64_get_reg_base(SMC_GET_GIC_BASE_GICC);
+     paddr_t gicd = generic_arm64_get_reg_base(SMC_GET_GIC_BASE_GICD);
+     paddr_t gicr = generic_arm64_get_reg_base(SMC_GET_GIC_BASE_GICR);
+@@ -120,6 +126,7 @@ static void platform_after_vm_init(uint level) {
+             .gicr_size = GICR_SIZE,
+     };
+     arm_gic_init_map(&init_info);
++#endif
+ 
+     /* initialize the timer block */
+     arm_generic_timer_init(ARM_GENERIC_TIMER_INT, 0);
+diff --git a/platform/generic-arm64/rules.mk b/platform/generic-arm64/rules.mk
+index 1f9b8b1..1c04bfe 100644
+--- a/platform/generic-arm64/rules.mk
++++ b/platform/generic-arm64/rules.mk
+@@ -51,6 +51,11 @@ MODULE_SRCS += \
+ 	$(LOCAL_DIR)/platform.c \
+ 	$(LOCAL_DIR)/smc.c \
+ 
++ifeq (true,$(call TOBOOL,$(TRUSTY_ARM_ARCH_SECURE_EL2)))
++GLOBAL_DEFINES += \
++	TRUSTY_ARM_ARCH_SECURE_EL2=1
++endif
++
+ MODULE_DEPS += \
+ 	dev/interrupt/arm_gic \
+ 	dev/timer/arm_generic
+-- 
+2.17.1
+

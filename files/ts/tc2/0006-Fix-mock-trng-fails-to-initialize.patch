@@ -1,0 +1,102 @@
+From dbe41e1321c2914fb66e32206eb89e3cd0178d7a Mon Sep 17 00:00:00 2001
+From: Davidson K <davidson.kumaresan@arm.com>
+Date: Thu, 22 Jul 2021 19:20:51 +0530
+Subject: [PATCH 6/6] Fix: mock trng fails to initialize
+
+For the working of mock trng, we don't need to add any device region
+in the ramstore.  Hence initializing the trng driver only if a device
+region is added in ramstore will not work for the mock trng driver.
+Hence adding an else condition. It also allows the NULL device_region
+for the juno_trng and tztrng platform_tztrng_create which was not the
+case before. Hence added the checks in the juno_trng and tztrng
+drivers as well.
+
+Signed-off-by: Davidson K <davidson.kumaresan@arm.com>
+Change-Id: Id3f6469d696884a05672502582a8edb742b6e8ab
+---
+ .../mbedcrypto/trng_adapter/platform/platform_trng_adapter.c | 5 +++--
+ platform/drivers/arm/juno_trng/juno_trng_adapter.c           | 4 +++-
+ platform/drivers/arm/tztrng/tztrng_adapter.c                 | 4 +++-
+ 3 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/components/service/crypto/provider/mbedcrypto/trng_adapter/platform/platform_trng_adapter.c b/components/service/crypto/provider/mbedcrypto/trng_adapter/platform/platform_trng_adapter.c
+index 9342bcf..8c9db64 100644
+--- a/components/service/crypto/provider/mbedcrypto/trng_adapter/platform/platform_trng_adapter.c
++++ b/components/service/crypto/provider/mbedcrypto/trng_adapter/platform/platform_trng_adapter.c
+@@ -7,7 +7,6 @@
+ #include <platform/interface/trng.h>
+ #include <service/crypto/provider/mbedcrypto/trng_adapter/trng_adapter.h>
+ #include <config/interface/config_store.h>
+-#include <psa/error.h>
+ #include <stddef.h>
+ 
+ /*
+@@ -19,7 +18,7 @@ static struct platform_trng_driver driver = {0};
+ 
+ int trng_adapter_init(int instance)
+ {
+-	int status = PSA_STATUS_HARDWARE_FAILURE;
++	int status;
+ 	struct device_region device_region;
+ 
+ 	if (config_store_query(CONFIG_CLASSIFIER_DEVICE_REGION,
+@@ -27,6 +26,8 @@ int trng_adapter_init(int instance)
+ 		&device_region, sizeof(device_region))) {
+ 
+ 		status = platform_trng_create(&driver, &device_region);
++	} else {
++		status = platform_trng_create(&driver, NULL);
+ 	}
+ 
+ 	return status;
+diff --git a/platform/drivers/arm/juno_trng/juno_trng_adapter.c b/platform/drivers/arm/juno_trng/juno_trng_adapter.c
+index 3ad8b04..449085c 100644
+--- a/platform/drivers/arm/juno_trng/juno_trng_adapter.c
++++ b/platform/drivers/arm/juno_trng/juno_trng_adapter.c
+@@ -5,6 +5,7 @@
+  */
+ #include <platform/interface/trng.h>
+ #include <platform/interface/device_region.h>
++#include <psa/error.h>
+ #include "juno_decl.h"
+ 
+ /*
+@@ -55,9 +56,10 @@ int platform_trng_create(struct platform_trng_driver *driver,
+          * A device region has been provided, possibly from an external configuation.
+          */
+         juno_trng_set_base_addr(device_region->base_addr);
++        return 0;
+     }
+ 
+-    return 0;
++    return PSA_STATUS_HARDWARE_FAILURE;
+ }
+ 
+ void platform_trng_destroy(struct platform_trng_driver *driver)
+diff --git a/platform/drivers/arm/tztrng/tztrng_adapter.c b/platform/drivers/arm/tztrng/tztrng_adapter.c
+index f52eeaa..26bbd6b 100644
+--- a/platform/drivers/arm/tztrng/tztrng_adapter.c
++++ b/platform/drivers/arm/tztrng/tztrng_adapter.c
+@@ -9,6 +9,7 @@
+ #include <tztrng_defs.h>
+ #include <stdlib.h>
+ #include <limits.h>
++#include <psa/error.h>
+ 
+ /*
+  * A platform trng driver that uses the tz-trng driver to provide a
+@@ -68,9 +69,10 @@ int platform_trng_create(struct platform_trng_driver *driver,
+             new_instance->trng_device_region = *device_region;
+             driver->context = new_instance;
+         }
++        return 0;
+     }
+ 
+-    return 0;
++    return PSA_STATUS_HARDWARE_FAILURE;
+ }
+ 
+ void platform_trng_destroy(struct platform_trng_driver *driver)
+-- 
+2.17.1
+

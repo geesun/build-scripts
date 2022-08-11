@@ -1,0 +1,190 @@
+From 3e1ede30c0252250a6407d08175707b15c9329d1 Mon Sep 17 00:00:00 2001
+From: Olivier Deprez <olivier.deprez@arm.com>
+Date: Thu, 9 Sep 2021 14:27:57 +0200
+Subject: [PATCH] WIP hafnium para virt fixes
+
+Signed-off-by: Olivier Deprez <olivier.deprez@arm.com>
+Signed-off-by: Arunachalam Ganapathy <arunachalam.ganapathy@arm.com>
+Change-Id: If4d78e6c4b920116508c3e6f7c0a3591a57d3dd3
+---
+ dev/interrupt/arm_gic/arm_gic.c | 55 +++++++++++++++++----------------
+ dev/interrupt/arm_gic/gic_v3.c  |  4 +++
+ 2 files changed, 33 insertions(+), 26 deletions(-)
+
+diff --git a/dev/interrupt/arm_gic/arm_gic.c b/dev/interrupt/arm_gic/arm_gic.c
+index c237cecd..037f2545 100644
+--- a/dev/interrupt/arm_gic/arm_gic.c
++++ b/dev/interrupt/arm_gic/arm_gic.c
+@@ -21,6 +21,7 @@
+  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  */
+ #include <assert.h>
++#include <debug.h>
+ #include <bits.h>
+ #include <err.h>
+ #include <sys/types.h>
+@@ -72,6 +73,12 @@ static spin_lock_t gicd_lock;
+ #define GIC_MAX_PER_CPU_INT 32
+ #define GIC_MAX_SGI_INT 16
+ 
++#if TRUSTY_ARM_ARCH_SECURE_EL2
++uint32_t hf_interrupt_get(void);
++int64_t hf_interrupt_enable(uint32_t vintid, bool enable, uint32_t type);
++int64_t hf_interrupt_deactivate(uint32_t vintid);
++#endif
++
+ #if ARM_GIC_USE_DOORBELL_NS_IRQ
+ static bool doorbell_enabled;
+ #endif
+@@ -132,11 +139,16 @@ void register_int_handler(unsigned int vector, int_handler handler, void *arg)
+     if (vector >= MAX_INT)
+         panic("register_int_handler: vector out of range %d\n", vector);
+ 
++#if TRUSTY_ARM_ARCH_SECURE_EL2
++    /* spm_interrupt_enable. */
++    (void)hf_interrupt_enable(vector, true, 0);
++#endif
++    
+     spin_lock_save(&gicd_lock, &state, GICD_LOCK_FLAGS);
+ 
+     if (arm_gic_interrupt_change_allowed(vector)) {
+ #if GIC_VERSION > 2
+-        arm_gicv3_configure_irq_locked(cpu, vector);
++        //arm_gicv3_configure_irq_locked(cpu, vector);
+ #endif
+         h = get_int_handler(vector, cpu);
+         h->handler = handler;
+@@ -146,7 +158,7 @@ void register_int_handler(unsigned int vector, int_handler handler, void *arg)
+          * Use lowest priority Linux does not mask to allow masking the entire
+          * group while still allowing other interrupts to be delivered.
+          */
+-        arm_gic_set_priority_locked(vector, 0xf7);
++        //arm_gic_set_priority_locked(vector, 0xf7);
+ #endif
+ 
+         /*
+@@ -177,31 +189,14 @@ static DEFINE_GIC_SHADOW_REG(gicd_itargetsr, 4, 0x01010101, 32);
+ 
+ static void gic_set_enable(uint vector, bool enable)
+ {
+-    int reg = vector / 32;
+-    uint32_t mask = 1ULL << (vector % 32);
+-
+-#if GIC_VERSION > 2
+-    if (reg == 0) {
+-        uint32_t cpu = arch_curr_cpu_num();
+-
+-        /* On GICv3/v4 these are on GICR */
+-        if (enable)
+-            GICRREG_WRITE(0, cpu, GICR_ISENABLER0, mask);
+-        else
+-            GICRREG_WRITE(0, cpu, GICR_ICENABLER0, mask);
+-        return;
+-    }
+-#endif
+-    if (enable)
+-        GICDREG_WRITE(0, GICD_ISENABLER(reg), mask);
+-    else
+-        GICDREG_WRITE(0, GICD_ICENABLER(reg), mask);
++    return;
+ }
+ 
+ static void arm_gic_init_percpu(uint level)
+ {
+ #if GIC_VERSION > 2
+     /* GICv3/v4 */
++    (void)hf_interrupt_enable(4, true, 1);
+     arm_gicv3_init_percpu();
+ #else
+     /* GICv2 */
+@@ -519,11 +514,14 @@ status_t unmask_interrupt(unsigned int vector)
+ static
+ enum handler_return __platform_irq(struct iframe *frame)
+ {
++
+     // get the current vector
+-    uint32_t iar = GICCREG_READ(0, GICC_PRIMARY_IAR);
++
++    /* spm_interrupt_get. */
++    uint32_t iar = hf_interrupt_get();
+     unsigned int vector = iar & 0x3ff;
+ 
+-    if (vector >= 0x3fe) {
++    if (vector >= 0x3fe || vector == 4) {
+ #if WITH_LIB_SM && ARM_GIC_USE_DOORBELL_NS_IRQ
+         // spurious or non-secure interrupt
+         return sm_handle_irq();
+@@ -549,7 +547,9 @@ enum handler_return __platform_irq(struct iframe *frame)
+     if (handler->handler)
+         ret = handler->handler(handler->arg);
+ 
+-    GICCREG_WRITE(0, GICC_PRIMARY_EOIR, iar);
++    /* spm_interrupt_deactivate. */
++    //GICCREG_WRITE(0, GICC_PRIMARY_EOIR, iar);
++    (void)hf_interrupt_deactivate(iar);
+ 
+     LTRACEF_LEVEL(2, "cpu %u exit %d\n", cpu, ret);
+ 
+@@ -760,6 +760,7 @@ status_t sm_intc_fiq_enter(void)
+     u_int cpu = arch_curr_cpu_num();
+ #if GIC_VERSION > 2
+     u_int irq = GICCREG_READ(0, icc_iar0_el1) & 0x3ff;
++    /* TODO: why reading IAR0? call hf_interrupt_get? */
+ #else
+     u_int irq = GICCREG_READ(0, GICC_IAR) & 0x3ff;
+ #endif
+@@ -779,7 +780,9 @@ status_t sm_intc_fiq_enter(void)
+ 
+         if (doorbell_enabled) {
+             LTRACEF("GICD_SGIR: %llx\n", val);
+-            GICCREG_WRITE(0, icc_asgi1r_el1, val);
++	    //GICCREG_WRITE(0, icc_asgi1r_el1, val);
++	    //dprintf(INFO, "OD %s send SGI %llu\n", __func__, val);
++	    /* TODO: CALL hf_interrupt_deactivate. */
+         }
+ #else
+         LTRACEF("spurious fiq: cpu %d, old %d, new %d\n", cpu, current_fiq[cpu], irq);
+@@ -789,7 +792,7 @@ status_t sm_intc_fiq_enter(void)
+ 
+     fiq_enabled = update_fiq_targets(cpu, false, irq, false);
+ #if GIC_VERSION > 2
+-    GICCREG_WRITE(0, icc_eoir0_el1, irq);
++    //GICCREG_WRITE(0, icc_eoir0_el1, irq);
+ #else
+     GICCREG_WRITE(0, GICC_EOIR, irq);
+ #endif
+diff --git a/dev/interrupt/arm_gic/gic_v3.c b/dev/interrupt/arm_gic/gic_v3.c
+index d5e3c668..5f4ba8e6 100644
+--- a/dev/interrupt/arm_gic/gic_v3.c
++++ b/dev/interrupt/arm_gic/gic_v3.c
+@@ -186,6 +186,7 @@ static void gicv3_gicr_setup_default_group(uint32_t grp) {
+ }
+ 
+ void arm_gicv3_init(void) {
++#if !TRUSTY_ARM_ARCH_SECURE_EL2
+     uint32_t grp_mask = (0x1u << GICV3_IRQ_GROUP);
+ 
+ #if !WITH_LIB_SM
+@@ -208,9 +209,11 @@ void arm_gicv3_init(void) {
+ 
+     /* Enable selected group */
+     gicv3_gicd_ctrl_write(GICDREG_READ(0, GICD_CTLR) | grp_mask);
++#endif
+ }
+ 
+ void arm_gicv3_init_percpu(void) {
++#if !TRUSTY_ARM_ARCH_SECURE_EL2
+ #if WITH_LIB_SM
+     /* TZ */
+     /* Initialized by ATF */
+@@ -236,6 +239,7 @@ void arm_gicv3_init_percpu(void) {
+ 
+     /* Unmask interrupts at all priority levels */
+     GICCREG_WRITE(0, icc_pmr_el1, 0xFF);
++#endif
+ }
+ 
+ void arm_gicv3_configure_irq_locked(unsigned int cpu, unsigned int vector) {
+-- 
+2.17.1
+

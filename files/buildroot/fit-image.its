@@ -1,0 +1,57 @@
+/dts-v1/;
+
+/ {
+    description = "Total Compute: fitImage";
+    #address-cells = <1>;
+
+    images {
+        kernel {
+            description = "Linux Kernel";
+            data = /incbin/("../../output/tmp_build/linux/arch/arm64/boot/Image");
+            type = "kernel";
+            arch = "arm64";
+            os = "linux";
+            compression = "none";
+            load = <0x80200000>;
+            entry = <0x80200000>;
+            hash-1 {
+                algo = "sha1";
+            };
+        };
+        fdt-1 {
+            description = "Flattened Device Tree blob";
+            data = /incbin/("../../output/tmp_build/tfa/build/tc/debug/fdts/tc.dtb");
+            type = "flat_dt";
+            arch = "arm64";
+            load = <0x83000000>;
+            compression = "none";
+            hash-1 {
+                algo = "sha1";
+            };
+        };
+        ramdisk {
+            description = "ramdisk";
+            data = /incbin/("../../output/tmp_build/buildroot/images/rootfs.cpio.gz");
+            type = "ramdisk";
+            arch = "arm64";
+            load = <0x88000000>;
+            os = "linux";
+            compression = "gzip";
+            hash-1 {
+                algo = "sha1";
+            };
+        };
+    };
+    configurations {
+        default = "conf-1";
+        conf-1 {
+            description = "TC2: fitImage Boot: kernel with FDT blob and ramdisk";
+            kernel = "kernel";
+            fdt = "fdt-1";
+	    ramdisk = "ramdisk";
+            hash-1 {
+                algo = "sha1";
+            };
+        };
+    };
+};

@@ -1,0 +1,104 @@
+From 1f0a3ea3cf83bde0667db7507e8626ca7bb59913 Mon Sep 17 00:00:00 2001
+From: Davidson K <davidson.kumaresan@arm.com>
+Date: Mon, 25 Jul 2022 12:03:41 +0530
+Subject: [PATCH] fix: set the cross compiler for external components
+
+nanopb, mbedtls, libts and cpptest are included as external projects.
+Hence the CROSS_COMPILE set for the deployment have to be passed as
+an argument while calling the cmake for these components.
+
+Signed-off-by: Davidson K <davidson.kumaresan@arm.com>
+Change-Id: Ibe0790e15321a73d93176e808d83bca8d76d5013
+---
+ deployments/libts/libts-import.cmake | 3 ++-
+ external/CppUTest/CppUTest.cmake     | 3 ++-
+ external/MbedTLS/MbedTLS.cmake       | 3 ++-
+ external/nanopb/nanopb.cmake         | 5 +++--
+ 4 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/deployments/libts/libts-import.cmake b/deployments/libts/libts-import.cmake
+index 42bc3aa..b983b89 100644
+--- a/deployments/libts/libts-import.cmake
++++ b/deployments/libts/libts-import.cmake
+@@ -1,5 +1,5 @@
+ #-------------------------------------------------------------------------------
+-# Copyright (c) 2020-2021, Arm Limited and Contributors. All rights reserved.
++# Copyright (c) 2020-2022, Arm Limited and Contributors. All rights reserved.
+ #
+ # SPDX-License-Identifier: BSD-3-Clause
+ #
+@@ -23,6 +23,7 @@ execute_process(COMMAND
+ 	${CMAKE_COMMAND}
+ 		-DCMAKE_INSTALL_PREFIX=${LIBTS_INSTALL_PATH}
+ 		-GUnix\ Makefiles
++		-DCROSS_COMPILE=${CROSS_COMPILE}
+ 		${LIBTS_SOURCE_DIR}
+ 	WORKING_DIRECTORY
+ 		${LIBTS_BINARY_DIR}
+diff --git a/external/CppUTest/CppUTest.cmake b/external/CppUTest/CppUTest.cmake
+index c18f3e3..3d76796 100644
+--- a/external/CppUTest/CppUTest.cmake
++++ b/external/CppUTest/CppUTest.cmake
+@@ -1,5 +1,5 @@
+ #-------------------------------------------------------------------------------
+-# Copyright (c) 2020, Arm Limited and Contributors. All rights reserved.
++# Copyright (c) 2020-2022, Arm Limited and Contributors. All rights reserved.
+ #
+ # SPDX-License-Identifier: BSD-3-Clause
+ #
+@@ -64,6 +64,7 @@ else()
+ 		-DHAVE_FORK=OFF
+ 		-DCPP_PLATFORM=armcc
+ 		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY
++		-DCROSS_COMPILE=${CROSS_COMPILE}
+ 		-G${CMAKE_GENERATOR}
+ 		${cpputest_SOURCE_DIR}
+ 	WORKING_DIRECTORY
+diff --git a/external/MbedTLS/MbedTLS.cmake b/external/MbedTLS/MbedTLS.cmake
+index 6e86e84..f922ff8 100644
+--- a/external/MbedTLS/MbedTLS.cmake
++++ b/external/MbedTLS/MbedTLS.cmake
+@@ -1,5 +1,5 @@
+ #-------------------------------------------------------------------------------
+-# Copyright (c) 2020-2021, Arm Limited and Contributors. All rights reserved.
++# Copyright (c) 2020-2022, Arm Limited and Contributors. All rights reserved.
+ #
+ # SPDX-License-Identifier: BSD-3-Clause
+ #
+@@ -76,6 +76,7 @@ else()
+ 			-Dthirdparty_def=-DMBEDTLS_USER_CONFIG_FILE="${MBEDTLS_USER_CONFIG_FILE}"
+ 			-Dthirdparty_inc=${MBEDTLS_EXTRA_INCLUDES}
+ 			-GUnix\ Makefiles
++			-DCROSS_COMPILE=${CROSS_COMPILE}
+ 			${mbedtls_SOURCE_DIR}
+ 		WORKING_DIRECTORY
+ 			${mbedtls_BINARY_DIR}
+diff --git a/external/nanopb/nanopb.cmake b/external/nanopb/nanopb.cmake
+index 195e741..e048b80 100644
+--- a/external/nanopb/nanopb.cmake
++++ b/external/nanopb/nanopb.cmake
+@@ -1,5 +1,5 @@
+ #-------------------------------------------------------------------------------
+-# Copyright (c) 2020-2021, Arm Limited and Contributors. All rights reserved.
++# Copyright (c) 2020-2022, Arm Limited and Contributors. All rights reserved.
+ #
+ # SPDX-License-Identifier: BSD-3-Clause
+ #
+@@ -88,6 +88,7 @@ else()
+ 				-DCMAKE_TOOLCHAIN_FILE=${TS_EXTERNAL_LIB_TOOLCHAIN_FILE}
+ 				-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY
+ 				-GUnix\ Makefiles
++				-DCROSS_COMPILE=${CROSS_COMPILE}
+ 				${nanopb_SOURCE_DIR}
+ 			WORKING_DIRECTORY
+ 				${nanopb_BINARY_DIR}
+@@ -290,4 +291,4 @@ function(protobuf_generate_all)
+ 				NAMESPACE ${PARAMS_NAMESPACE}
+ 				BASE_DIR ${PARAMS_BASE_DIR})
+ 	endforeach()
+-endfunction()
+\ No newline at end of file
++endfunction()
+-- 
+2.34.1
+

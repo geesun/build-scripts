@@ -1,0 +1,30 @@
+From da99c1355f0a9839b49186b63392760fe3558d00 Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Mon, 5 Jul 2021 13:22:14 +0000
+Subject: [PATCH 1/8] Fix platform include when source directory path may
+ include uppercase
+
+Yocto source paths may include uppercase characters
+
+Change-Id: Ib641698f8b42fa151417755d4db81515db8614d9
+---
+ tools/cmake/common/AddPlatform.cmake | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tools/cmake/common/AddPlatform.cmake b/tools/cmake/common/AddPlatform.cmake
+index ae34c6e..3f4959c 100644
+--- a/tools/cmake/common/AddPlatform.cmake
++++ b/tools/cmake/common/AddPlatform.cmake
+@@ -37,7 +37,8 @@ function(add_platform)
+ 	set(TGT ${MY_PARAMS_TARGET} CACHE STRING "")
+ 
+ 	# Ensure file path conforms to lowercase project convention
+-	string(TOLOWER "${TS_PLATFORM_ROOT}/${TS_PLATFORM}/platform.cmake" _platdef)
++	string(TOLOWER ${TS_PLATFORM} _ts_platform_lc)
++	set(_platdef "${TS_PLATFORM_ROOT}/${_ts_platform_lc}/platform.cmake")
+ 	include(${_platdef})
+ 	set(CMAKE_CONFIGURE_DEPENDS ${_platdef})
+ 
+-- 
+2.17.1
+

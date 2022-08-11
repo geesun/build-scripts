@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2022, Arm Limited. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,127 +28,103 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-#
-# This script uses the following environment variables from the variant
-#
-# VARIANT - build variant name
-# TOP_DIR - workspace root directory
-# ANDROID_BUILD_ENABLED - Flag to enable building Android
-# ANDROID_SOURCE_PATH - sub-directory containing Android
-# ANDROID_BINARIES_PATH - sub-directory containing Android prebuilt bins
-# ANDROID_LUNCH_TARGET - Lunch target to build
-# ANDROID_IMAGE_SIZE - Size of the image to generate
-# UBOOT_MKIMAGE - path to uboot mkimage
-# LINUX_ARCH - the arch
-# UBOOT_BUILD_ENABLED - flag to indicate the need for uimages.
-# ANDROID_BINS_VARIANTS - list of binary distros
-# TARGET_{plat} - array of platform parameters, indexed by
-# 	ramdisk - the address of the ramdisk per platform
-# OPTEE_OS_PATH - path to optee os
-# OPTEE_PLATFORM - optee build target
-#
+do_build() {
 
-do_build ()
-{
-	if [ "$ANDROID_BUILD_ENABLED" == "1" ]; then
-		if [ -d "$TOP_DIR/$ANDROID_SOURCE_PATH" ]; then
-			pushd $TOP_DIR/$ANDROID_SOURCE_PATH
+    info_echo "Building Android"
+    pushd $ANDROID_SRC
 
-			echo "Android source build starting."
-			# android build system allows to specify external (to android) optee_os build path.
-			# This is done to ensure that TAs built from android build system are linked/compiled
-			#  against right secure world libraries and headers.
-			# Also, the path has to be relative to android top dir.
-			export TA_DEV_KIT_DIR=../$OPTEE_OS_PATH/out/arm-plat-$OPTEE_PLATFORM/export-ta_arm64
-			echo "export TA_DEV_KIT_DIR=../$OPTEE_OS_PATH/out/arm-plat-$OPTEE_PLATFORM/export-ta_arm64"
-			source build/envsetup.sh
-			lunch ${ANDROID_LUNCH_TARGET}
-			make -j $PARALLELISM USE_NINJA=false TARGET_NO_KERNEL=true \
-				BUILD_KERNEL_MODULES=false \
-				systemimage userdataimage ramdisk
+    # Source the main envsetup script.
+    if [[ ! -f "build/envsetup.sh" ]]; then
+        error_echo "Could not find build/envsetup.sh. Please call this file from root of android directory."
+    fi
 
-			popd
-		else
-			echo "Android binary build. Skipping."
-		fi
-	fi
+    # check if file exists and exit if it doesnt
+    check_file_exists_and_exit () {
+        if [ ! -f $1 ]
+        then
+            error_echo "$1 does not exist"
+            exit 1
+        fi
+    }
+
+    make_ramdisk_android_image () {
+        $SCRIPT_DIR/add_uboot_header.sh
+        $SCRIPT_DIR/create_android_image.sh -a $AVB
+    }
+
+    TC_MICRODROID_DEMO_SRC="packages/modules/Virtualization/tc_microdroid_demo"
+    make_tc_microdroid_demo_app () {
+        # If the demo app exists, then build else return 0
+        if [ ! -d ${TC_MICRODROID_DEMO_SRC} ]
+        then
+            return 0
+        fi
+
+        info_echo "Building TC Microdroid Demo App"
+        UNBUNDLED_BUILD_SDKS_FROM_SOURCE=true   \
+        TARGET_BUILD_APPS=TCMicrodroidDemoApp   \
+        m apps_only dist
+
+        return $?
+    }
+
+    DISTRO=$FILESYSTEM
+
+    [ -z "$DISTRO" ] && incorrect_script_use || echo "DISTRO=$DISTRO"
+    echo "AVB=$AVB"
+
+    KERNEL_IMAGE=$LINUX_OUTDIR/arch/arm64/boot/Image
+    . build/envsetup.sh || true
+    case $DISTRO in
+        android-swr)
+            if [ "$AVB" == true ]
+            then
+                check_file_exists_and_exit $KERNEL_IMAGE
+                info_echo "Using $KERNEL_IMAGE for kernel"
+                cp $KERNEL_IMAGE device/arm/tc
+                lunch tc_swr-userdebug;
+            else
+                lunch tc_swr-eng;
+            fi
+            ;;
+        *) error_echo "bad option for distro $3"; incorrect_script_use
+            ;;
+    esac
+
+    # Build microdroid_demo_app before building tc_swr stack. This makes the demo
+    # app to be included in the system image
+    make_tc_microdroid_demo_app
+    if [[ $? != 0 ]]; then
+        error_echo "Building Microdroid demo App failed"
+        exit 1
+    fi
+
+    if make -j "$PARALLELISM";
+    then
+        make_ramdisk_android_image
+    else
+        error_echo "Errors when building - will not create file system images"
+    fi
+
+    popd
 }
 
-do_clean ()
-{
-	if [ "$ANDROID_BUILD_ENABLED" == "1" ]; then
-		if [ -d "$TOP_DIR/$ANDROID_SOURCE_PATH" ]; then
-			pushd $TOP_DIR/$ANDROID_SOURCE_PATH
-			echo "Cleaning Android source build..."
-			rm -rf out
-			popd
-		else
-			echo "Android binary build. Skipping."
-		fi
-	fi
+do_deploy() {
+    ln -s $ANDROID_SRC/out/target/product/tc_swr/android.img $DEPLOY_DIR/$PLATFORM
+    ln -s $ANDROID_SRC/out/target/product/tc_swr/ramdisk_uboot.img $DEPLOY_DIR/$PLATFORM
+    ln -s $ANDROID_SRC/out/target/product/tc_swr/system.img $DEPLOY_DIR/$PLATFORM
+    ln -s $ANDROID_SRC/out/target/product/tc_swr/userdata.img $DEPLOY_DIR/$PLATFORM
+
+    if [[ $AVB == "true" ]]; then
+        ln -s $ANDROID_SRC/out/target/product/tc_swr/boot.img $DEPLOY_DIR/$PLATFORM
+        ln -s $ANDROID_SRC/out/target/product/tc_swr/vbmeta.img $DEPLOY_DIR/$PLATFORM
+    fi
+
 }
 
-do_package ()
-{
-	if [ "$ANDROID_BUILD_ENABLED" == "1" ]; then
-		echo "Packaging Android... $VARIANT";
-
-		mkdir -p ${PLATDIR}
-
-		if [ -d "$TOP_DIR/$ANDROID_SOURCE_PATH" ]; then
-			pushd $TOP_DIR/$ANDROID_SOURCE_PATH
-			echo "Packaging Android source build..."
-
-			# Setup lunch option to have access to env variables
-			source build/envsetup.sh
-			lunch ${ANDROID_LUNCH_TARGET}
-
-			# ANDROID_PRODUCT_OUT env variable is exported by android build system,
-			# when  'lunch <target>' is run.
-			local product_out=${ANDROID_PRODUCT_OUT}
-			local make_ext4fs=${TOP_DIR}/${ANDROID_SOURCE_PATH}/out/host/linux-x86/bin/make_ext4fs
-
-			pushd ${product_out}
-			# Create an image file
-			MAKE_EXT4FS=${make_ext4fs} \
-				IMG=${PLATDIR}/${ANDROID_BINS_VARIANTS}-android.img \
-				$TOP_DIR/build-scripts/android-image.sh
-
-			# Copy the ramdisk
-			cp ${product_out}/ramdisk.img \
-				${PLATDIR}/${ANDROID_BINS_VARIANTS}-ramdisk-android.img
-			popd
-		else
-			pushd ${TOP_DIR}/${ANDROID_BINARIES_PATH}/${PLATFORM}
-			echo "Packaging Android binary build..."
-			# Create an image file
-			if [ -e "system.img" ]; then
-				IMG=${PLATDIR}/${ANDROID_BINS_VARIANTS}-android.img \
-					${TOP_DIR}/build-scripts/android-image.sh
-			elif [ -e "${ANDROID_BINS_VARIANTS}.img" ]; then
-				# platform image already created
-				cp ${ANDROID_BINS_VARIANTS}.img ${PLATDIR}/${ANDROID_BINS_VARIANTS}-android.img
-			else
-				echo "Error: no system image available for ${ANDROID_BINS_VARIANTS}"
-			fi
-			# Copy the ramdisk
-			cp ramdisk.img ${PLATDIR}/${ANDROID_BINS_VARIANTS}-ramdisk-android.img
-			popd
-		fi
-		if [ "$UBOOT_BUILD_ENABLED" == "1" ]; then
-			# Android ramdisks for uboot
-			pushd ${PLATDIR}
-				local addr=TARGET_$ANDROID_BINS_VARIANTS[ramdisk]
-				${UBOOT_MKIMG} -A $LINUX_ARCH -O linux -C none \
-					-T ramdisk -n ramdisk \
-					-a ${!addr} -e ${!addr} \
-					-n "Android ramdisk" \
-					-d ${ANDROID_BINS_VARIANTS}-ramdisk-android.img \
-					${ANDROID_BINS_VARIANTS}-uInitrd-android.${!addr}
-			popd
-		fi
-	fi
+do_clean() {
+    info_echo "Cleaning Android"
+    rm -rf $ANDROID_SRC/out
 }
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source $DIR/framework.sh $@
+source "$(dirname ${BASH_SOURCE[0]})/framework.sh"

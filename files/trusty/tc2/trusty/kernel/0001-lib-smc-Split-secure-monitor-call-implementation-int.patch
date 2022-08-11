@@ -1,0 +1,201 @@
+From 2ba17876005eb5ef62073de67d72b9af24c076e9 Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Tue, 7 Sep 2021 13:30:33 +0000
+Subject: [PATCH 01/22] [lib][smc] Split secure monitor call implementation
+ into new module
+
+Change-Id: I04651b8f23f05093cf39ff312995159d89146047
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/sm/arch/arm/rules.mk                      |  1 -
+ lib/sm/arch/arm64/rules.mk                    |  1 -
+ lib/sm/rules.mk                               |  1 +
+ lib/sm/shared_mem.c                           |  2 +-
+ lib/smc/arch/arm/rules.mk                     | 29 ++++++++++++++++
+ lib/{sm => smc}/arch/arm/smc.S                |  0
+ lib/smc/arch/arm64/rules.mk                   | 29 ++++++++++++++++
+ lib/{sm => smc}/arch/arm64/smc.S              |  0
+ .../lib/sm => smc/include/lib/smc}/smc.h      |  0
+ lib/smc/rules.mk                              | 33 +++++++++++++++++++
+ 10 files changed, 93 insertions(+), 3 deletions(-)
+ create mode 100644 lib/smc/arch/arm/rules.mk
+ rename lib/{sm => smc}/arch/arm/smc.S (100%)
+ create mode 100644 lib/smc/arch/arm64/rules.mk
+ rename lib/{sm => smc}/arch/arm64/smc.S (100%)
+ rename lib/{sm/include/lib/sm => smc/include/lib/smc}/smc.h (100%)
+ create mode 100644 lib/smc/rules.mk
+
+diff --git a/lib/sm/arch/arm/rules.mk b/lib/sm/arch/arm/rules.mk
+index 7408b71..9c6a7bc 100644
+--- a/lib/sm/arch/arm/rules.mk
++++ b/lib/sm/arch/arm/rules.mk
+@@ -29,7 +29,6 @@ endif
+ 
+ MODULE_SRCS += \
+ 	$(CUR_DIR)/entry.S \
+-	$(CUR_DIR)/smc.S \
+ 
+ ifneq (,$(findstring WITH_LIB_SM_MONITOR=1,$(GLOBAL_DEFINES)))
+ 
+diff --git a/lib/sm/arch/arm64/rules.mk b/lib/sm/arch/arm64/rules.mk
+index 3e0541a..9f3bc72 100644
+--- a/lib/sm/arch/arm64/rules.mk
++++ b/lib/sm/arch/arm64/rules.mk
+@@ -27,7 +27,6 @@ ifeq (false,$(call TOBOOL,$(LIB_SM_CUSTOM_SCHED_NONSECURE)))
+ 
+ MODULE_SRCS += \
+ 	$(CUR_DIR)/entry.S \
+-	$(CUR_DIR)/smc.S \
+ 
+ endif
+ 
+diff --git a/lib/sm/rules.mk b/lib/sm/rules.mk
+index a26b986..eec3c8c 100644
+--- a/lib/sm/rules.mk
++++ b/lib/sm/rules.mk
+@@ -40,6 +40,7 @@ MODULE_SRCS += \
+ MODULE_DEPS += \
+ 	trusty/kernel/lib/extmem \
+ 	trusty/kernel/lib/version \
++	trusty/kernel/lib/smc \
+ 
+ include $(LOCAL_DIR)/arch/$(ARCH)/rules.mk
+ 
+diff --git a/lib/sm/shared_mem.c b/lib/sm/shared_mem.c
+index 7a8ab70..eb4adbc 100644
+--- a/lib/sm/shared_mem.c
++++ b/lib/sm/shared_mem.c
+@@ -30,7 +30,7 @@
+ #include <lib/page_alloc.h>
+ #include <lib/sm.h>
+ #include <lib/sm/arm_ffa.h>
+-#include <lib/sm/smc.h>
++#include <lib/smc/smc.h>
+ #include <lk/init.h>
+ #include <string.h>
+ #include <trace.h>
+diff --git a/lib/smc/arch/arm/rules.mk b/lib/smc/arch/arm/rules.mk
+new file mode 100644
+index 0000000..45f078c
+--- /dev/null
++++ b/lib/smc/arch/arm/rules.mk
+@@ -0,0 +1,29 @@
++#
++# Copyright (c) 2021, Arm Ltd.  All rights reserved
++#
++# Permission is hereby granted, free of charge, to any person obtaining
++# a copy of this software and associated documentation files
++# (the "Software"), to deal in the Software without restriction,
++# including without limitation the rights to use, copy, modify, merge,
++# publish, distribute, sublicense, and/or sell copies of the Software,
++# and to permit persons to whom the Software is furnished to do so,
++# subject to the following conditions:
++#
++# The above copyright notice and this permission notice shall be
++# included in all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
++# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++#
++
++CUR_DIR := $(GET_LOCAL_DIR)
++
++MODULE_SRCS += \
++	$(CUR_DIR)/smc.S \
++
++CUR_DIR :=
+diff --git a/lib/sm/arch/arm/smc.S b/lib/smc/arch/arm/smc.S
+similarity index 100%
+rename from lib/sm/arch/arm/smc.S
+rename to lib/smc/arch/arm/smc.S
+diff --git a/lib/smc/arch/arm64/rules.mk b/lib/smc/arch/arm64/rules.mk
+new file mode 100644
+index 0000000..45f078c
+--- /dev/null
++++ b/lib/smc/arch/arm64/rules.mk
+@@ -0,0 +1,29 @@
++#
++# Copyright (c) 2021, Arm Ltd.  All rights reserved
++#
++# Permission is hereby granted, free of charge, to any person obtaining
++# a copy of this software and associated documentation files
++# (the "Software"), to deal in the Software without restriction,
++# including without limitation the rights to use, copy, modify, merge,
++# publish, distribute, sublicense, and/or sell copies of the Software,
++# and to permit persons to whom the Software is furnished to do so,
++# subject to the following conditions:
++#
++# The above copyright notice and this permission notice shall be
++# included in all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
++# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++#
++
++CUR_DIR := $(GET_LOCAL_DIR)
++
++MODULE_SRCS += \
++	$(CUR_DIR)/smc.S \
++
++CUR_DIR :=
+diff --git a/lib/sm/arch/arm64/smc.S b/lib/smc/arch/arm64/smc.S
+similarity index 100%
+rename from lib/sm/arch/arm64/smc.S
+rename to lib/smc/arch/arm64/smc.S
+diff --git a/lib/sm/include/lib/sm/smc.h b/lib/smc/include/lib/smc/smc.h
+similarity index 100%
+rename from lib/sm/include/lib/sm/smc.h
+rename to lib/smc/include/lib/smc/smc.h
+diff --git a/lib/smc/rules.mk b/lib/smc/rules.mk
+new file mode 100644
+index 0000000..ee89e90
+--- /dev/null
++++ b/lib/smc/rules.mk
+@@ -0,0 +1,33 @@
++#
++# Copyright (c) 2021, Arm Ltd.  All rights reserved
++#
++# Permission is hereby granted, free of charge, to any person obtaining
++# a copy of this software and associated documentation files
++# (the "Software"), to deal in the Software without restriction,
++# including without limitation the rights to use, copy, modify, merge,
++# publish, distribute, sublicense, and/or sell copies of the Software,
++# and to permit persons to whom the Software is furnished to do so,
++# subject to the following conditions:
++#
++# The above copyright notice and this permission notice shall be
++# included in all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
++# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++#
++
++LOCAL_DIR := $(GET_LOCAL_DIR)
++
++MODULE := $(LOCAL_DIR)
++
++GLOBAL_INCLUDES += \
++	$(LOCAL_DIR)/include
++
++include $(LOCAL_DIR)/arch/$(ARCH)/rules.mk
++
++include make/module.mk
+-- 
+2.17.1
+

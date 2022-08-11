@@ -1,0 +1,286 @@
+From bc059e045af4b23d594c7405bb728d8673a2c040 Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Fri, 8 Oct 2021 13:07:08 +0000
+Subject: [PATCH 18/22] [lib][sm] New api in which FF-A messages carry trusty
+ smc calls
+
+Add a new api version TRUSTY_API_VERSION_FFA (6). When using this
+api smc calls are encapsulated within FF-A direct messages.
+
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Change-Id: I7abee0c070f4d45ed7518691c0f0c332ce5e813f
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                     |  22 +++++
+ lib/arm_ffa/include/lib/arm_ffa/ffa.h |   5 +
+ lib/sm/include/lib/sm/smcall.h        |   3 +-
+ lib/sm/shared_mem.c                   |  17 ----
+ lib/sm/sm.c                           | 126 +++++++++++++++++++++++---
+ 5 files changed, 141 insertions(+), 32 deletions(-)
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+index e9c01d6..99f139f 100644
+--- a/lib/arm_ffa/ffa.c
++++ b/lib/arm_ffa/ffa.c
+@@ -38,6 +38,7 @@
+ #define LOCAL_TRACE 0
+ 
+ static bool ffa_init_is_success = false;
++static bool ffa_msg_direct_resp_32bit_supported = false;
+ static uint16_t ffa_local_id;
+ static size_t ffa_buf_size;
+ static void* ffa_tx;
+@@ -54,6 +55,10 @@ bool ffa_is_init(void) {
+     return ffa_init_is_success;
+ }
+ 
++bool ffa_msg_direct_resp_32bit_is_supported(void) {
++    return ffa_msg_direct_resp_32bit_supported;
++}
++
+ static status_t ffa_call_id_get(uint16_t *id) {
+     struct smc_ret8 smc_ret;
+ 
+@@ -530,6 +535,20 @@ bool ffa_mem_retrieve_req_is_implemented(bool request_ns_bit,
+     return true;
+ }
+ 
++static bool ffa_msg_send_direct_resp_32bit_is_implemented(void) {
++    bool is_implemented = false;
++    status_t res;
++    /* Just checking for the 32-bit version */
++    res  = ffa_call_features(SMC_FC_FFA_MSG_SEND_DIRECT_RESP, 0,
++                             &is_implemented, 0, 0);
++    if (res) {
++        TRACEF("Failed  to query for feature FFA_MSG_SEND_DIRECT_RESP, err = %d\n",
++               res);
++        return false;
++    }
++    return is_implemented;
++}
++
+ /* Helper function to set up the tx buffer with standard values
+    before calling FFA_MEM_RETRIEVE_REQ. */
+ static void ffa_populate_receive_req_tx_buffer(uint16_t sender_id,
+@@ -957,6 +976,9 @@ static void ffa_init(uint level) {
+ 
+     if (res == NO_ERROR) {
+         ffa_init_is_success = true;
++        if (ffa_msg_send_direct_resp_32bit_is_implemented()) {
++            ffa_msg_direct_resp_32bit_supported = true;
++        }
+     } else {
+         TRACEF("Failed to initialize FF-A (err=%d)\n", res);
+     }
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa.h b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+index eabf477..44caa80 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa/ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+@@ -31,6 +31,11 @@
+    returned. */
+ bool ffa_is_init(void);
+ 
++/* Check whether the spmc can receive SMC_FC_FFA_MSG_SEND_DIRECT_RESP
++   This should only be called once ffa_init() is guaranteed to have
++   returned. */
++bool ffa_msg_direct_resp_32bit_is_supported(void);
++
+ /* Relinquish trusty's access to a memory region. */
+ status_t ffa_mem_relinquish(uint64_t handle);
+ 
+diff --git a/lib/sm/include/lib/sm/smcall.h b/lib/sm/include/lib/sm/smcall.h
+index 2857711..1a16cf3 100644
+--- a/lib/sm/include/lib/sm/smcall.h
++++ b/lib/sm/include/lib/sm/smcall.h
+@@ -102,7 +102,8 @@
+ #define TRUSTY_API_VERSION_SMP_NOP (3)
+ #define TRUSTY_API_VERSION_PHYS_MEM_OBJ (4)
+ #define TRUSTY_API_VERSION_MEM_OBJ (5)
+-#define TRUSTY_API_VERSION_CURRENT (5)
++#define TRUSTY_API_VERSION_FFA (6)
++#define TRUSTY_API_VERSION_CURRENT (6)
+ #define SMC_FC_API_VERSION SMC_FASTCALL_NR(SMC_ENTITY_SECURE_MONITOR, 11)
+ 
+ #define SMC_FC_FIQ_RESUME SMC_FASTCALL_NR(SMC_ENTITY_SECURE_MONITOR, 12)
+diff --git a/lib/sm/shared_mem.c b/lib/sm/shared_mem.c
+index 33ce889..57e445e 100644
+--- a/lib/sm/shared_mem.c
++++ b/lib/sm/shared_mem.c
+@@ -266,20 +266,3 @@ status_t ext_mem_get_vmm_obj(ext_mem_client_id_t client_id,
+         }
+     }
+ }
+-
+-/**
+- * shared_mem_init - Connect to SPM/Hypervisor.
+- * @level:  Unused.
+- *
+- */
+-static void shared_mem_init(uint level) {
+-    /* Check the FF-A module initialized successfully */
+-    if (!ffa_is_init()) {
+-        TRACEF("The arm_ffa module is not initialized\n");
+-        if (sm_check_and_lock_api_version(TRUSTY_API_VERSION_MEM_OBJ)) {
+-            panic("shared_mem_init failed after mem_obj version selected\n");
+-        }
+-    }
+-}
+-
+-LK_INIT_HOOK(shared_mem, shared_mem_init, LK_INIT_LEVEL_APPS);
+diff --git a/lib/sm/sm.c b/lib/sm/sm.c
+index 881563d..019a03f 100644
+--- a/lib/sm/sm.c
++++ b/lib/sm/sm.c
+@@ -26,6 +26,7 @@
+ #include <kernel/mutex.h>
+ #include <kernel/thread.h>
+ #include <kernel/vm.h>
++#include <lib/arm_ffa/ffa.h>
+ #include <lib/heap.h>
+ #include <lib/sm.h>
+ #include <lib/sm/sm_err.h>
+@@ -208,23 +209,111 @@ err:
+     return ret;
+ }
+ 
+-static void sm_sched_nonsecure_fiq_loop(long ret, struct smc32_args* args) {
+-    while (true) {
+-        if (atomic_load(&platform_halted)) {
+-            ret = SM_ERR_PANIC;
+-        }
+-        sm_sched_nonsecure(ret, args);
+-        if (atomic_load(&platform_halted) && args->smc_nr != SMC_FC_FIQ_ENTER) {
+-            continue;
+-        }
+-        if (SMC_IS_SMC64(args->smc_nr)) {
+-            ret = SM_ERR_NOT_SUPPORTED;
+-            continue;
++static void sm_ffa_loop(long ret, struct smc32_args* args) {
++    status_t ffa_err;
++    const struct ffa_incall *ffa_incall;
++    struct ffa_msg_partition msg_out = {0};
++
++    ffa_incall = ffa_incall_get();
++    if (ffa_incall->type == FFA_NONE) {
++        // Tell the spmc that we're ready
++        ffa_call_msg_wait();
++    } else {
++        // Re-read the ffa_incall for the last stdcall and respond
++        if (ffa_incall->type != FFA_MSG_DIRECT_REQ_PARTITION) {
++            panic("Unexpected ffa_incall->type. Got 0x%d, expected FFA_MSG_DIRECT_REQ_PARTITION.\n",
++                  ffa_incall->type);
+         }
+-        if (!SMC_IS_FASTCALL(args->smc_nr)) {
++        LTRACEF_LEVEL(2,
++                      "Got FFA_MSG_SEND_DIRECT_REQ from 0x%X args 0x%X 0x%X 0x%X 0x%X\n",
++                      ffa_incall->msg_partition.remote_id,
++                      ffa_incall->msg_partition.args[0],
++                      ffa_incall->msg_partition.args[1],
++                      ffa_incall->msg_partition.args[2],
++                      ffa_incall->msg_partition.args[3]);
++        msg_out.remote_id = ffa_incall->msg_partition.remote_id;
++        msg_out.args[0] = (uint32_t) ret;
++        ffa_err = ffa_msg_send_direct_resp_partition(&msg_out);
++        if (ffa_err != NO_ERROR)
++            panic("FFA_MSG_SEND_DIRECT_RESP returned FFA_ERROR %d\n",
++                  ffa_err);
++    }
++    while (true) {
++        ffa_incall = ffa_incall_get();
++        switch (ffa_incall->type) {
++        case FFA_MSG_DIRECT_REQ_PARTITION:
++            {
++                msg_out = (struct ffa_msg_partition) {0};
++                LTRACEF_LEVEL(2,
++                              "Got FFA_MSG_SEND_DIRECT_REQ from 0x%X args 0x%X 0x%X 0x%X 0x%X\n",
++                              ffa_incall->msg_partition.remote_id,
++                              ffa_incall->msg_partition.args[0],
++                              ffa_incall->msg_partition.args[1],
++                              ffa_incall->msg_partition.args[2],
++                              ffa_incall->msg_partition.args[3]);
++
++                args->smc_nr = ffa_incall->msg_partition.args[0];
++                STATIC_ASSERT(SMC_NUM_PARAMS <= 3);
++                for (int i=0; i<SMC_NUM_PARAMS; i++) {
++                    args->params[i] = ffa_incall->msg_partition.args[i+1];
++                }
++
++                if (atomic_load(&platform_halted)) {
++                    TRACEF("Platform is halted\n");
++                    ret = SM_ERR_PANIC;
++                } else if (SMC_IS_SMC64(args->smc_nr)) {
++                    TRACEF("Got 64 bit SMC call\n");
++                    ret = SM_ERR_NOT_SUPPORTED;
++                } else if (!SMC_IS_FASTCALL(args->smc_nr)) {
++                    return;
++                } else {
++                    ret = sm_fastcall_table[SMC_ENTITY(args->smc_nr)](args);
++                }
++                msg_out.remote_id = ffa_incall->msg_partition.remote_id;
++                msg_out.args[0] = (uint32_t) ret;
++                ffa_err = ffa_msg_send_direct_resp_partition(&msg_out);
++                if (ffa_err != NO_ERROR)
++                    panic("FFA_MSG_SEND_DIRECT_RESP returned FFA_ERROR %d\n",
++                          ffa_err);
++                break;
++            }
++        case FFA_INTERRUPT:
++            LTRACEF_LEVEL(2, "Got FFA_INTERRUPT with intid %d\n",
++                          ffa_incall->interrupt.id);
++            *args = (struct smc32_args) SMC32_ARGS_INITIAL_VALUE(*args);
++            args->smc_nr = SMC_FC_FIQ_ENTER;
++            sm_fastcall_table[SMC_ENTITY(SMC_FC_FIQ_ENTER)](args);
++            ffa_call_msg_wait();
+             break;
++        default:
++            TRACEF("Bad ffa_incall->type, %d", ffa_incall->type);
++            ffa_call_error(FFA_ERROR_NOT_SUPPORTED);
++        }
++    }
++}
++
++static void sm_sched_nonsecure_fiq_loop(long ret, struct smc32_args* args) {
++    if (sm_check_and_lock_api_version(TRUSTY_API_VERSION_FFA)) {
++        sm_ffa_loop(ret, args);
++    } else {
++        while (true) {
++            if (atomic_load(&platform_halted)) {
++                ret = SM_ERR_PANIC;
++            }
++            sm_sched_nonsecure(ret, args);
++            if (atomic_load(&platform_halted) &&
++                args->smc_nr != SMC_FC_FIQ_ENTER) {
++                continue;
++            }
++            if (SMC_IS_SMC64(args->smc_nr)) {
++                ret = SM_ERR_NOT_SUPPORTED;
++                continue;
++            }
++            if (!SMC_IS_FASTCALL(args->smc_nr)) {
++                break;
++            }
++            ret = sm_fastcall_table[SMC_ENTITY(args->smc_nr)](args);
+         }
+-        ret = sm_fastcall_table[SMC_ENTITY(args->smc_nr)](args);
+     }
+ }
+ 
+@@ -422,6 +511,15 @@ LK_INIT_HOOK_FLAGS(libsm_cpu,
+ static void sm_init(uint level) {
+     status_t err;
+ 
++    if (!ffa_is_init()) {
++        sm_api_version_max = TRUSTY_API_VERSION_PHYS_MEM_OBJ;
++    } else if (!ffa_msg_direct_resp_32bit_is_supported()) {
++        sm_api_version_max = TRUSTY_API_VERSION_MEM_OBJ;
++    } else {
++        sm_api_version_min = TRUSTY_API_VERSION_FFA;
++        sm_api_version_max = TRUSTY_API_VERSION_FFA;
++    }
++
+     mutex_acquire(&boot_args_lock);
+ 
+     /* Map the boot arguments if supplied by the bootloader */
+-- 
+2.17.1
+

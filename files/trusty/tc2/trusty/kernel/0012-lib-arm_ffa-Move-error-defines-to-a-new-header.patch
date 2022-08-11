@@ -1,0 +1,173 @@
+From 1b37914591df1df7ea80b62df751e1c1b451d4d3 Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Tue, 5 Oct 2021 10:44:19 +0000
+Subject: [PATCH 12/22] [lib][arm_ffa] Move error defines to a new header
+
+The arm_ffa.h header can now be considered internal to the module.
+
+Change-Id: Ifac275d986624b0a4ab141395d58a14a5b5b1647
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                             |  2 +-
+ .../include/lib/{arm_ffa => }/arm_ffa.h       | 34 -----------
+ lib/arm_ffa/include/lib/arm_ffa/ffa.h         |  2 +
+ lib/arm_ffa/include/lib/arm_ffa/ffa_err.h     | 58 +++++++++++++++++++
+ lib/sm/shared_mem.c                           |  1 -
+ 5 files changed, 61 insertions(+), 36 deletions(-)
+ rename lib/arm_ffa/include/lib/{arm_ffa => }/arm_ffa.h (94%)
+ create mode 100644 lib/arm_ffa/include/lib/arm_ffa/ffa_err.h
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+index 2a4482a..3dee596 100644
+--- a/lib/arm_ffa/ffa.c
++++ b/lib/arm_ffa/ffa.c
+@@ -31,7 +31,7 @@
+ #include <sys/types.h>
+ 
+ #include <lib/arm_ffa/ffa.h>
+-#include <lib/arm_ffa/arm_ffa.h>
++#include <lib/arm_ffa.h>
+ #include <lib/smc/smc.h>
+ #include <lk/init.h>
+ 
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/arm_ffa.h b/lib/arm_ffa/include/lib/arm_ffa.h
+similarity index 94%
+rename from lib/arm_ffa/include/lib/arm_ffa/arm_ffa.h
+rename to lib/arm_ffa/include/lib/arm_ffa.h
+index 3ad41ea..6ef25dd 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa/arm_ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa.h
+@@ -340,40 +340,6 @@ typedef uint32_t ffa_features2_t;
+ typedef uint32_t ffa_features3_t;
+ #define FFA_FEATURES3_MEM_RETRIEVE_REQ_REFCOUNT_MASK 0xffU
+ 
+-/**
+- * enum ffa_error - FF-A error code
+- * @FFA_ERROR_NOT_SUPPORTED:
+- *         Operation is not supported by the current implementation.
+- * @FFA_ERROR_INVALID_PARAMETERS:
+- *         Invalid parameters. Conditions function specific.
+- * @FFA_ERROR_NO_MEMORY:
+- *         Not enough memory.
+- * @FFA_ERROR_BUSY:
+- *         Operation temporarily not possible. Conditions function specific.
+- * @FFA_ERROR_INTERRUPTED:
+- *         This error code is not specified in the FF-A specification.
+- * @FFA_ERROR_DENIED:
+- *         Operation not allowed. Conditions function specific.
+- * @FFA_ERROR_RETRY:
+- *         Operation temporarily not possible. Conditions function specific.
+- * @FFA_ERROR_ABORTED:
+- *         Operation aborted. Reason for abort is implementation specific.
+- * @FFA_ERROR_NO_DATA:
+- *         Requested information not available.
+- *
+- */
+-enum ffa_error {
+-    FFA_ERROR_NOT_SUPPORTED = -1,
+-    FFA_ERROR_INVALID_PARAMETERS = -2,
+-    FFA_ERROR_NO_MEMORY = -3,
+-    FFA_ERROR_BUSY = -4,
+-    FFA_ERROR_INTERRUPTED = -5,
+-    FFA_ERROR_DENIED = -6,
+-    FFA_ERROR_RETRY = -7,
+-    FFA_ERROR_ABORTED = -8,
+-    FFA_ERROR_NO_DATA = -9,
+-};
+-
+ /**
+  * SMC_FC32_FFA_MIN - First 32 bit SMC opcode reserved for FFA
+  */
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa.h b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+index 7f651ec..0ebdc7f 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa/ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+@@ -23,6 +23,8 @@
+ 
+ #pragma once
+ 
++#include "ffa_err.h"
++
+ /* Check whether or not this module initialized successfully.
+    This should only be called once ffa_init() is guaranteed to have
+    returned. */
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa_err.h b/lib/arm_ffa/include/lib/arm_ffa/ffa_err.h
+new file mode 100644
+index 0000000..fdd455c
+--- /dev/null
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa_err.h
+@@ -0,0 +1,58 @@
++/*
++ * Copyright (c) 2021, Arm Limited. All rights reserved.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining
++ * a copy of this software and associated documentation files
++ * (the "Software"), to deal in the Software without restriction,
++ * including without limitation the rights to use, copy, modify, merge,
++ * publish, distribute, sublicense, and/or sell copies of the Software,
++ * and to permit persons to whom the Software is furnished to do so,
++ * subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be
++ * included in all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
++ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++#pragma once
++
++/**
++ * enum ffa_error - FF-A error code
++ * @FFA_ERROR_NOT_SUPPORTED:
++ *         Operation is not supported by the current implementation.
++ * @FFA_ERROR_INVALID_PARAMETERS:
++ *         Invalid parameters. Conditions function specific.
++ * @FFA_ERROR_NO_MEMORY:
++ *         Not enough memory.
++ * @FFA_ERROR_BUSY:
++ *         Operation temporarily not possible. Conditions function specific.
++ * @FFA_ERROR_INTERRUPTED:
++ *         This error code is not specified in the FF-A specification.
++ * @FFA_ERROR_DENIED:
++ *         Operation not allowed. Conditions function specific.
++ * @FFA_ERROR_RETRY:
++ *         Operation temporarily not possible. Conditions function specific.
++ * @FFA_ERROR_ABORTED:
++ *         Operation aborted. Reason for abort is implementation specific.
++ * @FFA_ERROR_NO_DATA:
++ *         Requested information not available.
++ *
++ */
++enum ffa_error {
++    FFA_ERROR_NOT_SUPPORTED = -1,
++    FFA_ERROR_INVALID_PARAMETERS = -2,
++    FFA_ERROR_NO_MEMORY = -3,
++    FFA_ERROR_BUSY = -4,
++    FFA_ERROR_INTERRUPTED = -5,
++    FFA_ERROR_DENIED = -6,
++    FFA_ERROR_RETRY = -7,
++    FFA_ERROR_ABORTED = -8,
++    FFA_ERROR_NO_DATA = -9,
++};
+diff --git a/lib/sm/shared_mem.c b/lib/sm/shared_mem.c
+index e957a20..33ce889 100644
+--- a/lib/sm/shared_mem.c
++++ b/lib/sm/shared_mem.c
+@@ -28,7 +28,6 @@
+ #include <lib/extmem/extmem.h>
+ #include <lib/page_alloc.h>
+ #include <lib/sm.h>
+-#include <lib/arm_ffa/arm_ffa.h>
+ #include <lib/arm_ffa/ffa.h>
+ #include <lib/smc/smc.h>
+ #include <lk/init.h>
+-- 
+2.17.1
+

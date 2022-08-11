@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+
+load_drivers()
+{
+	echo "Loading arm-ffa-user..."
+	if ! grep -qs 'arm-ffa-user' /proc/modules; then
+		insmod /root/arm-ffa-user.ko
+	fi
+}
+
+mount_debugfs()
+{
+	echo "Mounting debugfs..."
+	if ! grep -qs 'debugfs' /proc/mounts; then
+		mount -t debugfs debugfs /sys/kernel/debug/
+	fi
+}
+
+start_tee_supplicant()
+{
+	echo "Starting tee-supplicant daemon..."
+	tee-supplicant -d
+}
+
+case "$1" in
+	start)
+		load_drivers
+		mount_debugfs
+		start_tee_supplicant
+		;;
+	stop)
+		;;
+	restart|reload)
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac

@@ -1,0 +1,6 @@
+{
+	"trusty" : {
+		"image": "lk.bin",
+		"pm": "tc_trusty_sp_manifest.dts"
+	}
+}

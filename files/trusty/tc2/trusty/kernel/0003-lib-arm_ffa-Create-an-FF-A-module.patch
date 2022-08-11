@@ -1,0 +1,89 @@
+From 7b8f3b9ec26d088b192cb6baf604c29f711a7a43 Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Wed, 8 Sep 2021 10:59:24 +0000
+Subject: [PATCH 03/22] [lib][arm_ffa] Create an FF-A module
+
+Change-Id: I0359e60d777b1a4d1fc9c801839cf1573d9ad2cb
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ .../include/lib/arm_ffa}/arm_ffa.h            |  0
+ lib/arm_ffa/rules.mk                          | 34 +++++++++++++++++++
+ lib/sm/rules.mk                               |  1 +
+ lib/sm/shared_mem.c                           |  2 +-
+ 4 files changed, 36 insertions(+), 1 deletion(-)
+ rename lib/{sm/include/lib/sm => arm_ffa/include/lib/arm_ffa}/arm_ffa.h (100%)
+ create mode 100644 lib/arm_ffa/rules.mk
+
+diff --git a/lib/sm/include/lib/sm/arm_ffa.h b/lib/arm_ffa/include/lib/arm_ffa/arm_ffa.h
+similarity index 100%
+rename from lib/sm/include/lib/sm/arm_ffa.h
+rename to lib/arm_ffa/include/lib/arm_ffa/arm_ffa.h
+diff --git a/lib/arm_ffa/rules.mk b/lib/arm_ffa/rules.mk
+new file mode 100644
+index 0000000..9cbbb8d
+--- /dev/null
++++ b/lib/arm_ffa/rules.mk
+@@ -0,0 +1,34 @@
++#
++# Copyright (c) 2022, Arm Ltd.  All rights reserved
++#
++# Permission is hereby granted, free of charge, to any person obtaining
++# a copy of this software and associated documentation files
++# (the "Software"), to deal in the Software without restriction,
++# including without limitation the rights to use, copy, modify, merge,
++# publish, distribute, sublicense, and/or sell copies of the Software,
++# and to permit persons to whom the Software is furnished to do so,
++# subject to the following conditions:
++#
++# The above copyright notice and this permission notice shall be
++# included in all copies or substantial portions of the Software.
++#
++# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
++# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++#
++
++LOCAL_DIR := $(GET_LOCAL_DIR)
++
++MODULE := $(LOCAL_DIR)
++
++GLOBAL_INCLUDES += \
++	$(LOCAL_DIR)/include
++
++MODULE_DEPS += \
++	trusty/kernel/lib/smc \
++
++include make/module.mk
+diff --git a/lib/sm/rules.mk b/lib/sm/rules.mk
+index eec3c8c..16a2529 100644
+--- a/lib/sm/rules.mk
++++ b/lib/sm/rules.mk
+@@ -41,6 +41,7 @@ MODULE_DEPS += \
+ 	trusty/kernel/lib/extmem \
+ 	trusty/kernel/lib/version \
+ 	trusty/kernel/lib/smc \
++	trusty/kernel/lib/arm_ffa \
+ 
+ include $(LOCAL_DIR)/arch/$(ARCH)/rules.mk
+ 
+diff --git a/lib/sm/shared_mem.c b/lib/sm/shared_mem.c
+index eb4adbc..91f2287 100644
+--- a/lib/sm/shared_mem.c
++++ b/lib/sm/shared_mem.c
+@@ -29,7 +29,7 @@
+ #include <lib/extmem/extmem.h>
+ #include <lib/page_alloc.h>
+ #include <lib/sm.h>
+-#include <lib/sm/arm_ffa.h>
++#include <lib/arm_ffa/arm_ffa.h>
+ #include <lib/smc/smc.h>
+ #include <lk/init.h>
+ #include <string.h>
+-- 
+2.17.1
+

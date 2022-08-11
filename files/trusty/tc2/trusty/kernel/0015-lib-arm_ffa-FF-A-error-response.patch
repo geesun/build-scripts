@@ -1,0 +1,52 @@
+From d67f90cfca5e7464a25ff580b0e1e80b84c410ed Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Tue, 5 Oct 2021 13:32:21 +0000
+Subject: [PATCH 15/22] [lib][arm_ffa] FF-A error response
+
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Change-Id: I9ef35c927228115c992c8528c50c76c8774a8388
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                     | 11 +++++++++++
+ lib/arm_ffa/include/lib/arm_ffa/ffa.h |  3 +++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+index 66290ed..e9dfce6 100644
+--- a/lib/arm_ffa/ffa.c
++++ b/lib/arm_ffa/ffa.c
+@@ -391,6 +391,17 @@ struct ffa_incall* ffa_incall_get(void) {
+     return &incalls[cpu];
+ }
+ 
++void ffa_call_error(enum ffa_error err) {
++    struct smc_ret8 smc_ret;
++    long target = 0; /* Target must be zero (MBZ) at secure FF-A instances */
++    spin_lock_saved_state_t irq_fiq_state;
++
++    arch_interrupt_save(&irq_fiq_state, SPIN_LOCK_FLAG_IRQ_FIQ);
++    smc_ret = smc8(SMC_FC_FFA_ERROR, target, (ulong) err, 0, 0, 0, 0, 0);
++    ffa_incall_set(&smc_ret);
++    arch_interrupt_restore(irq_fiq_state, SPIN_LOCK_FLAG_IRQ_FIQ);
++}
++
+ static bool ffa_rxtx_map_is_implemented(size_t *buf_size_log2) {
+     ffa_features2_t features2;
+     bool is_implemented = false;
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa.h b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+index 133f1e4..b1705c5 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa/ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+@@ -59,6 +59,9 @@ status_t ffa_mem_retrieve_next_frag(uint64_t handle,
+                                     struct ffa_mem_frag_info *frag_info);
+ status_t ffa_rx_release(void);
+ 
++/* Report an error */
++void ffa_call_error(enum ffa_error err);
++
+ enum ffa_call_type {
+     FFA_NONE = 0,
+     FFA_INTERRUPT,
+-- 
+2.17.1
+

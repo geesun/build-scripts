@@ -1,0 +1,188 @@
+From 33c81091fcdda0d036e4e03d91e412fbc44e0151 Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Tue, 5 Oct 2021 12:52:01 +0000
+Subject: [PATCH 14/22] [lib][arm_ffa] Get and set for inbound FF-A calls
+
+This will be used for abi calls that transfer control from
+one execution context to another as opposed to hypcalls which
+run to completion from the view of the caller.
+
+Change-Id: I8ee8c23c3dee6024ed76745255d3542dc32baf65
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ lib/arm_ffa/ffa.c                             | 65 +++++++++++++++++++
+ lib/arm_ffa/include/lib/arm_ffa/ffa.h         | 31 +++++++++
+ .../generic-arm64/include/platform/cache.h    | 31 +++++++++
+ 3 files changed, 127 insertions(+)
+ create mode 100644 platform/generic-arm64/include/platform/cache.h
+
+diff --git a/lib/arm_ffa/ffa.c b/lib/arm_ffa/ffa.c
+index 3dee596..66290ed 100644
+--- a/lib/arm_ffa/ffa.c
++++ b/lib/arm_ffa/ffa.c
+@@ -46,6 +46,10 @@ static bool supports_ns_bit = false;
+ 
+ static mutex_t ffa_rxtx_buffer_lock = MUTEX_INITIAL_VALUE(ffa_rxtx_buffer_lock);
+ 
++/* Responses after making an FF-A call. Indexed by cpu or, more
++   precisely, indexed by processing element, PE. */
++static struct ffa_incall incalls[SMP_MAX_CPUS];
++
+ bool ffa_is_init(void) {
+     return ffa_init_is_success;
+ }
+@@ -326,6 +330,67 @@ static status_t ffa_call_rx_release(void) {
+     }
+ }
+ 
++static status_t decode_smc_ret(const struct smc_ret8 *smc_ret,
++                               struct ffa_incall *ffa_incall) {
++    DEBUG_ASSERT(smc_ret && ffa_incall);
++
++    switch (smc_ret->r0) {
++    case 0:
++        /* Zero indicates no call*/
++        ffa_incall->type = FFA_NONE;
++        return NO_ERROR;
++    case SMC_FC_FFA_INTERRUPT:
++        ffa_incall->type = FFA_INTERRUPT;
++        ffa_incall->interrupt.id = smc_ret->r2;
++        return NO_ERROR;
++    case SMC_FC_FFA_MSG_SEND_DIRECT_REQ:
++        /* Check it's a partition message rather than a framework message. */
++        if (smc_ret->r2 == 0) {
++            ffa_incall->type = FFA_MSG_DIRECT_REQ_PARTITION;
++            ffa_incall->msg_partition.remote_id =
++              (smc_ret->r1 >> 16) & (0xFFFF);
++            if ((smc_ret->r1 & 0xFFFF) != ffa_local_id) {
++                TRACEF("WARNING: Received direct message request for a different endpoint, 0x%X != 0x%X\n",
++                       (uint16_t) (smc_ret->r1 & 0xFFFF), ffa_local_id);
++                return ERR_INVALID_ARGS;
++            }
++            ffa_incall->msg_partition.args[0] = smc_ret->r3;
++            ffa_incall->msg_partition.args[1] = smc_ret->r4;
++            ffa_incall->msg_partition.args[2] = smc_ret->r5;
++            ffa_incall->msg_partition.args[3] = smc_ret->r6;
++            ffa_incall->msg_partition.args[4] = smc_ret->r7;
++            return NO_ERROR;
++        }
++        TRACEF("Received framework direct message request of type 0x%x\n",
++               (uint32_t) smc_ret->r2 & 0xFF);
++        ffa_incall->type = FFA_UNKNOWN;
++        return NO_ERROR;
++    default:
++        TRACEF("Received unknonwn FFA call 0x%lX\n", smc_ret->r0);
++        ffa_incall->type = FFA_UNKNOWN;
++        return NO_ERROR;
++    }
++}
++
++/* The caller needs to ensure that the thread isn't migrated to
++   another cpu between making the smc call and retrieving the cpu num
++   and also that the result is stored before it's use is
++   attempted. To this end, call with interrupts (irq and fiqs) disabled. */
++static void ffa_incall_set(const struct smc_ret8 *ffa_ret) {
++    uint cpu = arch_curr_cpu_num();
++
++    ASSERT(cpu < SMP_MAX_CPUS);
++    decode_smc_ret(ffa_ret, &incalls[cpu]);
++}
++
++/* Call with interrupts (irqs and fiqs) disabled */
++struct ffa_incall* ffa_incall_get(void) {
++    uint cpu = arch_curr_cpu_num();
++
++    ASSERT(cpu < SMP_MAX_CPUS);
++    return &incalls[cpu];
++}
++
+ static bool ffa_rxtx_map_is_implemented(size_t *buf_size_log2) {
+     ffa_features2_t features2;
+     bool is_implemented = false;
+diff --git a/lib/arm_ffa/include/lib/arm_ffa/ffa.h b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+index 0ebdc7f..133f1e4 100644
+--- a/lib/arm_ffa/include/lib/arm_ffa/ffa.h
++++ b/lib/arm_ffa/include/lib/arm_ffa/ffa.h
+@@ -23,6 +23,7 @@
+ 
+ #pragma once
+ 
++#include <platform/cache.h>
+ #include "ffa_err.h"
+ 
+ /* Check whether or not this module initialized successfully.
+@@ -58,3 +59,33 @@ status_t ffa_mem_retrieve_next_frag(uint64_t handle,
+                                     struct ffa_mem_frag_info *frag_info);
+ status_t ffa_rx_release(void);
+ 
++enum ffa_call_type {
++    FFA_NONE = 0,
++    FFA_INTERRUPT,
++    FFA_MSG_DIRECT_REQ_PARTITION,
++    FFA_UNKNOWN = -1
++};
++
++struct ffa_msg_partition {
++    uint16_t remote_id;
++    uint32_t args[5];
++};
++
++struct ffa_interrupt {
++    uint32_t id;
++};
++
++struct ffa_incall {
++    enum ffa_call_type type;
++    union {
++        struct ffa_interrupt interrupt;
++        struct ffa_msg_partition msg_partition;
++    };
++} __MAX_CACHE_ALIGN;
++
++/* Get the current incoming FF-A call on the current cpu/pe.  Doesn't
++   include responses to hypcalls. So, doesn't include responses to
++   setup and discovery or memory management calls.  Call with
++   interrupts (irqs and fiqs) disabled so the incall is returned for
++   the current and unchanging cpu/pe. */
++struct ffa_incall *ffa_incall_get(void);
+diff --git a/platform/generic-arm64/include/platform/cache.h b/platform/generic-arm64/include/platform/cache.h
+new file mode 100644
+index 0000000..b6ca754
+--- /dev/null
++++ b/platform/generic-arm64/include/platform/cache.h
+@@ -0,0 +1,31 @@
++/*
++ * Copyright (c) 2021, Arm Limited. All rights reserved.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining
++ * a copy of this software and associated documentation files
++ * (the "Software"), to deal in the Software without restriction,
++ * including without limitation the rights to use, copy, modify, merge,
++ * publish, distribute, sublicense, and/or sell copies of the Software,
++ * and to permit persons to whom the Software is furnished to do so,
++ * subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be
++ * included in all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
++ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
++ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++#pragma once
++
++#ifndef CACHE_WRITEBACK_GRANULE
++#define CACHE_WRITEBACK_GRANULE 128
++#endif
++/* Used to align structures on largest cache line in the platform
++   to avoid cache bouncing */
++#define __MAX_CACHE_ALIGN __ALIGNED(CACHE_WRITEBACK_GRANULE)
+-- 
+2.17.1
+

@@ -1,0 +1,700 @@
+From d525064195c42115a364da5125dcbf424cbe7833 Mon Sep 17 00:00:00 2001
+From: Anders Dellien <anders.dellien@arm.com>
+Date: Mon, 27 Jun 2022 11:58:10 +0100
+Subject: [PATCH] product/tc2: Add support for TC2/RSS boot flow
+
+Add TC2 BL1 module that implements the boot flow, with MHU (doorbell)
+signalling to/from RSS.
+
+BL1 will signal the RSS to indicate that startup is complete, then wait
+for another signal from RSS before powering on the AP CPUs.
+
+Signed-off-by: Anders Dellien <anders.dellien@arm.com>
+Change-Id: I2747bd0d07e867764c9a498ae87a985f4b6b7035
+---
+ product/tc2/include/scp_mmap.h                |   3 +
+ product/tc2/include/scp_platform_mhu.h        |  19 ++
+ product/tc2/include/scp_tc2_mhu.h             |   1 +
+ product/tc2/module/tc2_bl1/CMakeLists.txt     |  18 ++
+ product/tc2/module/tc2_bl1/Module.cmake       |   9 +
+ .../tc2/module/tc2_bl1/include/mod_tc2_bl1.h  |  72 ++++++
+ product/tc2/module/tc2_bl1/src/mod_tc2_bl1.c  | 231 ++++++++++++++++++
+ product/tc2/scp_ramfw/Firmware.cmake          |   2 +-
+ product/tc2/scp_romfw/CMakeLists.txt          |   6 +-
+ product/tc2/scp_romfw/Firmware.cmake          |  10 +-
+ product/tc2/scp_romfw/config_clock.c          |   8 +-
+ product/tc2/scp_romfw/config_mhu2.c           |  43 ++++
+ product/tc2/scp_romfw/config_ppu_v1.c         |   8 +-
+ .../{config_msys_rom.c => config_tc2_bl1.c}   |   6 +-
+ product/tc2/scp_romfw/config_transport.c      |  49 ++++
+ 15 files changed, 469 insertions(+), 16 deletions(-)
+ create mode 100644 product/tc2/include/scp_platform_mhu.h
+ create mode 100644 product/tc2/module/tc2_bl1/CMakeLists.txt
+ create mode 100644 product/tc2/module/tc2_bl1/Module.cmake
+ create mode 100644 product/tc2/module/tc2_bl1/include/mod_tc2_bl1.h
+ create mode 100644 product/tc2/module/tc2_bl1/src/mod_tc2_bl1.c
+ create mode 100644 product/tc2/scp_romfw/config_mhu2.c
+ rename product/tc2/scp_romfw/{config_msys_rom.c => config_tc2_bl1.c} (81%)
+ create mode 100644 product/tc2/scp_romfw/config_transport.c
+
+diff --git a/product/tc2/include/scp_mmap.h b/product/tc2/include/scp_mmap.h
+index 829950ef..932d20b5 100644
+--- a/product/tc2/include/scp_mmap.h
++++ b/product/tc2/include/scp_mmap.h
+@@ -60,6 +60,9 @@
+ #define SCP_MHU_SCP_AP_RCV_S_CLUS0  (SCP_MHU_AP_BASE + 0x4000)
+ #define SCP_MHU_SCP_AP_SND_S_CLUS0  (SCP_MHU_AP_BASE + 0x5000)
+ 
++#define SCP_MHU_SCP_RSS_RCV_S_CLUS0 0x45440000
++#define SCP_MHU_SCP_RSS_SND_S_CLUS0 0x45430000
++
+ #define SCP_PLL_BASE         (SCP_SOC_EXPANSION3_BASE + 0x03000000)
+ #define SCP_PLL_SYSPLL       (SCP_PLL_BASE + 0x00000000)
+ #define SCP_PLL_DISPLAY      (SCP_PLL_BASE + 0x00000014)
+diff --git a/product/tc2/include/scp_platform_mhu.h b/product/tc2/include/scp_platform_mhu.h
+new file mode 100644
+index 00000000..20bb18e2
+--- /dev/null
++++ b/product/tc2/include/scp_platform_mhu.h
+@@ -0,0 +1,19 @@
++/*
++ * Arm SCP/MCP Software
++ * Copyright (c) 2022, Arm Limited and Contributors. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ *
++ * Description:
++ *     MHU module device indexes.
++ */
++
++#ifndef SCP_PLATFORM_MHU_H
++#define SCP_PLATFORM_MHU_H
++
++enum scp_platform_mhu_device_idx {
++    SCP_PLATFORM_MHU_DEVICE_IDX_SCP_AP_S_CLUS0,
++    SCP_PLATFORM_MHU_DEVICE_IDX_COUNT
++};
++
++#endif /* SCP_PLATFORM_MHU_H */
+diff --git a/product/tc2/include/scp_tc2_mhu.h b/product/tc2/include/scp_tc2_mhu.h
+index 8072ed15..7cc05000 100644
+--- a/product/tc2/include/scp_tc2_mhu.h
++++ b/product/tc2/include/scp_tc2_mhu.h
+@@ -15,6 +15,7 @@ enum scp_tc2_mhu_device_idx {
+     SCP_TC2_MHU_DEVICE_IDX_SCP_AP_S_CLUS0,
+     SCP_TC2_MHU_DEVICE_IDX_SCP_AP_NS_HP_CLUS0,
+     SCP_TC2_MHU_DEVICE_IDX_SCP_AP_NS_LP_CLUS0,
++    SCP_TC2_MHU_DEVICE_IDX_SCP_RSS_S_CLUS0,
+     SCP_TC2_MHU_DEVICE_IDX_COUNT
+ };
+ 
+diff --git a/product/tc2/module/tc2_bl1/CMakeLists.txt b/product/tc2/module/tc2_bl1/CMakeLists.txt
+new file mode 100644
+index 00000000..7b99a6c0
+--- /dev/null
++++ b/product/tc2/module/tc2_bl1/CMakeLists.txt
+@@ -0,0 +1,18 @@
++#
++# Arm SCP/MCP Software
++# Copyright (c) 2022, Arm Limited and Contributors. All rights reserved.
++#
++# SPDX-License-Identifier: BSD-3-Clause
++#
++
++add_library(${SCP_MODULE_TARGET} SCP_MODULE)
++
++target_include_directories(${SCP_MODULE_TARGET}
++                           PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
++
++target_sources(${SCP_MODULE_TARGET}
++               PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/mod_tc2_bl1.c")
++
++target_link_libraries(
++    ${SCP_MODULE_TARGET} PRIVATE module-bootloader module-power-domain
++                                 module-ppu-v1 module-transport)
+diff --git a/product/tc2/module/tc2_bl1/Module.cmake b/product/tc2/module/tc2_bl1/Module.cmake
+new file mode 100644
+index 00000000..7df39f95
+--- /dev/null
++++ b/product/tc2/module/tc2_bl1/Module.cmake
+@@ -0,0 +1,9 @@
++#
++# Arm SCP/MCP Software
++# Copyright (c) 2022, Arm Limited and Contributors. All rights reserved.
++#
++# SPDX-License-Identifier: BSD-3-Clause
++#
++
++set(SCP_MODULE "tc2-bl1")
++set(SCP_MODULE_TARGET "module-tc2-bl1")
+diff --git a/product/tc2/module/tc2_bl1/include/mod_tc2_bl1.h b/product/tc2/module/tc2_bl1/include/mod_tc2_bl1.h
+new file mode 100644
+index 00000000..071ceead
+--- /dev/null
++++ b/product/tc2/module/tc2_bl1/include/mod_tc2_bl1.h
+@@ -0,0 +1,72 @@
++/*
++ * Arm SCP/MCP Software
++ * Copyright (c) 2022, Arm Limited and Contributors. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ *
++ * Description: TC2 BL1 module.
++ */
++
++#ifndef MOD_TC2_BL1_H
++#define MOD_TC2_BL1_H
++
++#include <fwk_id.h>
++#include <fwk_module_idx.h>
++
++#include <stddef.h>
++#include <stdint.h>
++
++/*!
++ * \ingroup GroupTC2BL1
++ * \defgroup GroupTC2BL1 BL1 Support
++ * \{
++ */
++
++/*!
++ * \brief Module configuration data.
++ */
++struct tc2_bl1_config {
++    /*! Base address of the Application Processor (AP) context area */
++    const uintptr_t ap_context_base;
++
++    /*! Size of the AP context area */
++    const size_t ap_context_size;
++
++    /*! Element ID of the primary cluster PPU */
++    const fwk_id_t id_primary_cluster;
++
++    /*! Element ID of the primary core PPU */
++    const fwk_id_t id_primary_core;
++};
++
++/*!
++ * \brief Type of the interfaces exposed by the module.
++ */
++enum mod_tc2_bl1_api_idx {
++    /*! Interface for transport module */
++    MOD_TC2_BL1_API_TRANSPORT_FIRMWARE_SIGNAL_INPUT,
++    /*! Number of defined interfaces */
++    MOD_TC2_BL1_API_IDX_COUNT,
++};
++
++/*!
++ * \brief Notification indices.
++ */
++enum mod_tc2_bl1_notification_idx {
++    /*! <tt>SYSTOP powered on</tt> notification */
++    MOD_TC2_BL1_NOTIFICATION_IDX_POWER_SYSTOP,
++
++    /*! Number of notifications defined by the module */
++    MOD_TC2_BL1_NOTIFICATION_COUNT,
++};
++
++/*! <tt>SYSTOP powered on</tt> notification identifier */
++static const fwk_id_t mod_tc2_bl1_notification_id_systop =
++    FWK_ID_NOTIFICATION_INIT(FWK_MODULE_IDX_TC2_BL1,
++                             MOD_TC2_BL1_NOTIFICATION_IDX_POWER_SYSTOP);
++
++/*!
++ * \}
++ */
++
++#endif /* MOD_TC2_BL1_H */
+diff --git a/product/tc2/module/tc2_bl1/src/mod_tc2_bl1.c b/product/tc2/module/tc2_bl1/src/mod_tc2_bl1.c
+new file mode 100644
+index 00000000..f550883d
+--- /dev/null
++++ b/product/tc2/module/tc2_bl1/src/mod_tc2_bl1.c
+@@ -0,0 +1,231 @@
++/*
++ * Arm SCP/MCP Software
++ * Copyright (c) 2015-2022, Arm Limited and Contributors. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ *
++ */
++
++#include <mod_bootloader.h>
++#include <mod_transport.h>
++#include <mod_tc2_bl1.h>
++#include <mod_ppu_v1.h>
++
++#include <fwk_assert.h>
++#include <fwk_core.h>
++#include <fwk_event.h>
++#include <fwk_id.h>
++#include <fwk_log.h>
++#include <fwk_module.h>
++#include <fwk_module_idx.h>
++#include <fwk_notification.h>
++#include <fwk_status.h>
++
++#include <scp_tc2_mhu.h>
++
++#include <stdbool.h>
++#include <string.h>
++
++struct tc2_bl1_ctx {
++    const struct tc2_bl1_config *bl1_config;
++    struct ppu_v1_boot_api *ppu_boot_api;
++    struct mod_bootloader_api *bootloader_api;
++    struct mod_transport_firmware_api *firmware_api;
++    unsigned int notification_count; /* Notifications awaiting a response */
++} ctx;
++
++enum bl1_event {
++    BL1_EVENT_RUN,
++    BL1_EVENT_RSS_HANDSHAKE,
++    BL1_EVENT_COUNT
++};
++
++static int tc2_signal_error(fwk_id_t service_id)
++{
++    fwk_unexpected();
++    return FWK_E_PANIC;
++}
++
++bool fwk_is_interrupt_context();
++
++static int tc2_signal_message(fwk_id_t service_id)
++{
++    struct fwk_event event = {
++        .source_id = FWK_ID_MODULE(FWK_MODULE_IDX_TC2_BL1),
++        .target_id = FWK_ID_MODULE(FWK_MODULE_IDX_TC2_BL1),
++        .id = FWK_ID_EVENT(FWK_MODULE_IDX_TC2_BL1, BL1_EVENT_RSS_HANDSHAKE),
++    };
++
++    return fwk_put_event(&event);
++}
++
++static const struct mod_transport_firmware_signal_api
++    tc2_system_transport_firmware_signal_api = {
++        .signal_error = tc2_signal_error,
++        .signal_message = tc2_signal_message,
++    };
++
++static int bl1_deferred_setup(void)
++{
++    /* Initialize the AP context area by zeroing it */
++    memset((void *)ctx.bl1_config->ap_context_base,
++           0,
++           ctx.bl1_config->ap_context_size);
++
++    FWK_LOG_INFO("[TC2_BL1] Pinging RSS");
++    ctx.firmware_api->trigger_interrupt(FWK_ID_ELEMENT(FWK_MODULE_IDX_TRANSPORT, 0));
++
++    return FWK_SUCCESS;
++}
++
++/*
++ * Functions fulfilling the framework's module interface
++ */
++
++static int tc2_bl1_init(fwk_id_t module_id, unsigned int element_count,
++    const void *data)
++{
++    ctx.bl1_config = data;
++
++    if ((ctx.bl1_config->ap_context_base == 0) ||
++        (ctx.bl1_config->ap_context_size == 0))
++        return FWK_E_RANGE;
++
++    return FWK_SUCCESS;
++}
++
++static int tc2_bl1_bind(fwk_id_t id, unsigned int round)
++{
++    int status;
++
++    /* Use second round only (round numbering is zero-indexed) */
++    if (round == 1) {
++
++        /* Bind to the PPU module */
++        status = fwk_module_bind(FWK_ID_MODULE(FWK_MODULE_IDX_PPU_V1),
++                                 FWK_ID_API(FWK_MODULE_IDX_PPU_V1,
++                                            MOD_PPU_V1_API_IDX_BOOT),
++                                 &ctx.ppu_boot_api);
++        if (status != FWK_SUCCESS)
++            return FWK_E_PANIC;
++
++        /* Bind to the bootloader module */
++        status = fwk_module_bind(FWK_ID_MODULE(FWK_MODULE_IDX_BOOTLOADER),
++                                 FWK_ID_API(FWK_MODULE_IDX_BOOTLOADER, 0),
++                                 &ctx.bootloader_api);
++        if (status != FWK_SUCCESS)
++            return FWK_E_PANIC;
++
++        status = fwk_module_bind(FWK_ID_ELEMENT(FWK_MODULE_IDX_TRANSPORT, 0),
++                                 FWK_ID_API(FWK_MODULE_IDX_TRANSPORT, MOD_TRANSPORT_API_IDX_FIRMWARE),
++                                 &ctx.firmware_api);
++        if (status != FWK_SUCCESS)
++            return FWK_E_PANIC;
++    }
++
++    return FWK_SUCCESS;
++}
++
++static int tc2_bl1_start(fwk_id_t id)
++{
++    struct fwk_event event = {
++        .source_id = FWK_ID_MODULE(FWK_MODULE_IDX_TC2_BL1),
++        .target_id = FWK_ID_MODULE(FWK_MODULE_IDX_TC2_BL1),
++        .id = FWK_ID_EVENT(FWK_MODULE_IDX_TC2_BL1, BL1_EVENT_RUN),
++    };
++
++    return fwk_put_event(&event);
++}
++
++static int tc2_bl1_process_event(const struct fwk_event *event,
++    struct fwk_event *resp)
++{
++    int status;
++
++    if (fwk_id_get_event_idx(event->id) == BL1_EVENT_RUN) {
++        struct mod_pd_power_state_transition_notification_params
++            *notification_params;
++        struct fwk_event systop_on_event = {
++            .response_requested = true,
++            .id = mod_tc2_bl1_notification_id_systop,
++            .source_id = FWK_ID_NONE
++        };
++
++        /* Notify any subscribers of the SYSTOP power domain state change */
++        notification_params =
++            (struct mod_pd_power_state_transition_notification_params *)
++                systop_on_event.params;
++        notification_params->state = MOD_PD_STATE_ON;
++
++        status = fwk_notification_notify(&systop_on_event, &ctx.notification_count);
++        if (status != FWK_SUCCESS)
++            return status;
++
++        return FWK_SUCCESS;
++    } else if (fwk_id_get_event_idx(event->id) == BL1_EVENT_RSS_HANDSHAKE) {
++
++        FWK_LOG_INFO("[TC1_BL1] Got ACK from RSS");
++
++        /* Power on the primary cluster and cpu */
++        ctx.ppu_boot_api->power_mode_on(ctx.bl1_config->id_primary_cluster);
++        ctx.ppu_boot_api->power_mode_on(ctx.bl1_config->id_primary_core);
++
++        status = ctx.bootloader_api->load_image();
++
++        FWK_LOG_CRIT(
++            "[TC1_BL1] Failed to load RAM firmware image: %s",
++            fwk_status_str(status));
++
++        return FWK_E_DATA;
++    }
++
++    return FWK_SUCCESS;
++}
++
++static int tc2_bl1_process_notification(
++    const struct fwk_event *event,
++    struct fwk_event *resp_event)
++{
++    fwk_assert(
++        fwk_id_is_equal(event->id, mod_tc2_bl1_notification_id_systop));
++    fwk_assert(event->is_response == true);
++
++
++    /* At least one notification response must be outstanding */
++    if (ctx.notification_count == 0) {
++        fwk_unexpected();
++        return FWK_E_PANIC;
++    }
++
++    /* Complete remaining setup now that all subscribers have responded */
++    if ((--ctx.notification_count) == 0)
++    {
++        return bl1_deferred_setup();
++    }
++
++    return FWK_SUCCESS;
++}
++
++static int tc2_bl1_process_bind_request(
++    fwk_id_t source_id,
++    fwk_id_t target_id,
++    fwk_id_t api_id,
++    const void **api)
++{
++    *api = &tc2_system_transport_firmware_signal_api;
++    return FWK_SUCCESS;
++}
++
++/* Module descriptor */
++const struct fwk_module module_tc2_bl1 = {
++    .api_count = MOD_TC2_BL1_API_IDX_COUNT,
++    .type = FWK_MODULE_TYPE_SERVICE,
++    .event_count = BL1_EVENT_COUNT,
++    .notification_count = MOD_TC2_BL1_NOTIFICATION_COUNT,
++    .init = tc2_bl1_init,
++    .bind = tc2_bl1_bind,
++    .start = tc2_bl1_start,
++    .process_bind_request = tc2_bl1_process_bind_request,
++    .process_event = tc2_bl1_process_event,
++    .process_notification = tc2_bl1_process_notification,
++};
+diff --git a/product/tc2/scp_ramfw/Firmware.cmake b/product/tc2/scp_ramfw/Firmware.cmake
+index c219385d..f8d751c0 100644
+--- a/product/tc2/scp_ramfw/Firmware.cmake
++++ b/product/tc2/scp_ramfw/Firmware.cmake
+@@ -23,7 +23,7 @@ set(SCP_ENABLE_RESOURCE_PERMISSIONS_INIT TRUE)
+ 
+ set(SCP_ENABLE_IPO_INIT FALSE)
+ 
+-set(SCP_ARCHITECTURE "armv7-m")
++set(SCP_ARCHITECTURE "arm-m")
+ 
+ list(PREPEND SCP_MODULE_PATHS "${CMAKE_CURRENT_LIST_DIR}/../module/tc2_system")
+ 
+diff --git a/product/tc2/scp_romfw/CMakeLists.txt b/product/tc2/scp_romfw/CMakeLists.txt
+index 343a0598..8d5fa975 100644
+--- a/product/tc2/scp_romfw/CMakeLists.txt
++++ b/product/tc2/scp_romfw/CMakeLists.txt
+@@ -29,8 +29,10 @@ target_sources(
+             "${CMAKE_CURRENT_SOURCE_DIR}/config_clock.c"
+             "${CMAKE_CURRENT_SOURCE_DIR}/config_gtimer.c"
+             "${CMAKE_CURRENT_SOURCE_DIR}/config_timer.c"
+-            "${CMAKE_CURRENT_SOURCE_DIR}/config_msys_rom.c"
+-            "${CMAKE_CURRENT_SOURCE_DIR}/config_bootloader.c")
++            "${CMAKE_CURRENT_SOURCE_DIR}/config_tc2_bl1.c"
++            "${CMAKE_CURRENT_SOURCE_DIR}/config_bootloader.c"
++            "${CMAKE_CURRENT_SOURCE_DIR}/config_transport.c"
++            "${CMAKE_CURRENT_SOURCE_DIR}/config_mhu2.c")
+ 
+ #
+ # Some of our firmware includes require CMSIS.
+diff --git a/product/tc2/scp_romfw/Firmware.cmake b/product/tc2/scp_romfw/Firmware.cmake
+index 15ca0745..488d541a 100644
+--- a/product/tc2/scp_romfw/Firmware.cmake
++++ b/product/tc2/scp_romfw/Firmware.cmake
+@@ -21,9 +21,13 @@ set(SCP_ENABLE_NOTIFICATIONS_INIT TRUE)
+ 
+ set(SCP_ENABLE_IPO_INIT FALSE)
+ 
+-set(SCP_ARCHITECTURE "armv7-m")
++set(SCP_ENABLE_INBAND_MSG_SUPPORT TRUE)
++
++set(SCP_ARCHITECTURE "arm-m")
+ 
+ list(PREPEND SCP_MODULE_PATHS "${CMAKE_SOURCE_DIR}/module/cmn_booker")
++list(PREPEND SCP_MODULE_PATHS "${CMAKE_SOURCE_DIR}/module/transport")
++list(PREPEND SCP_MODULE_PATHS "${CMAKE_SOURCE_DIR}/product/tc2/module/tc2_bl1")
+ 
+ # The order of the modules in the following list is the order in which the
+ # modules are initialized, bound, started during the pre-runtime phase.
+@@ -31,7 +35,7 @@ list(PREPEND SCP_MODULE_PATHS "${CMAKE_SOURCE_DIR}/module/cmn_booker")
+ 
+ list(APPEND SCP_MODULES "pl011")
+ list(APPEND SCP_MODULES "ppu-v1")
+-list(APPEND SCP_MODULES "msys-rom")
++list(APPEND SCP_MODULES "tc2-bl1")
+ list(APPEND SCP_MODULES "bootloader")
+ list(APPEND SCP_MODULES "system-pll")
+ list(APPEND SCP_MODULES "pik-clock")
+@@ -41,3 +45,5 @@ list(APPEND SCP_MODULES "gtimer")
+ list(APPEND SCP_MODULES "timer")
+ list(APPEND SCP_MODULES "cmn-booker")
+ list(APPEND SCP_MODULES "sds")
++list(APPEND SCP_MODULES "mhu2")
++list(APPEND SCP_MODULES "transport")
+diff --git a/product/tc2/scp_romfw/config_clock.c b/product/tc2/scp_romfw/config_clock.c
+index b11ad5d4..3839e71a 100644
+--- a/product/tc2/scp_romfw/config_clock.c
++++ b/product/tc2/scp_romfw/config_clock.c
+@@ -11,7 +11,7 @@
+ 
+ #include <mod_clock.h>
+ #include <mod_css_clock.h>
+-#include <mod_msys_rom.h>
++#include <mod_tc2_bl1.h>
+ #include <mod_pik_clock.h>
+ #include <mod_power_domain.h>
+ 
+@@ -31,7 +31,7 @@ static const struct fwk_element clock_dev_desc_table[2] = {
+                 .api_id = FWK_ID_API_INIT(
+                     FWK_MODULE_IDX_CSS_CLOCK,
+                     MOD_CSS_CLOCK_API_TYPE_CLOCK),
+-                .pd_source_id = FWK_ID_MODULE_INIT(FWK_MODULE_IDX_MSYS_ROM),
++                .pd_source_id = FWK_ID_MODULE_INIT(FWK_MODULE_IDX_TC2_BL1),
+             }),
+         },
+     { 0 }, /* Termination description. */
+@@ -46,8 +46,8 @@ const struct fwk_module_config config_clock = {
+     .elements = FWK_MODULE_DYNAMIC_ELEMENTS(clock_get_dev_desc_table),
+     .data = &((struct mod_clock_config){
+         .pd_transition_notification_id = FWK_ID_NOTIFICATION_INIT(
+-            FWK_MODULE_IDX_MSYS_ROM,
+-            MOD_MSYS_ROM_NOTIFICATION_IDX_POWER_SYSTOP),
++            FWK_MODULE_IDX_TC2_BL1,
++            MOD_TC2_BL1_NOTIFICATION_IDX_POWER_SYSTOP),
+         .pd_pre_transition_notification_id = FWK_ID_NONE_INIT,
+     }),
+ };
+diff --git a/product/tc2/scp_romfw/config_mhu2.c b/product/tc2/scp_romfw/config_mhu2.c
+new file mode 100644
+index 00000000..8d1ed86a
+--- /dev/null
++++ b/product/tc2/scp_romfw/config_mhu2.c
+@@ -0,0 +1,43 @@
++/*
++ * Arm SCP/MCP Software
++ * Copyright (c) 2022, Arm Limited and Contributors. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++
++#include "scp_mmap.h"
++#include "scp_tc2_mhu.h"
++
++#include <mod_mhu2.h>
++
++#include <fwk_element.h>
++#include <fwk_id.h>
++#include <fwk_module.h>
++
++#include <fmw_cmsis.h>
++
++static const struct fwk_element mhu_element_table[
++    ] = {
++    [0] = {
++        .name = "MHU_SCP_RSS_S",
++        .sub_element_count = 1,
++        .data = &((
++            struct
++            mod_mhu2_channel_config){
++            .irq = 121,
++            .recv = SCP_MHU_SCP_RSS_RCV_S_CLUS0,
++            .send = SCP_MHU_SCP_RSS_SND_S_CLUS0,
++            .channel = 0,
++        }),
++    },
++    [1] = { 0 },
++};
++
++static const struct fwk_element *mhu_get_element_table(fwk_id_t module_id)
++{
++    return mhu_element_table;
++}
++
++const struct fwk_module_config config_mhu2 = {
++    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(mhu_get_element_table),
++};
+diff --git a/product/tc2/scp_romfw/config_ppu_v1.c b/product/tc2/scp_romfw/config_ppu_v1.c
+index 030d9b37..354b9005 100644
+--- a/product/tc2/scp_romfw/config_ppu_v1.c
++++ b/product/tc2/scp_romfw/config_ppu_v1.c
+@@ -10,9 +10,9 @@
+ #include "tc2_core.h"
+ 
+ #include <mod_cmn_booker.h>
+-#include <mod_msys_rom.h>
+ #include <mod_power_domain.h>
+ #include <mod_ppu_v1.h>
++#include <mod_tc2_bl1.h>
+ 
+ #include <fwk_element.h>
+ #include <fwk_id.h>
+@@ -128,8 +128,8 @@ struct fwk_module_config config_ppu_v1 = {
+     .data =
+         &(struct mod_ppu_v1_config){
+             .pd_notification_id = FWK_ID_NOTIFICATION_INIT(
+-                FWK_MODULE_IDX_MSYS_ROM,
+-                MOD_MSYS_ROM_NOTIFICATION_IDX_POWER_SYSTOP),
+-            .pd_source_id = FWK_ID_MODULE_INIT(FWK_MODULE_IDX_MSYS_ROM),
++                FWK_MODULE_IDX_TC2_BL1,
++                MOD_TC2_BL1_NOTIFICATION_IDX_POWER_SYSTOP),
++            .pd_source_id = FWK_ID_MODULE_INIT(FWK_MODULE_IDX_TC2_BL1),
+         },
+ };
+diff --git a/product/tc2/scp_romfw/config_msys_rom.c b/product/tc2/scp_romfw/config_tc2_bl1.c
+similarity index 81%
+rename from product/tc2/scp_romfw/config_msys_rom.c
+rename to product/tc2/scp_romfw/config_tc2_bl1.c
+index 3b1b8d8c..322ddc00 100644
+--- a/product/tc2/scp_romfw/config_msys_rom.c
++++ b/product/tc2/scp_romfw/config_tc2_bl1.c
+@@ -7,14 +7,14 @@
+ 
+ #include "scp_mmap.h"
+ 
+-#include <mod_msys_rom.h>
++#include <mod_tc2_bl1.h>
+ 
+ #include <fwk_id.h>
+ #include <fwk_module.h>
+ #include <fwk_module_idx.h>
+ 
+-const struct fwk_module_config config_msys_rom = {
+-    .data = &((struct msys_rom_config){
++const struct fwk_module_config config_tc2_bl1 = {
++    .data = &((struct tc2_bl1_config){
+         .ap_context_base = SCP_AP_CONTEXT_BASE,
+         .ap_context_size = SCP_AP_CONTEXT_SIZE,
+         .id_primary_cluster = FWK_ID_ELEMENT_INIT(FWK_MODULE_IDX_PPU_V1, 1),
+diff --git a/product/tc2/scp_romfw/config_transport.c b/product/tc2/scp_romfw/config_transport.c
+new file mode 100644
+index 00000000..4cafec00
+--- /dev/null
++++ b/product/tc2/scp_romfw/config_transport.c
+@@ -0,0 +1,49 @@
++/*
++ * Arm SCP/MCP Software
++ * Copyright (c) 2022, Arm Limited and Contributors. All rights reserved.
++ *
++ * SPDX-License-Identifier: BSD-3-Clause
++ */
++
++#include <mod_mhu2.h>
++#include <mod_transport.h>
++#include <mod_tc2_bl1.h>
++
++#include <fwk_element.h>
++#include <fwk_id.h>
++#include <fwk_macros.h>
++#include <fwk_module.h>
++
++#include <scp_platform_mhu.h>
++
++static const struct fwk_element transport_element_table[] = {
++    [0] = {
++        .name = "SCP2RSS_EVENT",
++        .data = &((
++            struct mod_transport_channel_config) {
++            .transport_type = MOD_TRANSPORT_CHANNEL_TRANSPORT_TYPE_NONE,
++            .signal_api_id = FWK_ID_API_INIT(
++                                FWK_MODULE_IDX_TC2_BL1,
++                                MOD_TC2_BL1_API_TRANSPORT_FIRMWARE_SIGNAL_INPUT),
++            .driver_id =
++                FWK_ID_SUB_ELEMENT_INIT(
++                    FWK_MODULE_IDX_MHU2,
++                    0,
++                    0),
++            .driver_api_id =
++                FWK_ID_API_INIT(
++                    FWK_MODULE_IDX_MHU2,
++                    MOD_MHU2_API_IDX_TRANSPORT_DRIVER),
++        }),
++    },
++    [1] = { 0 },
++};
++
++static const struct fwk_element *transport_get_element_table(fwk_id_t module_id)
++{
++    return transport_element_table;
++}
++
++const struct fwk_module_config config_transport = {
++    .elements = FWK_MODULE_DYNAMIC_ELEMENTS(transport_get_element_table),
++};
+-- 
+2.36.1
+
