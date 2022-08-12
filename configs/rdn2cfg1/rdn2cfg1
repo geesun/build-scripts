@@ -83,7 +83,7 @@ UEFI_PLAT_rdn2cfg1[dsc]="Platform/ARM/SgiPkg/RdN2Cfg1/RdN2Cfg1.dsc"
 UEFI_PLAT_rdn2cfg1[output]=css-common
 UEFI_PLAT_rdn2cfg1[defines]="-D EDK2_PLAT=rdn2cfg1 -D VALIDATION_LVL=$VALIDATION_LVL"
 if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
-	UEFI_PLAT_rdn2cfg1[defines]="${UEFI_PLAT_rdn2cfg1[defines]} -D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_FIRMWARE_FIRST"
+	UEFI_PLAT_rdn2cfg1[defines]="${UEFI_PLAT_rdn2cfg1[defines]} -D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_FIRMWARE_FIRST -D EDK2_ERROR_INJ_EN"
 fi
 UEFI_PLAT_rdn2cfg1[defines]="${UEFI_PLAT_rdn2cfg1[defines]} -D EDK2_ENABLE_RAS=$ARM_TF_RAS_FW_FIRST"
 UEFI_PLAT_rdn2cfg1[binary]="BL33_AP_UEFI.fd"
