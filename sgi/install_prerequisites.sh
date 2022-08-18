@@ -309,6 +309,8 @@ ${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
 	install_package
 
 	echo -e "\n Installing CMake - \n\n"
+	pip install scikit-build >> $LOGFILE 2>&1
+	python -m pip install --upgrade pip >> $LOGFILE 2>&1
 	pip install cmake --upgrade >> $LOGFILE 2>&1
 	echo -e "${BOLD}${GREEN}done${NORMAL}"
 
