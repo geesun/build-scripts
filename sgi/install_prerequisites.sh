@@ -260,7 +260,7 @@ function install_openssl3_0()
 	cd ${TOOLS_DIR}/${OPENSSL_DIRNAME}
 	./Configure --libdir=lib --prefix=/usr --api=1.0.1
 	cd ${TOOLS_DIR}
-	make -C ${TOOLS_DIR}/${OPENSSL_DIRNAME}
+	make -j${nproc} -C ${TOOLS_DIR}/${OPENSSL_DIRNAME}
 	make -C ${TOOLS_DIR}/${OPENSSL_DIRNAME} install
 }
 
