@@ -73,7 +73,7 @@ APT_PACKAGES_COMMON=(
 		"expect"
 		"bridge-utils"
 		"python"
-		"python-pip"
+		"python3-pip"
 		"device-tree-compiler"
 		"autopoint"
 		"doxygen"
