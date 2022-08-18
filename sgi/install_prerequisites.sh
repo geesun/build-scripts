@@ -54,15 +54,8 @@ APT_PACKAGES_COMMON=(
 		"build-essential"
 		"curl"
 		"flex"
-		"g++-multilib"
-		"gcc-multilib"
-		"gcc-6"
-		"g++-6"
 		"genext2fs"
 		"gperf"
-		"libc6:i386"
-		"libstdc++6:i386"
-		"libncurses5:i386"
 		"libxml2"
 		"libxml2-dev"
 		"libxml2-utils"
@@ -80,27 +73,48 @@ APT_PACKAGES_COMMON=(
 		"xterm"
 		"ninja-build"
 		"python3-distutils"
-		"gcc-aarch64-linux-gnu"
-)
-
-###########################################################################
-# List of packages which would need to be installed via "apt-get install" #
-# for enterprise platform only. This list should not include any package  #
-# which is specific to any test or filesystem.                            #
-###########################################################################
-APT_PACKAGES_ENTERPRISE=(
 		"uuid-dev"
 		"wget"
-		"zlib1g:i386"
-		"zlib1g-dev:i386"
 		"zip"
 		"mtools"
-		"fuseext2"
 		"autoconf"
 		"locales"
 		"sbsigntool"
 		"pkg-config"
 		"gdisk"
+)
+
+############################################################################
+# List of packages which would need to be installed via "apt-get install"  #
+# for x86 host machines. This list should not include any package which is #
+# specific to any test or filesystem.                                      #
+############################################################################
+APT_PACKAGES_x86=(
+		"g++-multilib"
+		"gcc-multilib"
+		"gcc-6"
+		"g++-6"
+		"gcc-aarch64-linux-gnu"
+		"libc6:i386"
+		"libstdc++6:i386"
+		"libncurses5:i386"
+		"fuseext2"
+		"zlib1g:i386"
+		"zlib1g-dev:i386"
+)
+
+############################################################################
+# List of packages which would need to be installed via "apt-get install"  #
+# for arm64 host machines. This list should not include any package which  #
+# is specific to any test or filesystem.                                   #
+############################################################################
+APT_PACKAGES_arm64=(
+		"libc6:arm64"
+		"libstdc++6:arm64"
+		"libncurses5:arm64"
+		"zlib1g:arm64"
+		"zlib1g-dev:arm64"
+		"gcc-arm-none-eabi"
 )
 
 LOGFILE="./refinfra_pkg_install.log"
@@ -119,9 +133,15 @@ RC_SUCCESS=0
 ###########################################################################
 function prepare_resources()
 {
+	ARCH_VERSION=$(uname -m)
+
 	# Get the list of packages to be installed
 	APT_PACKAGES_TO_INSTALL+=( "${APT_PACKAGES_COMMON[@]}" )
-	APT_PACKAGES_TO_INSTALL+=( "${APT_PACKAGES_ENTERPRISE[@]}" )
+	if [ "$ARCH_VERSION" ==  "x86_64" ]; then
+		APT_PACKAGES_TO_INSTALL+=( "${APT_PACKAGES_x86[@]}" )
+	else
+		APT_PACKAGES_TO_INSTALL+=( "${APT_PACKAGES_arm64[@]}" )
+	fi
 
 	# Enable all the standard Ubuntu repositories
 	echo -ne "\nAdding required Ubuntu repositories to apt list..."
@@ -133,9 +153,15 @@ function prepare_resources()
 	echo >> $LOGFILE 2>&1
 	echo -e "${BOLD}${GREEN}done${NORMAL}"
 
-	# Add 'i386'  to dpkg architecture list
-	sudo dpkg --add-architecture i386 >> $LOGFILE 2>&1
-	echo >> $LOGFILE 2>&1
+	if [ "$ARCH_VERSION" ==  "x86_64" ]; then
+		# Add 'i386'  to dpkg architecture list
+		sudo dpkg --add-architecture i386 >> $LOGFILE 2>&1
+		echo >> $LOGFILE 2>&1
+	else
+		# Add 'arm64'  to dpkg architecture list
+		sudo dpkg --add-architecture arm64 >> $LOGFILE 2>&1
+		echo >> $LOGFILE 2>&1
+	fi
 
 	# Update package list
 	echo -ne "\nUpdating apt list..."
@@ -187,6 +213,8 @@ Check log file to find the specific reason for failure\n"
 ############################################################################
 function install_gcc_toolchain()
 {
+	echo -e "\nInstalling toolchain:\n\n"
+
 	# Create the target path if not present
 	mkdir -p tools/gcc
 	pushd tools/gcc
@@ -280,6 +308,49 @@ function shutdown()
 
 ############################################################################
 #                                                                          #
+#  Function: install_fvp_dependencies                                      #
+#  Description: Install any packages required to use the FVP.              #
+#                                                                          #
+############################################################################
+function install_fvp_dependencies()
+{
+	sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+	sudo apt upgrade -y libstdc++6
+}
+
+############################################################################
+#                                                                          #
+#  Function: install_cmake                                                 #
+#  Description: Install cmake for the platform                             #
+#                                                                          #
+############################################################################
+function install_cmake()
+{
+	echo -e "\n Installing CMake - \n\n"
+
+	ARCH_VERSION=$(uname -m)
+	if [ "$ARCH_VERSION" ==  "x86_64" ]; then
+		pip install scikit-build >> $LOGFILE 2>&1
+		python -m pip install --upgrade pip >> $LOGFILE 2>&1
+		pip install cmake --upgrade >> $LOGFILE 2>&1
+	else
+		mkdir /tmp/cmake_build
+		pushd /tmp/cmake_build
+		wget https://github.com/Kitware/CMake/releases/download/v3.24.1/cmake-3.24.1.tar.gz
+		tar xf cmake-3.24.1.tar.gz
+		cd cmake-3.24.1
+		./configure
+		make -j${nproc}
+		make -j${nproc} install
+		popd
+		sudo rm -Rf /tmp/cmake_build
+	fi
+
+	echo -e "${BOLD}${GREEN}done${NORMAL}"
+}
+
+############################################################################
+#                                                                          #
 #  Function:     main                                                      #
 #  Description:  Entry point for the script.                               #
 #                                                                          #
@@ -300,31 +371,30 @@ function shutdown()
 	fi
 	echo "LOGFILE is $LOGFILE"
 
-	echo -e "\nInstalltion of prerequisites started on \
-${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
+	echo -e "\nInstalltion of prerequisites started on "
+	echo -e "${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
 
 	prepare_resources
 
 	echo -e "\nInstalling Required Packages:\n\n"
 	install_package
 
-	echo -e "\n Installing CMake - \n\n"
-	pip install scikit-build >> $LOGFILE 2>&1
-	python -m pip install --upgrade pip >> $LOGFILE 2>&1
-	pip install cmake --upgrade >> $LOGFILE 2>&1
-	echo -e "${BOLD}${GREEN}done${NORMAL}"
-
 	ARCH_VERSION=$(uname -m)
 	if [ "$ARCH_VERSION" ==  "x86_64" ]; then
-		echo -e "\nInstalling toolchain:\n\n"
 		install_gcc_toolchain
 	fi
 
 	echo -e "\nInstalling OpenSSL 3.0:\n\n"
 	install_openssl3_0
 
-	echo -e "\nInstalltion of prerequisites ended at \
-${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
+	#install cmake
+	install_cmake
+
+	echo -e "\nInstalling FVP dependencies \n\n"
+	install_fvp_dependencies
+
+	echo -e "\nInstalltion of prerequisites ended at "
+	echo -e "${NORMAL} ${BOLD}${BLUE}`date`${NORMAL}\n"
 
 	shutdown $?
 
