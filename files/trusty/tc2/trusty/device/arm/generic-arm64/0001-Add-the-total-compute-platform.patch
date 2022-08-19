@@ -1,0 +1,132 @@
+From c93d025889b87348327c0e2992606c63c2d1a99b Mon Sep 17 00:00:00 2001
+From: Ben Horgan <ben.horgan@arm.com>
+Date: Tue, 26 Apr 2022 10:00:49 +0000
+Subject: [PATCH] Add the total compute platform
+
+Adds build targets tc, tc-test, tc-debug and tc-test-debug
+
+Signed-off-by: Ben Horgan <ben.horgan@arm.com>
+Change-Id: Ib73814b3c9ad9e769e881fc0dd6f795991771182
+Upstream-Status: Pending [Not submitted to upstream yet]
+---
+ project/generic-arm-inc.mk |  5 ++++-
+ project/tc-debug.mk        |  3 +++
+ project/tc-inc.mk          | 20 ++++++++++++++++++++
+ project/tc-test-debug.mk   |  3 +++
+ project/tc-test-inc.mk     | 11 +++++++++++
+ project/tc-test.mk         |  3 +++
+ project/tc.mk              |  3 +++
+ 7 files changed, 47 insertions(+), 1 deletion(-)
+ create mode 100644 project/tc-debug.mk
+ create mode 100644 project/tc-inc.mk
+ create mode 100644 project/tc-test-debug.mk
+ create mode 100644 project/tc-test-inc.mk
+ create mode 100644 project/tc-test.mk
+ create mode 100644 project/tc.mk
+
+diff --git a/project/generic-arm-inc.mk b/project/generic-arm-inc.mk
+index df38c6d..75f0d2a 100644
+--- a/project/generic-arm-inc.mk
++++ b/project/generic-arm-inc.mk
+@@ -21,6 +21,7 @@ SMP_CPU_CLUSTER_SHIFT ?= 2
+ GIC_VERSION ?= 2
+ # Use modern KM wrapping key size (256-bits)
+ TRUSTY_KM_WRAPPING_KEY_SIZE ?= 32
++TRUSTY_ARM_ARCH_SECURE_EL2 ?= false
+ 
+ TARGET := generic-arm64
+ 
+@@ -52,7 +53,9 @@ ASLR               ?= false
+ endif
+ 
+ # select timer
+-ifeq (true,$(call TOBOOL,$(KERNEL_32BIT)))
++ifeq (true,$(call TOBOOL,$(TRUSTY_ARM_ARCH_SECURE_EL2)))
++GLOBAL_DEFINES += TIMER_ARM_GENERIC_SELECTED=CNTP
++else ifeq (true,$(call TOBOOL,$(KERNEL_32BIT)))
+ # 32 bit Secure EL1 with a 64 bit EL3 gets the non-secure physical timer
+ GLOBAL_DEFINES += TIMER_ARM_GENERIC_SELECTED=CNTP
+ else
+diff --git a/project/tc-debug.mk b/project/tc-debug.mk
+new file mode 100644
+index 0000000..70d7f89
+--- /dev/null
++++ b/project/tc-debug.mk
+@@ -0,0 +1,3 @@
++DEBUG := 2
++
++include project/tc-inc.mk
+diff --git a/project/tc-inc.mk b/project/tc-inc.mk
+new file mode 100644
+index 0000000..0928b98
+--- /dev/null
++++ b/project/tc-inc.mk
+@@ -0,0 +1,20 @@
++KERNEL_32BIT := false
++GIC_VERSION := 4
++
++# Shifted affinity
++SMP_CPU_CLUSTER_SHIFT := 0
++
++# GIC has the GICR_PWRR register
++GLOBAL_DEFINES += GIC600=1
++
++# Stop boringssl generating aes instructions
++GLOBAL_DEFINES   += OPENSSL_NO_ASM
++USE_ARM_V7_NEON  := 0
++USE_ARM_V8_AES   := 0
++USE_ARM_V8_PMULL := 0
++USE_ARM_V8_SHA1  := 0
++USE_ARM_V8_SHA2  := 0
++
++TRUSTY_ARM_ARCH_SECURE_EL2 := true
++
++include project/generic-arm-inc.mk
+diff --git a/project/tc-test-debug.mk b/project/tc-test-debug.mk
+new file mode 100644
+index 0000000..7577e3b
+--- /dev/null
++++ b/project/tc-test-debug.mk
+@@ -0,0 +1,3 @@
++DEBUG := 2
++
++include project/tc-test-inc.mk
+diff --git a/project/tc-test-inc.mk b/project/tc-test-inc.mk
+new file mode 100644
+index 0000000..f8a3d7d
+--- /dev/null
++++ b/project/tc-test-inc.mk
+@@ -0,0 +1,11 @@
++UBSAN_ENABLED ?= true
++
++include project/tc-inc.mk
++include trusty/kernel/kerneltests-inc.mk
++include trusty/user/base/usertests-inc.mk
++
++# Only enable pattern init in test-builds, as it has runtime overhead
++# and intentionally attempts to induce crashes for bad assumptions.
++GLOBAL_SHARED_COMPILEFLAGS += -ftrivial-auto-var-init=pattern
++
++TEST_BUILD := true
+diff --git a/project/tc-test.mk b/project/tc-test.mk
+new file mode 100644
+index 0000000..82eadfa
+--- /dev/null
++++ b/project/tc-test.mk
+@@ -0,0 +1,3 @@
++DEBUG := 1
++
++include project/tc-test-inc.mk
+diff --git a/project/tc.mk b/project/tc.mk
+new file mode 100644
+index 0000000..0c203d1
+--- /dev/null
++++ b/project/tc.mk
+@@ -0,0 +1,3 @@
++DEBUG := 1
++
++include project/tc-inc.mk
+-- 
+2.17.1
+
+
