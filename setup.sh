@@ -142,6 +142,7 @@ pip3 install markupsafe==2.0.1
 # Trusted Services requirements
 pushd $SCRIPT_DIR/../src/trusted-services
 pip3 install -r requirements.txt
+pip3 install --upgrade protobuf grpcio-tools
 popd
 
 # Patch components
