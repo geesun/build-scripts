@@ -32,6 +32,7 @@ do_configure() {
     source $TRUSTY_ENV/envsetup.sh
     export BUILDROOT=$TRUSTY_TOP/build-root
     export TARGET=tc-test-debug
+    export HOST_FLAGS+=-Wno-error=deprecated-declarations
 }
 
 do_build() {
