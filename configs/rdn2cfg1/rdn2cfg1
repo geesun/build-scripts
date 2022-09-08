@@ -131,7 +131,7 @@ UEFI_PLAT_rdn2cfg1_mm_standalone[platname]="SgiMmStandalone"
 UEFI_PLAT_rdn2cfg1_mm_standalone[dsc]="Platform/ARM/SgiPkg/PlatformStandaloneMm2.dsc"
 UEFI_PLAT_rdn2cfg1_mm_standalone[output]=css-common
 if [ "$ARM_TF_RAS_FW_FIRST" == "1" ]; then
-	UEFI_PLAT_rdn2cfg1_mm_standalone[defines]="-D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_CPU_MM"
+	UEFI_PLAT_rdn2cfg1_mm_standalone[defines]="-D EDK2_ENABLE_GHES_MM -D EDK2_ENABLE_CPU_MM -D EDK2_ENABLE_SRAM_MM"
 fi
 UEFI_PLAT_rdn2cfg1_mm_standalone[binary]="BL32_AP_MM.fd"
 UEFI_PLAT_rdn2cfg1_mm_standalone[outbin]=mm_standalone.bin
