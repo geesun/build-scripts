@@ -1,0 +1,28 @@
+From d440e712e0c1893a78e51cba0313695274f7f96c Mon Sep 17 00:00:00 2001
+From: Anders Dellien <anders.dellien@arm.com>
+Date: Fri, 9 Sep 2022 09:05:06 +0100
+Subject: [PATCH] fix: Don't use shallow clone for hfsp-shim
+
+This fixes build issues when referring to SHAs earlier in history
+
+Signed-off-by: Anders Dellien <anders.dellien@arm.com>
+---
+ environments/hfsp-shim/component.cmake | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/environments/hfsp-shim/component.cmake b/environments/hfsp-shim/component.cmake
+index ee80a1b..a228c72 100644
+--- a/environments/hfsp-shim/component.cmake
++++ b/environments/hfsp-shim/component.cmake
+@@ -24,7 +24,7 @@ FetchContent_Declare(
+ 	hfsp-shim
+ 	GIT_REPOSITORY ${HFSP_SHIM_URL}
+ 	GIT_TAG ${HFSP_SHIM_TAG}
+-	GIT_SHALLOW TRUE
++	GIT_SHALLOW FALSE
+ )
+ 
+ # FetchContent_GetProperties exports hfsp-shim_SOURCE_DIR and hfsp-shim_BINARY_DIR variables
+-- 
+2.17.1
+
