@@ -56,3 +56,14 @@ deploy.
 
 Build files will be in output/tmp_build/$COMPONENT
 The deployed binaries are then copied to output/deploy/$PLATFORM
+
+
+Build Components and its dependencies
+-------------------------------------
+
+A new dependency to a component can be added in the form of $component=$dependency in dependencies.txt file
+
+To build a component and rebuild those components that depend on it
+```sh
+./$filename build with_reqs
+```

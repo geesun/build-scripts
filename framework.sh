@@ -139,6 +139,14 @@ source "$SCRIPT_DIR/parse_params.sh"
 for cmd in "${CMD[@]}" ; do
     cd "$WORKSPACE_DIR"
     source $VENV_DIR/bin/activate
-    do_$cmd
+    if [[ "$cmd" != "with_reqs" ]];then
+        do_$cmd
+    else
+        if [[ "$1" == "build" || "$1" == "with_reqs" ]];then
+            info_echo "Building Dependencies"
+            export SRC="$(basename $0)"
+            "$(dirname ${BASH_SOURCE[0]})/build-scripts/requisites.sh"
+        fi
+    fi
     deactivate
 done
