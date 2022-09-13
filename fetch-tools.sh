@@ -45,8 +45,8 @@ readonly -A TOOL_arm_eabi_gcc=(
     [sanity_file]="bin/arm-none-eabi-gcc"
     [extract]="yes"
 )
-readonly -A TOOL_ubuntu_bionic=(
-    [data_url]="http://cdimage.ubuntu.com/ubuntu-base/bionic/daily/current/bionic-base-arm64.tar.gz"
+readonly -A TOOL_ubuntu_minimal_rootfs=(
+    [data_url]="http://cdimage.ubuntu.com/ubuntu-base/focal/daily/current/focal-base-arm64.tar.gz"
     [checksum_url]=""
     [sanity_file]=""
     [extract]=""
@@ -57,7 +57,7 @@ readonly -A TOOL_linuxfirmware=(
     [sanity_file]=""
     [extract]=""
 )
-readonly TOOLS=( arm_linux_gcc arm_eabi_gcc ubuntu_bionic linuxfirmware )
+readonly TOOLS=( arm_linux_gcc arm_eabi_gcc ubuntu_minimal_rootfs linuxfirmware )
 readonly DO_DESC_build="download tools if not already downloaded"
 
 do_build() {

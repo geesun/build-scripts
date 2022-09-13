@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -140,7 +140,7 @@ do_build() {
         create_ramdisk busybox firmware ubuntu
 
         create_ext4part "ubuntu.root.img" $EXT4_IMG_SIZE \
-            "$WORKSPACE_DIR/tools/ubuntu_bionic/bionic-base-arm64.tar.gz" "ubuntu"
+            "$WORKSPACE_DIR/tools/ubuntu_minimal_rootfs/focal-base-arm64.tar.gz" "ubuntu"
     fi
 }
 
