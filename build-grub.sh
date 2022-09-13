@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -54,21 +54,6 @@ readonly GRUB_MODULES=(
     terminal
     terminfo
 )
-
-# newer_ctime COMPARE_FILE CHECK_FILE...
-#
-# Returns TRUE if any of...
-# 1. the input do not exist the return value is TRUE.
-# 2. CHECK_FILE... has a newer ctime than COMPARE_FILE.
-newer_ctime() {
-    local f
-    for f in "$@" ; do
-        [[ -e "$f" ]] || return 0
-    done
-
-    local -r state_file="$1" ; shift
-    [[ -n $(find "$@" -cnewer "$state_file" -print -quit) ]]
-}
 
 do_build() {
     local -r grub_work_dir="$PLATFORM_OUT_DIR/intermediates/grub"

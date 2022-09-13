@@ -126,6 +126,21 @@ in_haystack() {
     return 1
 }
 
+# newer_ctime COMPARE_FILE CHECK_FILE...
+#
+# Returns TRUE if any of...
+# 1. the input do not exist the return value is TRUE.
+# 2. CHECK_FILE... has a newer ctime than COMPARE_FILE.
+newer_ctime() {
+    local f
+    for f in "$@" ; do
+        [[ -e "$f" ]] || return 0
+    done
+
+    local -r state_file="$1" ; shift
+    [[ -n $(find "$@" -cnewer "$state_file" -print -quit) ]]
+}
+
 readonly DO_DESC_all="alias for \"clean build\""
 do_all() {
     cd "$WORKSPACE_DIR"
