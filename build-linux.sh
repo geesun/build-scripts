@@ -28,7 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-UBUNTU_COMMIT_ID="ea2285daccaa73a7e9189a079ec7c581ff18e682"
+UBUNTU_COMMIT_ID="6d26d875d5b1fddc9933db7b5a2fe1ddfbd04d06"
 UBUNTU_URL="git://git.launchpad.net/~ubuntu-kernel-test/ubuntu/+source/linux/+git/mainline-crack"
 
 do_build() {
