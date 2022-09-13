@@ -176,3 +176,8 @@ LINUXBOOT_BUILD_ENABLED=0
 if [ "$LINUXBOOT_BUILD_ENABLED" == "1" ]; then
 	BUILD_SCRIPTS="${BUILD_SCRIPTS} build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-target-bins.sh "
 fi
+
+# Pick config fragments based on the features
+if [ "$ARM_TF_ENABLE_MPAM_FOR_LOWER_ELS" == "1" ]; then
+        LINUX_defconfig[config]="rdn2cfg1_mpam"
+fi
