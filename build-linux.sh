@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2015-2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -43,7 +43,8 @@
 # LINUX_{config} - array of linux config options, indexed by
 # 	path - the path to the linux source
 #	defconfig - a defconfig to build
-#	config - the list of config fragments
+#	config - the list of config fragments which would get
+#	appended to the .config generated from base defconfig
 # LINUX_TOOLS_IOMMU_BUILD - Build tools/iommu in Linux
 # TARGET_BINS_PLATS - the platforms to create binaries for
 # TARGET_{plat} - array of platform parameters, indexed by
@@ -69,66 +70,66 @@ do_build ()
 			mkdir -p $LINUX_OUT_DIR/$name
 			confs=LINUX_$name[config]
 			echo "confs: ${!confs}"
+
+			ldefconfig=LINUX_$name[defconfig];
+			echo
+			echo -e "${GREEN}Building linux using ${!ldefconfig} on [`date`]${NORMAL}"
+			echo
+			set -x
+			make O=$LINUX_OUT_DIR/$name ${!ldefconfig}
+			{ set +x;  } 2> /dev/null
+
+			# pull in fragments if available
 			if [ "${!lconfig}" != "" ]; then
 				echo "Building using config fragments..."
 				CONFIG=""
+				# Iterate through all the configs in the list
+				# and append them to .config
 				for config in ${!lconfig}; do
-					CONFIG=$CONFIG"linaro/configs/${config}.conf "
+					set -x
+					CONFIG=$DIR"/configs/"$FLAVOUR"/fragments/${config}"
+					scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR/$name/ $LINUX_OUT_DIR/$name/.config $CONFIG
+					set +x
 				done
-				scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR/$name $CONFIG
-				make O=$LINUX_OUT_DIR/$name -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
-				if [ ${!lmodules} == "true" ]; then
-					mkdir -p $LINUX_OUT_DIR/$name/modules
-					scripts/kconfig/merge_config.sh -O $LINUX_OUT_DIR/$name/modules $CONFIG
-					make O=$LINUX_OUT_DIR/$name/modules -j$PARALLELISM modules
-				fi
-			else
-				lconfig=LINUX_$name[defconfig];
+			fi
+
+			echo
+			echo -e "${GREEN}Building linux $LINUX_IMAGE_TYPE and dtbs on [`date`]${NORMAL}"
+			echo
+			set -x
+			make O=$LINUX_OUT_DIR/$name -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
+			{ set +x;  } 2> /dev/null
+
+			if [ "$LINUX_TOOLS_IOMMU_BUILD" == "1" ]; then
 				echo
-				echo -e "${GREEN}Building linux using ${!lconfig} on [`date`]${NORMAL}"
+				echo -e "${GREEN}Building linux headers_install on [`date`]${NORMAL}"
 				echo
 				set -x
-				make O=$LINUX_OUT_DIR/$name ${!lconfig}
+				make O=$LINUX_OUT_DIR/$name headers_install
 				{ set +x;  } 2> /dev/null
 
 				echo
-				echo -e "${GREEN}Building linux $LINUX_IMAGE_TYPE and dtbs on [`date`]${NORMAL}"
+				echo -e "${GREEN}Building linux iommu tools on [`date`]${NORMAL}"
 				echo
 				set -x
-				make O=$LINUX_OUT_DIR/$name -j$PARALLELISM $LINUX_IMAGE_TYPE dtbs
+				make O=$LINUX_OUT_DIR/$name tools/iommu
+				{ set +x;  } 2> /dev/null
+			fi
+
+			if [ "${!lmodules}" == "true" ]; then
+				echo
+				echo -e "${GREEN}Building ${!lconfig} for linux on [`date`]${NORMAL}"
+				echo
+				set -x
+				make O=$LINUX_OUT_DIR/$name/modules ${!lconfig}
 				{ set +x;  } 2> /dev/null
 
-				if [ "$LINUX_TOOLS_IOMMU_BUILD" == "1" ]; then
-					echo
-					echo -e "${GREEN}Building linux headers_install on [`date`]${NORMAL}"
-					echo
-					set -x
-					make O=$LINUX_OUT_DIR/$name headers_install
-					{ set +x;  } 2> /dev/null
-
-					echo
-					echo -e "${GREEN}Building linux iommu tools on [`date`]${NORMAL}"
-					echo
-					set -x
-					make O=$LINUX_OUT_DIR/$name tools/iommu
-					{ set +x;  } 2> /dev/null
-				fi
-
-				if [ "${!lmodules}" == "true" ]; then
-					echo
-					echo -e "${GREEN}Building ${!lconfig} for linux on [`date`]${NORMAL}"
-					echo
-					set -x
-					make O=$LINUX_OUT_DIR/$name/modules ${!lconfig}
-					{ set +x;  } 2> /dev/null
-
-					echo
-					echo -e "${GREEN}Building linux modules on [`date`]${NORMAL}"
-					echo
-					set -x
-					make O=$LINUX_OUT_DIR/$name/modules -j$PARALLELISM modules
-					{ set +x;  } 2> /dev/null
-				fi
+				echo
+				echo -e "${GREEN}Building linux modules on [`date`]${NORMAL}"
+				echo
+				set -x
+				make O=$LINUX_OUT_DIR/$name/modules -j$PARALLELISM modules
+				{ set +x;  } 2> /dev/null
 			fi
 			popd
 		done
