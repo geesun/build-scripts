@@ -29,8 +29,34 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 do_build() {
-    make --no-print-directory -C "bsp/arm-tf/tools/fiptool"
-    make --no-print-directory -C "bsp/arm-tf/tools/cert_create"
+    readonly OPENSSL_SRC="$WORKSPACE_DIR/bsp/deps/openssl"
+    readonly OPENSSL_PATH="$PLATFORM_OUT_DIR/intermediates/host_openssl"
+    local -r state_file="$OPENSSL_PATH/host.openssl.state"
+
+    if newer_ctime "$state_file" \
+        "$OPENSSL_SRC" \
+        "$SCRIPT_DIR/build-arm-tf.sh" \
+        "$SCRIPT_DIR/framework.sh" \
+    ; then
+        rm -rf "$OPENSSL_PATH"
+        mkdir -p "$OPENSSL_PATH/build"
+        cd "$OPENSSL_PATH/build"
+        $OPENSSL_SRC/Configure \
+            --libdir=lib \
+            --prefix="$OPENSSL_PATH/install" \
+            --api=1.0.1 \
+            no-shared \
+            no-dso \
+            no-threads
+        make -j$PARALLELISM
+        make -j$PARALLELISM install_sw
+        cd -
+        touch "$state_file"
+        echo "OpenSSL Installed"
+    fi
+
+    make OPENSSL_DIR="$OPENSSL_PATH/install" --no-print-directory -C "bsp/arm-tf/tools/fiptool"
+    make OPENSSL_DIR="$OPENSSL_PATH/install" --no-print-directory -C "bsp/arm-tf/tools/cert_create"
 
     local make_opts=(
         --no-print-directory
@@ -92,15 +118,16 @@ do_build() {
 }
 
 do_clean() {
-    rm -f \
+    rm -rf \
+        "$PLATFORM_OUT_DIR/intermediates/host_openssl" \
         "$PLATFORM_OUT_DIR/intermediates/$PLATFORM-single-chip.dtb" \
         "$PLATFORM_OUT_DIR/intermediates/$PLATFORM-multi-chip.dtb" \
-        "$PLATFORM_OUT_DIR/intermediates/tf-bl1.bin" \
-        "$PLATFORM_OUT_DIR/intermediates/tf-bl2.bin" \
-        "$PLATFORM_OUT_DIR/intermediates/tf-bl31.bin" \
         "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_fw_config.dtb" \
         "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_tb_fw_config.dtb" \
         "$PLATFORM_OUT_DIR/intermediates/"$PLATFORM"_nt_fw_config.dtb" \
+        "$PLATFORM_OUT_DIR/intermediates/tf-bl1.bin" \
+        "$PLATFORM_OUT_DIR/intermediates/tf-bl2.bin" \
+        "$PLATFORM_OUT_DIR/intermediates/tf-bl31.bin"
 
     make --no-print-directory -C "bsp/arm-tf" distclean
 }
