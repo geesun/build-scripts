@@ -73,6 +73,14 @@ ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS ARM_BL31_IN_DRAM=$ARM_TF_BL31_IN_DRAM"
 
 ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS CSS_SGI_PLATFORM_VARIANT=1"
 
+#TFTF Flags
+TFTF_BUILD_ENABLED=0
+TFTF_DEBUG_ENABLED=1
+TFTF_PATH=validation/comp-test/trusted-firmware-tf
+TFTF_PLATS="rdn2"
+TFTF_REPORTS="uart:raw"
+TFTF_PLATFORM_VARIANT="1"
+
 # Filesystem options
 VALID_FILESYSTEMS="busybox buildroot linuxboot"
 
@@ -153,6 +161,7 @@ TARGET_rdn2cfg1[linux]="Image"
 TARGET_rdn2cfg1[ramdisk]=0x88000000
 TARGET_rdn2cfg1[tbbr]=1
 TARGET_rdn2cfg1[scp]="rdn2"
+TARGET_rdn2cfg1[tftf]="rdn2"
 SCP_BYPASS_ROM_SUPPORT[rdn2]=false
 BUILD_SCRIPTS="${BUILD_SCRIPTS} build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-target-bins.sh "
 
