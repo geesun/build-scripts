@@ -66,6 +66,13 @@ fi
 # Place BL31 to SRAM/DRAM based on ARM_BL31_IN_DRAM flag
 ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS ARM_BL31_IN_DRAM=$ARM_TF_BL31_IN_DRAM"
 
+#TFTF Flags
+TFTF_BUILD_ENABLED=0
+TFTF_DEBUG_ENABLED=1
+TFTF_PATH=validation/comp-test/trusted-firmware-tf
+TFTF_PLATS="rdv1"
+TFTF_REPORTS="uart:raw"
+
 # Filesystem options
 VALID_FILESYSTEMS="busybox buildroot linuxboot"
 
@@ -121,6 +128,7 @@ TARGET_rdv1[linux]="Image"
 TARGET_rdv1[ramdisk]=0x88000000
 TARGET_rdv1[tbbr]=1
 TARGET_rdv1[scp]="rdv1"
+TARGET_rdv1[tftf]="rdv1"
 SCP_BYPASS_ROM_SUPPORT[rdv1]=false
 BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-target-bins.sh "
 
