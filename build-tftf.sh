@@ -47,7 +47,7 @@ do_build ()
 
 		pushd $TOP_DIR/$TFTF_PATH
 		for plat in $TFTF_PLATS; do
-			make -j $PARALLELISM PLAT=${plat} DEBUG=${TFTF_DEBUG_ENABLED} TEST_REPORTS="${TFTF_REPORTS}"
+			make -j $PARALLELISM PLAT=${plat} CSS_SGI_PLATFORM_VARIANT=$TFTF_PLATFORM_VARIANT DEBUG=${TFTF_DEBUG_ENABLED} TEST_REPORTS="${TFTF_REPORTS}"
 		done
 		popd
 	fi
@@ -61,7 +61,7 @@ do_clean ()
 		pushd $TOP_DIR/$TFTF_PATH
 
 		for plat in $TFTF_PLATS; do
-			make PLAT=$plat DEBUG=$TFTF_DEBUG_ENABLED clean
+			make PLAT=$plat CSS_SGI_PLATFORM_VARIANT=$TFTF_PLATFORM_VARIANT DEBUG=$TFTF_DEBUG_ENABLED clean
 		done
 		popd
 	fi
