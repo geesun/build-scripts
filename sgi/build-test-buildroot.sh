@@ -139,14 +139,6 @@ create_ext3part ()
 
 	dd if=/dev/zero of=$ext3part_name bs=$BLOCK_SIZE count=$ext3part_size
 	mkdir -p mnt
-	#umount if it has been mounted
-	if [[ $(findmnt -M "mnt") ]]; then
-		fusermount -u mnt
-	fi
-	mkfs.ext3 -F $ext3part_name
-	tune2fs -U $EXT3PART_UUID $ext3part_name
-
-	fuse-ext2 $ext3part_name mnt -o rw+
 	cp $OUTDIR/linux/Image ./mnt
 	cp $PLATDIR/ramdisk-buildroot.img ./mnt
 	if [ -d "$LINUX_OUTDIR/tools/iommu/smmute" ]; then
@@ -154,8 +146,7 @@ create_ext3part ()
 		cp $LINUXDIR/tools/iommu/smmute/test_smmute.sh ./mnt
 		chmod +x ./mnt/test_smmute.sh
 	fi
-	sync
-	fusermount -u mnt
+	mkfs.ext3 -d mnt $ext3part_name -U $EXT3PART_UUID
 	rm -rf mnt
 	echo "EXT3 partition image created"
 }

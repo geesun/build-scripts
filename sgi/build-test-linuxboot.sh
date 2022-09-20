@@ -296,21 +296,10 @@ create_disk_image ()
 	# use randomly generated UUID
 	EXT3PART_UUID=$(uuidgen)
 
-	# umount if it has been mounted
-	if [[ $(findmnt -M "mnt") ]]; then
-		fusermount -u mnt
-	fi
-	# mkfs.ext3 -F $DISK_IMAGE_NAME
-	mkfs -t ext3 $DISK_IMAGE_NAME
-	tune2fs -U $EXT3PART_UUID $DISK_IMAGE_NAME
-
-	fuse-ext2 $DISK_IMAGE_NAME mnt -o rw+
-
 	# copy the stage-2 linux kernel image and initrd
 	cp $OUTDIR/linux/Image ./mnt
 	cp $PLATDIR/ramdisk-busybox.img ./mnt
-	sync
-	fusermount -u mnt
+	mkfs.ext3 -d mnt $DISK_IMAGE_NAME -U $EXT3PART_UUID
 	rm -rf mnt
 	echo "$DISK_IMAGE_NAME disk image created"
 	mv ${DISK_IMAGE_NAME} ./output/$SGI_PLATFORM
