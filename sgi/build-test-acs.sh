@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2019, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2019-2022, Arm Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,43 +28,75 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-declare -A arm_platforms
-arm_platforms[sgi575]=1
-arm_platforms[rdn1edge]=1
-arm_platforms[rde1edge]=1
+if [ -z "$refinfra" ] ; then
+	refinfra="sgi"
+fi
 
-# Environment variables
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-WS_DIR=`pwd`
+declare -A platforms_sgi
+platforms_sgi[sgi575]=1
+declare -A platforms_rdinfra
+platforms_rdinfra[rdn1edge]=1
+platforms_rdinfra[rdn1edgex2]=1
+platforms_rdinfra[rdv1]=1
+platforms_rdinfra[rdv1mc]=1
+platforms_rdinfra[rdn2]=1
+platforms_rdinfra[rdn2cfg1]=1
+platforms_rdinfra[rdn2cfg2]=1
+platforms_rdinfra[rdv2]=1
 
-__print_supported_arm_platforms()
+__print_supported_platforms_sgi()
 {
 	echo "Supported platforms are -"
-	for plat in "${!arm_platforms[@]}" ;
+	for plat in "${!platforms_sgi[@]}" ;
 		do
-			printf "\t $plat \n"
+			printf "\t $plat\n"
 		done
 	echo
 }
 
+__print_supported_platforms_rdinfra()
+{
+	echo "Supported platforms are -"
+	for plat in "${!platforms_rdinfra[@]}" ;
+		do
+			printf "\t $plat\n"
+		done
+	echo
+}
+
+__print_examples()
+{
+	echo "Example 1: ./build-scripts/$refinfra/build-test-acs.sh -p $1 all"
+	echo "   This command builds the software stack for $1 platform and"
+	echo "   prepares a disk image to boot upto uefi shell"
+	echo
+	echo "Example 2: ./build-scripts/$refinfra/build-test-acs.sh -p $1 clean"
+	echo "   This command cleans the previous build of the $1 platform "
+	echo "   software stack"
+}
+
+__print_examples_sgi()
+{
+	__print_examples "sgi575"
+}
+
+__print_examples_rdinfra()
+{
+	__print_examples "rdn1edge"
+}
+
 __print_usage()
 {
-	echo "Usage: ./build-scripts/build-test-acs.sh -p <platform> <command>"
+	echo "Usage: ./build-scripts/$refinfra/build-test-acs.sh -p <platform> <command>"
 	echo
 	echo "build-test-acs.sh: Builds the platform software stack with all the"
 	echo "required software components that allows the execution for Arm"
 	echo "Architecture Compliance Suite (ACS) tests."
 	echo
-	__print_supported_arm_platforms
+	__print_supported_platforms_$refinfra
 	echo "Supported build commands are - clean/build/package/all"
 	echo
-	echo "Example 1: ./build-scripts/build-test-acs.sh -p sgi575 all"
-	echo "   This command builds the software stack for sgi575 platform, downloads"
-	echo "   ACS source code, builds it and prepares the luv live image."
-	echo
-	echo "Example 2: ./build-scripts/build-test-acs.sh -p sgi575 clean"
-	echo "   This command cleans the previous build of the sgi575 platform software"
-	echo "   stack and ACS."
+	__print_examples_$refinfra
 	echo
 	exit 0
 }
@@ -73,7 +105,22 @@ __print_usage()
 __do_override_build_configs()
 {
 	echo "build-test-acs.sh: overriding BUILD_SCRIPTS"
-	BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-scp.sh build-target-bins.sh build-acs.sh"
+	BUILD_SCRIPTS="build-arm-tf.sh build-uefi.sh build-scp.sh build-target-bins.sh "
+
+	# Disable RAS extension on arm-tf build
+	ARM_TF_BUILD_FLAGS="${ARM_TF_BUILD_FLAGS/RAS_EXTENSION=1/}"
+	ARM_TF_BUILD_FLAGS="${ARM_TF_BUILD_FLAGS/HANDLE_EA_EL3_FIRST=1/}"
+	ARM_TF_BUILD_FLAGS="${ARM_TF_BUILD_FLAGS/SDEI_SUPPORT=1/}"
+
+	# Disable RAS extension on UEFI build
+	var=UEFI_PLAT_$PLATFORM[defines]
+	EDK2_VAR=${!var}
+	EDK2_VAR="${EDK2_VAR/-D EDK2_ENABLE_GHES_MM/}"
+	EDK2_VAR="${EDK2_VAR/-D EDK2_ENABLE_FIRMWARE_FIRST/}"
+	EDK2_VAR="${EDK2_VAR/-D EDK2_ERROR_INJ_EN/}"
+	EDK2_VAR="${EDK2_VAR/-D EDK2_ENABLE_RAS=1/}"
+	eval "UEFI_PLAT_$PLATFORM[defines]=\"$EDK2_VAR\""
+
 	echo "BUILD_SCRIPTS="$BUILD_SCRIPTS
 }
 
@@ -95,9 +142,10 @@ parse_params() {
 	if [ -z "$ARM_PLATFORM" ] ; then
 		__print_usage
 	fi
-	if [ -z "${arm_platforms[$ARM_PLATFORM]}" ] ; then
+	platform=platforms_$refinfra[$ARM_PLATFORM]
+	if [ -z "${!platform}" ] ; then
 		echo "[ERROR] Could not deduce which platform to build."
-		__print_supported_arm_platforms
+		__print_supported_platforms_$refinfra
 		exit
 	fi
 
