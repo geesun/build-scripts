@@ -215,13 +215,21 @@ function install_libfdt()
 {
 	local CC SYSROOT
 
+	ARCH_VERSION=$(uname -m)
+	if [ "$ARCH_VERSION" ==  "x86_64" ]; then
+		pushd tools/gcc
+		# Compile and install library to the cross compiler
+		export CC="${PWD}/${1}gcc"
+		SYSROOT=$($CC -print-sysroot)
+	else
+		# For aarch64 host, use preinstalled host gcc
+		SYSROOT=$(gcc -print-sysroot)
+	fi
+
 	# Clone the LIBFDT git repo
 	git clone git://git.kernel.org/pub/scm/utils/dtc/dtc.git
 	wait
 
-	# Compile and install library
-	export CC="${PWD}/${1}gcc"
-	SYSROOT=$($CC -print-sysroot)
 	pushd dtc
 	make clean
 	make libfdt
@@ -230,6 +238,10 @@ function install_libfdt()
 	# Clean Up
 	popd
 	rm -rf dtc
+
+	if [ "$ARCH_VERSION" ==  "x86_64" ]; then
+		popd
+	fi
 }
 
 ############################################################################
@@ -279,17 +291,6 @@ function install_gcc_toolchain()
 
 		echo
 		echo -e "${BOLD}${GREEN}GCC 11.2 toolchain setup complete${NORMAL}\n"
-		echo
-
-		echo
-		echo -ne "Installing LIBFDT library ..."
-		echo
-
-		# Install LIBFDT library for GCC 11.2
-		install_libfdt "gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-"
-
-		echo
-		echo -e "${BOLD}${GREEN}LIBFDT library installation complete${NORMAL}\n"
 		echo
 	else
 		echo
@@ -429,6 +430,10 @@ function install_cmake()
 	if [ "$ARCH_VERSION" ==  "x86_64" ]; then
 		install_gcc_toolchain
 	fi
+
+	echo -e "\nInstalling LIBFDT library:\n\n"
+	# Install LIBFDT library for GCC 11.2
+	install_libfdt "gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-"
 
 	echo -e "\nInstalling OpenSSL 3.0:\n\n"
 	install_openssl3_0
