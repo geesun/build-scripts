@@ -145,11 +145,14 @@ function prepare_resources()
 
 	# Enable all the standard Ubuntu repositories
 	echo -ne "\nAdding required Ubuntu repositories to apt list..."
-	sudo add-apt-repository main > $LOGFILE 2>&1
-	sudo add-apt-repository universe >> $LOGFILE 2>&1
-	sudo add-apt-repository restricted >> $LOGFILE 2>&1
-	sudo add-apt-repository multiverse >> $LOGFILE 2>&1
-	sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y 2>&1
+	# Install add-apt-repository command
+	sudo apt-get install -y software-properties-common
+	# Add repositories
+	sudo add-apt-repository -y main >> $LOGFILE 2>&1
+	sudo add-apt-repository -y universe >> $LOGFILE 2>&1
+	sudo add-apt-repository -y restricted >> $LOGFILE 2>&1
+	sudo add-apt-repository -y multiverse >> $LOGFILE 2>&1
+	sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test 2>&1
 	echo >> $LOGFILE 2>&1
 	echo -e "${BOLD}${GREEN}done${NORMAL}"
 
