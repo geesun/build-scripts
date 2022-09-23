@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2021-2022, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -49,10 +49,41 @@ do_build ()
 
 		pushd "$DIR/configs/$PLATFORM/buildroot"
 		cp $BUILDROOT_DEFCONFIG $TOP_DIR/$BUILDROOT_PATH/configs/
+
+		ARCH_VERSION=$(uname -m)
+
+		# if the host build machine is x86_64, pick up the config
+		# framgment specific to x86_64.
+		if [ "$ARCH_VERSION" ==  "x86_64" ] && [ ! -z "$BUILDROOT_X86_64_HOST_CONFIG" ] ; then
+			cp $BUILDROOT_X86_64_HOST_CONFIG $TOP_DIR/$BUILDROOT_PATH/configs/
+		fi
+
+		# if the host build machine is aarch64, pick up the config
+		# framgment specific to aarch64.
+		if [ "$ARCH_VERSION" ==  "aarch64" ] && [ ! -z "$BUILDROOT_AARCH64_HOST_CONFIG" ] ; then
+			cp $BUILDROOT_AARCH64_HOST_CONFIG $TOP_DIR/$BUILDROOT_PATH/configs/
+		fi
 		popd
 
 		pushd $TOP_DIR/$BUILDROOT_PATH
 		mkdir -p $BUILDROOT_OUT_DIR
+
+		# if the host build machine is x86_64, merge the x86 config with
+		# the default config
+		if [ "$ARCH_VERSION" ==  "x86_64" ] && [ ! -z "$BUILDROOT_X86_64_HOST_CONFIG" ] ; then
+			./support/kconfig/merge_config.sh -m configs/$BUILDROOT_DEFCONFIG configs/$BUILDROOT_X86_64_HOST_CONFIG
+			mv .config configs/$BUILDROOT_DEFCONFIG
+			rm configs/$BUILDROOT_X86_64_HOST_CONFIG # not required anymore
+		fi
+
+		# if the host build machine is aarch64, merge the aarch64 config
+		# with the default config
+		if [ "$ARCH_VERSION" ==  "aarch64" ] && [ ! -z "$BUILDROOT_AARCH64_HOST_CONFIG" ] ; then
+			./support/kconfig/merge_config.sh -m configs/$BUILDROOT_DEFCONFIG configs/$BUILDROOT_AARCH64_HOST_CONFIG
+			mv .config configs/$BUILDROOT_DEFCONFIG
+			rm configs/$BUILDROOT_AARCH64_HOST_CONFIG # not required anymore
+		fi
+
 		make O=$BUILDROOT_OUT_DIR $BUILDROOT_DEFCONFIG
 		make O=$BUILDROOT_OUT_DIR -j $PARALLELISM
 		rm configs/$BUILDROOT_DEFCONFIG
