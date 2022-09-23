@@ -117,6 +117,7 @@ fi
 
 # Buildroot options
 BUILDROOT_DEFCONFIG=aarch64_rdinfra_defconfig
+BUILDROOT_X86_64_HOST_CONFIG=aarch64_rdinfra_x86_fragment_config
 
 # Misc options
 COMPONENT_FLAVOUR=rdn2cfg2

@@ -110,6 +110,7 @@ SCP_COMPILER_PATH=$TOP_DIR/tools/gcc/gcc-arm-11.2-2022.02-x86_64-arm-none-eabi/b
 
 # Buildroot options
 BUILDROOT_DEFCONFIG=aarch64_rdinfra_defconfig
+BUILDROOT_X86_64_HOST_CONFIG=aarch64_rdinfra_x86_fragment_config
 
 # Misc options
 COMPONENT_FLAVOUR=rdv1mc

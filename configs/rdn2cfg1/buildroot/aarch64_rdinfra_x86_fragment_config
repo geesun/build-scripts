@@ -1,0 +1,2 @@
+# Use external toolchain to cross compile
+BR2_TOOLCHAIN_EXTERNAL=y
