@@ -44,6 +44,9 @@
 
 do_build ()
 {
+	# autogen.sh expects python to exist but newer version of Linux distributions only have python3
+	export PYTHON=python3
+
 	if [ "$GRUB_BUILD_ENABLED" == "1" ]; then
 		if [ -d $TOP_DIR/$GRUB_PATH ]; then
 			pushd $TOP_DIR/$GRUB_PATH
@@ -71,6 +74,8 @@ do_build ()
 			output/bin/grub-mkimage -v -c ${GRUB_PLAT_CONFIG_FILE} -o output/grubaa64.efi -O arm64-efi -p "" part_gpt part_msdos ntfs ntfscomp hfsplus fat ext2 normal chain boot configfile linux help part_msdos terminal terminfo configfile lsefi search normal gettext loadenv read search_fs_file search_fs_uuid search_label
 		fi
 	fi
+
+	unset PYTHON
 }
 
 do_clean ()
