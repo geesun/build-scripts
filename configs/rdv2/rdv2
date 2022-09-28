@@ -82,12 +82,17 @@ TFTF_PLATFORM_VARIANT="0"
 # Filesystem options
 VALID_FILESYSTEMS="busybox buildroot linuxboot"
 
+# Virtualization Options
+ARM_VIRT_KVM_TOOL=1
+
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
+UEFI_PLATFORMS="rdv2"
 if [ "$ARM_TF_ENABLE_SPM" == "1" ]; then
-	UEFI_PLATFORMS="rdv2 rdv2_mm_standalone"
-else
-	UEFI_PLATFORMS="rdv2"
+	UEFI_PLATFORMS="$UEFI_PLATFORMS rdv2_mm_standalone"
+fi
+if [ "$ARM_VIRT_KVM_TOOL" == "1" ]; then
+	UEFI_PLATFORMS="$UEFI_PLATFORMS ArmVirtKvmTool"
 fi
 declare -A UEFI_PLAT_rdv2
 UEFI_PLAT_rdv2[platname]="RdN2"
@@ -100,6 +105,14 @@ fi
 UEFI_PLAT_rdv2[defines]="${UEFI_PLAT_rdv2[defines]} -D EDK2_ENABLE_RAS=$ARM_TF_RAS_FW_FIRST"
 UEFI_PLAT_rdv2[binary]="BL33_AP_UEFI.fd"
 UEFI_PLAT_rdv2[outbin]=uefi.bin
+
+declare -A UEFI_PLAT_ArmVirtKvmTool
+UEFI_PLAT_ArmVirtKvmTool[platname]="ArmVirtKvmTool"
+UEFI_PLAT_ArmVirtKvmTool[dsc]="ArmVirtPkg/ArmVirtKvmTool.dsc"
+UEFI_PLAT_ArmVirtKvmTool[output]=css-common
+UEFI_PLAT_ArmVirtKvmTool[binary]="KVMTOOL_EFI.fd"
+UEFI_PLAT_ArmVirtKvmTool[outbin]="KVMTOOL_EFI.bin"
+UEFI_PLAT_ArmVirtKvmTool[defines]="${UEFI_PLAT_ArmVirtKvmTool[defines]} -D EDK2_OUT_DIR=Build/ArmVirtKvmTool"
 
 #Standalone MM Build Options
 UEFI_MM_BUILD_ENABLED=$ARM_TF_ENABLE_SPM
