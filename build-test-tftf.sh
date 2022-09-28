@@ -34,6 +34,7 @@ arm_platforms[rdn1edge]=1
 arm_platforms[rdv1]=1
 arm_platforms[rdn2]=1
 arm_platforms[rdn2cfg1]=1
+arm_platforms[rdv2]=1
 
 # Environment variables
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
