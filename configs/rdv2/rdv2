@@ -34,6 +34,8 @@ if [ "$BUILD_MACHINE_ARCH" == "x86_64" ]; then
 	export LINUX_COMPILER=$CROSS_COMPILE_64
 fi
 
+BUILD_SCRIPTS=""
+
 #Default linux configs per OS
 LINUX_CONFIG_LIST=""
 BUSYBOX_LINUX_CONFIG_LIST="defconfig"
@@ -84,6 +86,13 @@ VALID_FILESYSTEMS="busybox buildroot linuxboot"
 
 # Virtualization Options
 ARM_VIRT_KVM_TOOL=1
+KVMTOOL_BUILD_ENABLED=1
+KVM_UNIT_TESTS_BUILD_ENABLED=1
+KVMTOOL_SUPPORT_PLATFORM="rdn2"
+if [ "${KVMTOOL_BUILD_ENABLED}" == "1" ] ||
+	[ "${KVM_UNIT_TESTS_BUILD_ENABLED}" == "1" ]; then
+	BUILD_SCRIPTS="${BUILD_SCRIPTS} build-kvmtool.sh"
+fi
 
 #UEFI Options.
 UEFI_BUILD_ENABLED=1
@@ -153,10 +162,10 @@ TARGET_rdv2[tbbr]=1
 TARGET_rdv2[scp]="rdn2"
 TARGET_rdv2[tftf]="rdn2"
 SCP_BYPASS_ROM_SUPPORT[rdn2]=false
-BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-target-bins.sh "
+BUILD_SCRIPTS="${BUILD_SCRIPTS} build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-buildroot.sh build-grub.sh build-target-bins.sh "
 
 # Linuxboot Options
 LINUXBOOT_BUILD_ENABLED=0
 if [ "$LINUXBOOT_BUILD_ENABLED" == "1" ]; then
-	BUILD_SCRIPTS="build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-target-bins.sh "
+	BUILD_SCRIPTS="${BUILD_SCRIPTS} build-scp.sh build-arm-tf.sh build-uefi.sh build-linux.sh build-busybox.sh build-target-bins.sh "
 fi
