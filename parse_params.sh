@@ -16,7 +16,7 @@ readonly PLATFORM_OPTIONS=(
 AVB_DEFAULT=false
 
 readonly CMD_DEFAULT=( "build" )
-CMD_OPTIONS=("build" "patch" "clean" "deploy")
+CMD_OPTIONS=("build" "patch" "clean" "deploy" "with_reqs")
 if [[ $0 == "./build-all.sh" ]]; then
     CMD_OPTIONS=("build" "package" "clean" "all" "deploy")
 fi
@@ -43,8 +43,10 @@ print_usage() {
         (( i > s_maxlen )) && s_maxlen="$i"
     done
     for s in "${CMD_OPTIONS[@]}" ; do
-        local -n desc="DO_DESC_$s"
-        printf "    %- ${s_maxlen}s    %s\n" "$s" "${desc:+($desc)}"
+        if [[ "$s" != "with_reqs" ]];then
+            local -n desc="DO_DESC_$s"
+            [[ "$s" == "build" ]] && printf "    %- ${s_maxlen}s    %s\n" "$s [with_reqs]" "${desc:+($desc)}" || printf "    %- ${s_maxlen}s    %s\n" "$s" "${desc:+($desc)}"
+        fi
     done
 }
 

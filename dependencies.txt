@@ -1,0 +1,7 @@
+build-u-boot.sh=build-tfa.sh
+build-hafnium.sh=build-tfa.sh
+build-optee-os.sh=build-tfa.sh , build-buildroot.sh
+build-optee-test.sh=build-buildroot.sh
+build-trusted-services.sh=build-tfa.sh , build-buildroot.sh
+build-tfa.sh=build-rss.sh
+build-scp.sh=build-tfa.sh
