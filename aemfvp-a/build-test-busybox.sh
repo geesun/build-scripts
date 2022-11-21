@@ -35,7 +35,12 @@ __print_examples()
 	echo "   This command builds the software stack for $1 platform and prepares a"
 	echo "   disk image to boot upto busybox filesystem"
 	echo
-	echo "Example 2: ./build-scripts/$1/build-test-busybox.sh -p $1 clean"
+	echo "Example 2: ./build-scripts/$1/build-test-busybox.sh -p $1 -a true all"
+	echo "   This command builds the software stack for $1 platform which does not"
+	echo "   include pci and smmu device and prepares a disk image to boot upto"
+	echo "   busybox filesystem"
+	echo
+	echo "Example 3: ./build-scripts/$1/build-test-busybox.sh -p $1 clean"
 	echo "   This command cleans the previous build of the $1 platform software stack"
 }
 
@@ -87,10 +92,13 @@ __parse_params_validate()
 
 parse_params() {
 	#Parse the named parameters
-	while getopts "p:" opt; do
+	while getopts "p:a:" opt; do
 		case $opt in
 			p)
 				ARM_PLATFORM="$OPTARG"
+				;;
+			a)
+				export AEMV8A="$OPTARG"
 				;;
 		esac
 	done
@@ -102,8 +110,34 @@ parse_params() {
 	__parse_params_validate
 }
 
+pci_smmu_node_delete()
+{
+	TOP_DIR=`pwd`
+	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )
+	source $DIR/configs/$ARM_PLATFORM/aemfvp-a
+	local fd=TARGET_aemfvp_a[fdts]
+	for target in ${!fd}; do
+		DTS_FILE=$TOP_DIR/linux/arch/arm64/boot/dts/arm/$target.dts
+		if [ -f "$DTS_FILE" ] ; then
+			CNT=$(grep "delete-node" $DTS_FILE | wc -l)
+			if [ "$AEMV8A" = "true" ] ; then
+				if [ "$CNT" == "0" ]; then
+					sed -i -e "\$a/delete-node/ &smmu;" $DTS_FILE
+					sed -i -e "\$a/delete-node/ &pci;" $DTS_FILE
+				fi
+			else
+				if [ "$CNT" != "0" ]; then
+					sed -i '/delete-node/d' $DTS_FILE
+				fi
+			fi
+		fi
+	done
+}
+
 #parse the command line parameters
 parse_params $@
+
+pci_smmu_node_delete
 
 #override the command line parameters for build-all.sh
 set -- "-p $ARM_PLATFORM -f busybox $BUILD_CMD"

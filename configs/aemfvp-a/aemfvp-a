@@ -27,3 +27,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 source ${DIR}/configs/common/common.aemfvp-a
+
+if [ "$AEMV8A" = "true" ] ; then
+	ARM_TF_BUILD_FLAGS="$ARM_TF_BUILD_FLAGS HW_ASSISTED_COHERENCY=1 USE_COHERENT_MEM=0 CTX_INCLUDE_AARCH32_REGS=0" 
+fi
+
